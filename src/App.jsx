@@ -1,10 +1,8 @@
+import "./App.css";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
 import Services from "./components/Services";
-import WhyChooseUs from "./components/WhyChooseUs";
-import Stats from "./components/Stats";
-import CTA from "./components/CTA";
-import Footer from "./components/Footer";
+import About from "./components/About";
 
 function App() {
   return (
@@ -12,10 +10,7 @@ function App() {
       <Navbar />
       <Hero />
       <Services />
-      <WhyChooseUs />
-      <Stats />
-      <CTA />
-      <Footer />
+      <About />
     </>
   );
 }
