@@ -1,24 +1,82 @@
+import { useState } from "react";
+import { FaBars, FaTimes } from "react-icons/fa";
 import logo from "../assets/logo.PNG";
 
-function Navbar() {
+// Accept the function as a prop here
+function Navbar({ activePage, onNavigate, onSignUpClick }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const handleNavigate = (page) => {
+    onNavigate(page);
+    setMenuOpen(false);
+  };
+
+  const handleSignUp = () => {
+    onSignUpClick();
+    setMenuOpen(false);
+  };
+
   return (
     <nav className="navbar">
-      <div className="logo-section">
+      <button
+        className="logo-section logo-button"
+        type="button"
+        onClick={() => handleNavigate("home")}
+      >
         <img src={logo} alt="logo" />
         <div>
           <h2>Assignopedia</h2>
           <p>Academic Excellence</p>
         </div>
+      </button>
+
+      <button
+        className="menu-toggle"
+        type="button"
+        aria-label={menuOpen ? "Close menu" : "Open menu"}
+        aria-expanded={menuOpen}
+        onClick={() => setMenuOpen(!menuOpen)}
+      >
+        {menuOpen ? <FaTimes /> : <FaBars />}
+      </button>
+
+      <div className={`nav-panel ${menuOpen ? "nav-panel-open" : ""}`}>
+        <ul className="nav-links">
+          <li>
+            <button
+              className={activePage === "home" ? "active-nav" : ""}
+              type="button"
+              onClick={() => handleNavigate("home")}
+            >
+              Home
+            </button>
+          </li>
+          <li>
+            <button
+              className={activePage === "services" ? "active-nav" : ""}
+              type="button"
+              onClick={() => handleNavigate("services")}
+            >
+              Services
+            </button>
+          </li>
+          <li>
+            <button type="button" onClick={() => handleNavigate("home")}>
+              About
+            </button>
+          </li>
+          <li>
+            <button type="button" onClick={() => handleNavigate("home")}>
+              Contact
+            </button>
+          </li>
+        </ul>
+
+        {/* Attach the click handler here */}
+        <button className="sign-up-btn" onClick={handleSignUp} type="button">
+          Sign Up
+        </button>
       </div>
-
-      <ul className="nav-links">
-        <li>Home</li>
-        <li>Services</li>
-        <li>About</li>
-        <li>Contact</li>
-      </ul>
-
-      <button className="help-btn">Get Help</button>
     </nav>
   );
 }
