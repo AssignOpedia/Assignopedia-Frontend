@@ -4,6 +4,8 @@ import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
 import Services from "./components/Services";
 import About from "./components/About";
+import Blog from "./components/Blog";
+import Careers from "./components/Careers";
 import AuthForm from "./AuthForm/AuthForm";
 
 function App() {
@@ -11,7 +13,26 @@ function App() {
   const [showAuth, setShowAuth] = useState(false);
   const [activePage, setActivePage] = useState("home");
 
-  const showHomePage = activePage === "home";
+  const renderPage = () => {
+    if (activePage === "services") {
+      return <Services />;
+    }
+
+    if (activePage === "blog") {
+      return <Blog />;
+    }
+
+    if (activePage === "careers") {
+      return <Careers />;
+    }
+
+    return (
+      <>
+        <Hero />
+        <About />
+      </>
+    );
+  };
 
   return (
     <>
@@ -22,14 +43,7 @@ function App() {
         onSignUpClick={() => setShowAuth(true)}
       />
 
-      {showHomePage ? (
-        <>
-          <Hero />
-          <About />
-        </>
-      ) : (
-        <Services />
-      )}
+      {renderPage()}
 
       {/* 4. Conditionally render the AuthForm if showAuth is true */}
       {showAuth && <AuthForm onClose={() => setShowAuth(false)} />}

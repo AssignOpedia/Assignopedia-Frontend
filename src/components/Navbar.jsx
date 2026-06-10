@@ -25,8 +25,8 @@ function Navbar({ activePage, onNavigate, onSignUpClick }) {
       >
         <img src={logo} alt="logo" />
         <div>
-          <h2>Assignopedia</h2>
-          <p>Academic Excellence</p>
+          <h2>AssignOpedia</h2>
+          <p>AssignOpedia Services</p>
         </div>
       </button>
 
@@ -58,6 +58,24 @@ function Navbar({ activePage, onNavigate, onSignUpClick }) {
               onClick={() => handleNavigate("services")}
             >
               Services
+            </button>
+          </li>
+          <li>
+            <button
+              className={activePage === "blog" ? "active-nav" : ""}
+              type="button"
+              onClick={() => handleNavigate("blog")}
+            >
+              Blog
+            </button>
+          </li>
+          <li>
+            <button
+              className={activePage === "careers" ? "active-nav" : ""}
+              type="button"
+              onClick={() => handleNavigate("careers")}
+            >
+              Careers
             </button>
           </li>
           <li>
