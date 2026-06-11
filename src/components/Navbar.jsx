@@ -79,12 +79,20 @@ function Navbar({ activePage, onNavigate, onSignUpClick }) {
             </button>
           </li>
           <li>
-            <button type="button" onClick={() => handleNavigate("home")}>
+            <button
+              className={activePage === "about" ? "active-nav" : ""}
+              type="button"
+              onClick={() => handleNavigate("about")}
+            >
               About
             </button>
           </li>
           <li>
-            <button type="button" onClick={() => handleNavigate("home")}>
+            <button
+              className={activePage === "contact" ? "active-nav" : ""}
+              type="button"
+              onClick={() => handleNavigate("contact")}
+            >
               Contact
             </button>
           </li>

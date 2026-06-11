@@ -6,6 +6,8 @@ import Services from "./components/Services";
 import About from "./components/About";
 import Blog from "./components/Blog";
 import Careers from "./components/Careers";
+import Contact from "./components/Contact";
+import Footer from "./components/Footer";
 import AuthForm from "./AuthForm/AuthForm";
 
 function App() {
@@ -26,10 +28,17 @@ function App() {
       return <Careers />;
     }
 
+    if (activePage === "about") {
+      return <About onNavigate={setActivePage} />;
+    }
+
+    if (activePage === "contact") {
+      return <Contact onNavigate={setActivePage} />;
+    }
+
     return (
       <>
         <Hero />
-        <About />
       </>
     );
   };
@@ -44,6 +53,8 @@ function App() {
       />
 
       {renderPage()}
+
+      <Footer onNavigate={setActivePage} />
 
       {/* 4. Conditionally render the AuthForm if showAuth is true */}
       {showAuth && <AuthForm onClose={() => setShowAuth(false)} />}
