@@ -3392,3 +3392,185 @@ body{
   }
 }
 
+/* ================= ROLE LOGIN MODAL + PAGES ================= */
+
+.auth-overlay{
+  inset:0;
+  width:auto;
+  height:auto;
+  padding:24px;
+  background:rgba(6,21,56,.72);
+  backdrop-filter:blur(5px);
+  animation:authOverlayFade .25s ease both;
+}
+
+@keyframes authOverlayFade{
+  from{opacity:0}
+  to{opacity:1}
+}
+
+.auth-role-card{
+  max-width:460px;
+  padding:44px 38px 38px;
+  border:1px solid rgba(11,34,85,.08);
+  border-radius:22px;
+  box-shadow:0 28px 70px rgba(6,21,56,.28);
+}
+
+.auth-role-card .auth-title{
+  margin-bottom:10px;
+}
+
+.auth-description{
+  color:#666;
+  line-height:1.7;
+  margin-bottom:28px;
+  text-align:center;
+}
+
+.auth-close-btn{
+  width:38px;
+  height:38px;
+  top:14px;
+  right:14px;
+  border-radius:50%;
+  color:#0b2255;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family:inherit;
+  font-size:28px;
+  line-height:1;
+}
+
+.auth-close-btn:hover{
+  background:#f1f5fb;
+  color:#0d47d9;
+}
+
+.login-options{
+  display:grid;
+  gap:14px;
+}
+
+.login-btn{
+  width:100%;
+  background:#0b2255;
+  color:white;
+  border:0;
+  border-radius:12px;
+  padding:15px 22px;
+  cursor:pointer;
+  font:inherit;
+  font-size:16px;
+  font-weight:700;
+  transition:.3s;
+}
+
+.login-btn:hover{
+  background:#0d47d9;
+  box-shadow:0 12px 22px rgba(13,71,217,.22);
+  transform:translateY(-2px);
+}
+
+.login-btn:focus-visible,
+.auth-close-btn:focus-visible,
+.auth-submit-btn:focus-visible{
+  outline:3px solid rgba(244,163,0,.55);
+  outline-offset:3px;
+}
+
+.role-login-page{
+  min-height:calc(100vh - 85px);
+  padding:80px 24px;
+  background:#f8fbff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  animation:fadeIn .45s ease both;
+}
+
+.role-login-card{
+  width:100%;
+  max-width:480px;
+  background:white;
+  border:1px solid #eef2f8;
+  border-radius:22px;
+  box-shadow:0 20px 50px rgba(11,34,85,.12);
+  padding:42px;
+  animation:fadeUp .55s ease both;
+}
+
+.role-login-eyebrow{
+  color:#f4a300;
+  font-size:13px;
+  font-weight:800;
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+}
+
+.role-login-card h1{
+  color:#0b2255;
+  font-size:38px;
+  margin:10px 0 12px;
+}
+
+.role-login-card > p{
+  color:#666;
+  line-height:1.7;
+  margin-bottom:28px;
+}
+
+@media(max-width:991px){
+  .role-login-page{
+    min-height:calc(100vh - 76px);
+  }
+}
+
+@media(max-width:520px){
+  .auth-overlay{
+    padding:16px;
+  }
+
+  .auth-role-card,
+  .role-login-card{
+    padding:38px 22px 26px;
+  }
+
+  .role-login-card h1{
+    font-size:32px;
+  }
+}
+
+/* ================= ROLE LOGIN + SIGNUP SWITCH ================= */
+
+.role-auth-switch{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  margin-top:20px;
+  color:#666;
+  font-size:14px;
+}
+
+.role-auth-switch button{
+  background:none;
+  border:0;
+  color:#0d47d9;
+  cursor:pointer;
+  font:inherit;
+  font-weight:700;
+  padding:0;
+}
+
+.role-auth-switch button:hover{
+  text-decoration:underline;
+}
+
+.role-auth-switch button:focus-visible{
+  outline:3px solid rgba(244,163,0,.55);
+  outline-offset:3px;
+  border-radius:3px;
+}
+

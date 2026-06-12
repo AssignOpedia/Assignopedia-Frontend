@@ -1,4 +1,4 @@
-import { useState } from "react"; // 1. Import useState
+import { useEffect, useState } from "react";
 import "./App.css";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
@@ -10,10 +10,32 @@ import Contact from "./components/Contact";
 import Footer from "./components/Footer";
 import AuthForm from "./AuthForm/AuthForm";
 
+const getPageFromPath = () => {
+  const page = window.location.pathname.replace(/^\/+|\/+$/g, "");
+  return page || "home";
+};
+
 function App() {
-  // 2. Create a state to control the visibility of the AuthForm
   const [showAuth, setShowAuth] = useState(false);
-  const [activePage, setActivePage] = useState("home");
+  const [activePage, setActivePage] = useState(getPageFromPath);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setActivePage(getPageFromPath());
+      setShowAuth(false);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  const handleNavigate = (page) => {
+    const path = page === "home" ? "/" : `/${page}`;
+    window.history.pushState({}, "", path);
+    setActivePage(page);
+    setShowAuth(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const renderPage = () => {
     if (activePage === "services") {
@@ -29,11 +51,38 @@ function App() {
     }
 
     if (activePage === "about") {
-      return <About onNavigate={setActivePage} />;
+      return <About onNavigate={handleNavigate} />;
     }
 
     if (activePage === "contact") {
-      return <Contact onNavigate={setActivePage} />;
+      return <Contact onNavigate={handleNavigate} />;
+    }
+
+    if (
+      activePage === "hr-login" ||
+      activePage === "admin-login" ||
+      activePage === "employee-login"
+    ) {
+      return (
+        <AuthForm
+          role={activePage.replace("-login", "")}
+          onNavigate={handleNavigate}
+        />
+      );
+    }
+
+    if (
+      activePage === "hr-signup" ||
+      activePage === "admin-signup" ||
+      activePage === "employee-signup"
+    ) {
+      return (
+        <AuthForm
+          role={activePage.replace("-signup", "")}
+          mode="signup"
+          onNavigate={handleNavigate}
+        />
+      );
     }
 
     return (
@@ -45,19 +94,22 @@ function App() {
 
   return (
     <>
-      {/* 3. Pass the function to open the form to your Navbar */}
       <Navbar
         activePage={activePage}
-        onNavigate={setActivePage}
+        onNavigate={handleNavigate}
         onSignUpClick={() => setShowAuth(true)}
       />
 
       {renderPage()}
 
-      <Footer onNavigate={setActivePage} />
+      <Footer onNavigate={handleNavigate} />
 
-      {/* 4. Conditionally render the AuthForm if showAuth is true */}
-      {showAuth && <AuthForm onClose={() => setShowAuth(false)} />}
+      {showAuth && (
+        <AuthForm
+          onClose={() => setShowAuth(false)}
+          onRoleSelect={handleNavigate}
+        />
+      )}
     </>
   );
 }

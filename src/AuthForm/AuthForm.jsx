@@ -1,82 +1,205 @@
-import { useState } from 'react';
+import { useEffect, useState } from "react";
 
-export default function AuthForm({ onClose }) {
-  const [isSignUp, setIsSignUp] = useState(true);
-  const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+const roleDetails = {
+  hr: {
+    title: "HR Login",
+    description: "Sign in to manage recruitment and employee workflows.",
+    signupDescription:
+      "Create your account to manage recruitment and employee workflows.",
+  },
+  admin: {
+    title: "Admin Login",
+    description: "Sign in to manage Assignopedia administration.",
+    signupDescription:
+      "Create your account to manage Assignopedia administration.",
+  },
+  employee: {
+    title: "Employee Login",
+    description: "Sign in to access your employee workspace.",
+    signupDescription: "Create your account to access your employee workspace.",
+  },
+};
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+const AuthForm = ({
+  onClose,
+  onRoleSelect,
+  onNavigate,
+  role,
+  mode = "login",
+}) => {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
+  const isRoleForm = Boolean(role);
+  const isSignup = mode === "signup";
+
+  useEffect(() => {
+    if (isRoleForm) {
+      return undefined;
+    }
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [isRoleForm, onClose]);
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((current) => ({ ...current, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log(isSignUp ? "Registering user:" : "Logging in user:", formData);
+  const handleSubmit = (event) => {
+    event.preventDefault();
+  };
+
+  if (isRoleForm) {
+    const details = roleDetails[role];
+    const roleName = details.title.replace(" Login", "");
+
+    return (
+      <main className="role-login-page">
+        <section className="role-login-card">
+          <span className="role-login-eyebrow">Assignopedia Portal</span>
+          <h1>{isSignup ? `${roleName} Sign Up` : details.title}</h1>
+          <p>
+            {isSignup ? details.signupDescription : details.description}
+          </p>
+
+          <form className="auth-form" onSubmit={handleSubmit}>
+            {isSignup && (
+              <label className="auth-input-group">
+                <span className="auth-label">Full Name</span>
+                <input
+                  className="auth-input"
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  placeholder="Enter your full name"
+                  autoComplete="name"
+                  required
+                />
+              </label>
+            )}
+
+            <label className="auth-input-group">
+              <span className="auth-label">Email Address</span>
+              <input
+                className="auth-input"
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="you@example.com"
+                autoComplete="email"
+                required
+              />
+            </label>
+
+            <label className="auth-input-group">
+              <span className="auth-label">Password</span>
+              <input
+                className="auth-input"
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Enter your password"
+                autoComplete={isSignup ? "new-password" : "current-password"}
+                required
+              />
+            </label>
+
+            <button className="auth-submit-btn" type="submit">
+              {isSignup ? `Sign Up as ${roleName}` : `Login as ${roleName}`}
+            </button>
+          </form>
+
+          <div className="role-auth-switch">
+            <span>
+              {isSignup
+                ? "Already have an account?"
+                : "Don\u2019t have an account?"}
+            </span>
+            <button
+              type="button"
+              onClick={() =>
+                onNavigate(`${role}-${isSignup ? "login" : "signup"}`)
+              }
+            >
+              {isSignup ? "Login" : "Sign Up"}
+            </button>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  const handleBackdropClick = (event) => {
+    if (event.target === event.currentTarget) {
+      onClose();
+    }
   };
 
   return (
-    <div className="auth-overlay">
-      <div className="auth-card">
-        {/* Close Button */}
-        <button onClick={onClose} className="auth-close-btn" type="button">✕</button>
+    <div
+      className="auth-overlay"
+      role="presentation"
+      onMouseDown={handleBackdropClick}
+    >
+      <section
+        className="auth-card auth-role-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="auth-dialog-title"
+      >
+        <button
+          className="auth-close-btn"
+          type="button"
+          onClick={onClose}
+          aria-label="Close login options"
+        >
+          &times;
+        </button>
 
-        <h2 className="auth-title">{isSignUp ? 'Create Account' : 'Welcome Back'}</h2>
-        
-        <form onSubmit={handleSubmit} className="auth-form">
-          {isSignUp && (
-            <div className="auth-input-group">
-              <label className="auth-label">Full Name</label>
-              <input 
-                type="text" 
-                name="name" 
-                value={formData.name} 
-                onChange={handleChange} 
-                required 
-                className="auth-input" 
-                placeholder="John Doe" 
-              />
-            </div>
-          )}
+        <h2 className="auth-title" id="auth-dialog-title">
+          Choose Your Login Type
+        </h2>
+        <p className="auth-description">Select an account type to continue</p>
 
-          <div className="auth-input-group">
-            <label className="auth-label">Email Address</label>
-            <input 
-              type="email" 
-              name="email" 
-              value={formData.email} 
-              onChange={handleChange} 
-              required 
-              className="auth-input" 
-              placeholder="you@example.com" 
-            />
-          </div>
-
-          <div className="auth-input-group">
-            <label className="auth-label">Password</label>
-            <input 
-              type="password" 
-              name="password" 
-              value={formData.password} 
-              onChange={handleChange} 
-              required 
-              className="auth-input" 
-              placeholder="••••••••" 
-            />
-          </div>
-
-          <button type="submit" className="auth-submit-btn">
-            {isSignUp ? 'Sign Up' : 'Sign In'}
+        <div className="login-options">
+          <button
+            className="login-btn"
+            type="button"
+            onClick={() => onRoleSelect("hr-login")}
+          >
+            HR Login
           </button>
-        </form>
-
-        <div className="auth-toggle-container">
-          <p className="auth-toggle-text">
-            {isSignUp ? 'Already have an account?' : "Don't have an account?"}
-            <button type="button" onClick={() => setIsSignUp(!isSignUp)} className="auth-toggle-btn">
-              {isSignUp ? 'Sign In' : 'Sign Up'}
-            </button>
-          </p>
+          <button
+            className="login-btn"
+            type="button"
+            onClick={() => onRoleSelect("admin-login")}
+          >
+            Admin Login
+          </button>
+          <button
+            className="login-btn"
+            type="button"
+            onClick={() => onRoleSelect("employee-login")}
+          >
+            Employee Login
+          </button>
         </div>
-      </div>
+      </section>
     </div>
   );
-}
+};
+
+export default AuthForm;

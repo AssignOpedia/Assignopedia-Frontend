@@ -2,7 +2,6 @@ import { useState } from "react";
 import { FaBars, FaTimes } from "react-icons/fa";
 import logo from "../assets/logo.PNG";
 
-// Accept the function as a prop here
 function Navbar({ activePage, onNavigate, onSignUpClick }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -98,9 +97,13 @@ function Navbar({ activePage, onNavigate, onSignUpClick }) {
           </li>
         </ul>
 
-        {/* Attach the click handler here */}
-        <button className="sign-up-btn" onClick={handleSignUp} type="button">
-          Sign Up
+        <button
+          className="sign-up-btn"
+          onClick={handleSignUp}
+          type="button"
+          aria-haspopup="dialog"
+        >
+          Access Portal
         </button>
       </div>
     </nav>
