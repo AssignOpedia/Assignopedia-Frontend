@@ -40,22 +40,25 @@ function Footer() {
               <h2>Professional Academic Writing Services</h2>
             </div>
           </div>
-          <p>
+          <p className="footer-description">
             Kolkata-based academic and content writing support for students,
             professionals, and businesses.
           </p>
         </section>
 
         <section className="footer-contact-card">
-          <a href="tel:+916291075245">
+          <a className="footer-contact-item" href="tel:+916291075245">
             <FaPhoneAlt />
             <span>+91 6291075245</span>
           </a>
-          <a href="mailto:assignopedia2.0@gmail.com">
+          <a
+            className="footer-contact-item"
+            href="mailto:assignopedia2.0@gmail.com"
+          >
             <FaEnvelope />
             <span>assignopedia2.0@gmail.com</span>
           </a>
-          <p>
+          <p className="footer-contact-item">
             <FaMapMarkerAlt />
             <span>Kolkata, West Bengal, India</span>
           </p>

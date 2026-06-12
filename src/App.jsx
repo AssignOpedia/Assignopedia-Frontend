@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { FaWhatsapp } from "react-icons/fa";
 import "./App.css";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
@@ -35,6 +36,36 @@ function App() {
     setActivePage(page);
     setShowAuth(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const playWhatsAppClick = () => {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+
+    if (!AudioContext) {
+      return;
+    }
+
+    try {
+      const audioContext = new AudioContext();
+      const oscillator = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      const now = audioContext.currentTime;
+
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(620, now);
+      oscillator.frequency.exponentialRampToValueAtTime(420, now + 0.07);
+
+      gain.gain.setValueAtTime(0.035, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+      oscillator.connect(gain);
+      gain.connect(audioContext.destination);
+      oscillator.start(now);
+      oscillator.stop(now + 0.08);
+      oscillator.addEventListener("ended", () => audioContext.close());
+    } catch {
+      // Audio support must never block the WhatsApp link.
+    }
   };
 
   const renderPage = () => {
@@ -110,6 +141,18 @@ function App() {
           onRoleSelect={handleNavigate}
         />
       )}
+
+      <a
+        className="whatsapp-float"
+        href="https://wa.me/919288288828"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Chat with Assignopedia on WhatsApp"
+        title="Chat with us on WhatsApp"
+        onClick={playWhatsAppClick}
+      >
+        <FaWhatsapp aria-hidden="true" />
+      </a>
     </>
   );
 }

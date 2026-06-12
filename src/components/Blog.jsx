@@ -1,12 +1,57 @@
+import { useEffect, useState } from "react";
 import {
   FaBook,
-  FaComments,
+  FaCheckCircle,
+  FaCloudUploadAlt,
   FaEdit,
+  FaExclamationCircle,
   FaLayerGroup,
+  FaPenNib,
   FaSearch,
 } from "react-icons/fa";
 
 function Blog() {
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState("");
+  const [uploadMessage, setUploadMessage] = useState(null);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
+  const handleCoverImageChange = (event) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    const allowedTypes = ["image/png", "image/jpeg", "image/webp"];
+    const allowedExtension = /\.(png|jpe?g|webp)$/i.test(file.name);
+
+    if (!allowedTypes.includes(file.type) || !allowedExtension) {
+      setSelectedImage(null);
+      setPreviewUrl("");
+      setUploadMessage({
+        type: "error",
+        text: "Invalid file type. Please upload PNG, JPG, or WEBP.",
+      });
+      event.target.value = "";
+      return;
+    }
+
+    setSelectedImage(file);
+    setPreviewUrl(URL.createObjectURL(file));
+    setUploadMessage({
+      type: "success",
+      text: "Image uploaded successfully \u2713",
+    });
+  };
+
   const categories = [
     "Academic Writing Tips",
     "Referencing Guides",
@@ -112,20 +157,146 @@ function Blog() {
               </button>
             ))}
           </div>
-
-          <div className="sidebar-panel comments-panel">
-            <h3>
-              <FaComments />
-              Comments
-            </h3>
-            <p>
-              Ask a question, suggest a topic, or share what you want us to
-              explain next.
-            </p>
-            <textarea placeholder="Write a comment..." />
-            <button type="button">Post Comment</button>
-          </div>
         </aside>
+      </section>
+
+      <section className="blog-upload-panel">
+        <div className="blog-upload-heading">
+          <span className="blog-upload-icon">
+            <FaPenNib />
+          </span>
+          <div>
+            <h3>Upload Blog</h3>
+            <p>Create and publish a new article</p>
+          </div>
+        </div>
+
+        <form className="blog-upload-form">
+          <div className="blog-upload-column">
+            <label>
+              Blog Title
+              <input
+                type="text"
+                name="blogTitle"
+                placeholder="Enter article title"
+              />
+            </label>
+
+            <label>
+              Category
+              <select name="category" defaultValue="">
+                <option value="" disabled>
+                  Select category
+                </option>
+                {categories.map((category) => (
+                  <option value={category} key={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              Tags
+              <input
+                type="text"
+                name="tags"
+                placeholder="writing, research, tips"
+              />
+            </label>
+
+            <label>
+              Publish Date
+              <input type="date" name="publishDate" />
+            </label>
+          </div>
+
+          <div className="blog-upload-column">
+            <div className="blog-upload-field">
+              <span>Upload Cover Image</span>
+              <label className="blog-cover-upload">
+                <input
+                  type="file"
+                  name="coverImage"
+                  accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
+                  onChange={handleCoverImageChange}
+                />
+                <FaCloudUploadAlt />
+                <strong>Choose cover image</strong>
+                <small>PNG, JPG or WEBP</small>
+              </label>
+              {previewUrl && selectedImage && (
+                <img
+                  src={previewUrl}
+                  alt={`Preview of ${selectedImage.name}`}
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    maxWidth: "180px",
+                    maxHeight: "140px",
+                    objectFit: "cover",
+                    borderRadius: "12px",
+                    boxShadow: "0 10px 24px rgba(11,34,85,.16)",
+                    margin: "10px auto 0",
+                    animation: "fadeIn .35s ease both",
+                  }}
+                />
+              )}
+              {uploadMessage && (
+                <p
+                  role={uploadMessage.type === "error" ? "alert" : "status"}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "7px",
+                    color:
+                      uploadMessage.type === "success" ? "#18864b" : "#c0392b",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    lineHeight: 1.5,
+                    textAlign: "center",
+                    margin: previewUrl ? "2px 0 0" : "8px 0 0",
+                    animation: "fadeIn .35s ease both",
+                  }}
+                >
+                  {uploadMessage.type === "success" ? (
+                    <FaCheckCircle aria-hidden="true" />
+                  ) : (
+                    <FaExclamationCircle aria-hidden="true" />
+                  )}
+                  {uploadMessage.text}
+                </p>
+              )}
+            </div>
+
+            <label>
+              Short Description
+              <textarea
+                name="shortDescription"
+                placeholder="Write a brief article summary"
+              />
+            </label>
+          </div>
+
+          <label className="blog-content-field">
+            Full Blog Content
+            <textarea
+              className="blog-content-editor"
+              name="blogContent"
+              placeholder="Write your full article content here..."
+            />
+          </label>
+
+          <div className="blog-upload-actions">
+            <button className="draft-blog-btn" type="button">
+              Save Draft
+            </button>
+            <button className="publish-blog-btn" type="button">
+              Publish Blog
+            </button>
+          </div>
+        </form>
       </section>
     </main>
   );

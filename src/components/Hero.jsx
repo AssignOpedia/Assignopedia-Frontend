@@ -8,6 +8,7 @@ import {
   FaCheckCircle,
 } from "react-icons/fa";
 import student from "../assets/student.png";
+import aboutTeam from "../assets/about-team.png";
 
 const servicesPreview = [
   {
@@ -52,8 +53,8 @@ const highlights = [
 
 function Hero() {
   return (
-    <>
-      <section className="hero">
+    <div className="home-page-shell">
+      <section className="hero home-hero">
       <div className="hero-left">
         <span className="badge">
           🎓 Trusted by Thousands of Students Worldwide
@@ -117,8 +118,9 @@ function Hero() {
       </div>
     </section>
 
-    <section className="home-summary">
-      <div className="section-title">
+    <section className="home-summary home-motion-section">
+      <div className="about-summary-hero">
+        <div className="section-title">
         <span>ABOUT ASSIGNOPEDIA</span>
         <h2>Empowering Academic & Creative Success — One Word at a Time</h2>
         <p>
@@ -128,6 +130,14 @@ function Hero() {
           professionals and businesses with well-researched, plagiarism-free,
           custom-written content.
         </p>
+        </div>
+
+        <div className="about-summary-image">
+          <img
+            src={aboutTeam}
+            alt="Assignopedia academic writing team collaborating"
+          />
+        </div>
       </div>
 
       <div className="summary-grid">
@@ -141,7 +151,7 @@ function Hero() {
       </div>
     </section>
 
-    <section className="home-services-preview">
+    <section className="home-services-preview home-motion-section">
       <div className="section-title">
         <span>OUR SERVICES</span>
         <h2>Solutions for every academic requirement</h2>
@@ -162,7 +172,7 @@ function Hero() {
       </div>
     </section>
 
-    <section className="home-cta">
+    <section className="home-cta home-motion-section">
       <div className="cta-copy">
         <span>WHY CHOOSE US</span>
         <h2>Join 5000+ clients who trust Assignopedia for academic success.</h2>
@@ -176,7 +186,7 @@ function Hero() {
         <button className="secondary-btn">Contact Us</button>
       </div>
     </section>
-    </>
+    </div>
   );
 }
 
