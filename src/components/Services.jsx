@@ -1,74 +1,161 @@
 import {
   FaBookOpen,
-  FaChartLine,
-  FaClipboardCheck,
-  FaComments,
-  FaFileAlt,
   FaGraduationCap,
-  FaPenNib,
+  FaFileAlt,
+  FaBriefcase,
+  FaCode,
+  FaCloud,
+  FaPalette,
+  FaGlobe,
+  FaLaptopCode,
+  FaChartLine,
+  FaBullhorn,
+  FaPenFancy,
 } from "react-icons/fa";
 
 function Services() {
   const services = [
     {
-      icon: <FaBookOpen />,
-      title: "Assignment Help",
-      desc: "Subject-focused assignment support for essays, reports, problem sets, reflective writing, and coursework across academic levels.",
-      benefits: ["Custom writing", "Clear structure", "Deadline support"],
-      process: ["Share brief", "Expert matching", "Quality review"],
+      icon: <FaFileAlt />,
+      title: "Research Proposal Writing",
+      desc: "High-quality research proposals with clear objectives, literature review, methodology, and academic formatting.",
+      benefits: [
+        "Topic Selection",
+        "Literature Review",
+        "Research Methodology",
+      ],
     },
     {
       icon: <FaGraduationCap />,
-      title: "Dissertation Assistance",
-      desc: "Guided dissertation support from topic refinement and literature review to methodology, analysis, editing, and final formatting.",
-      benefits: ["Chapter guidance", "Research depth", "Formatting help"],
-      process: ["Scope chapters", "Draft sections", "Finalize submission"],
+      title: "Dissertation & Thesis Assistance",
+      desc: "Complete support for dissertations and theses from proposal development to final submission.",
+      benefits: [
+        "Full Dissertation",
+        "Full Thesis",
+        "Data Analysis",
+      ],
     },
     {
-      icon: <FaFileAlt />,
-      title: "Research Proposal Writing",
-      desc: "Well-planned proposals with strong research questions, rationale, objectives, methodology, and academic references.",
-      benefits: ["Focused topic", "Method clarity", "Citation support"],
-      process: ["Confirm idea", "Build framework", "Polish proposal"],
+      icon: <FaBriefcase />,
+      title: "Business & Management Assignments",
+      desc: "Expert assistance for business, management, marketing, HRM, operations, and strategic management assignments.",
+      benefits: [
+        "Case Studies",
+        "Business Reports",
+        "Strategic Analysis",
+      ],
+    },
+    {
+      icon: <FaBookOpen />,
+      title: "Report Writing Services",
+      desc: "Well-structured academic and professional reports tailored to university and industry standards.",
+      benefits: [
+        "Academic Reports",
+        "Technical Reports",
+        "Business Reports",
+      ],
+    },
+    {
+      icon: <FaCode />,
+      title: "Programming & Development",
+      desc: "Professional support for coding assignments, software projects, debugging, and development tasks.",
+      benefits: [
+        "Python & Java",
+        "HTML, C & C++",
+        "SQL & Linux",
+      ],
+    },
+    {
+      icon: <FaCloud />,
+      title: "Cloud & Data Analytics",
+      desc: "Advanced solutions in cloud computing, business intelligence, cybersecurity, and data visualization.",
+      benefits: [
+        "AWS & Azure",
+        "Power BI",
+        "Tableau",
+      ],
+    },
+    {
+      icon: <FaPalette />,
+      title: "UI/UX Design & Prototyping",
+      desc: "Modern UI/UX design services with interactive prototypes and user-centered experiences.",
+      benefits: [
+        "Figma",
+        "Canva",
+        "Prototyping",
+      ],
+    },
+    {
+      icon: <FaGlobe />,
+      title: "Web Design & Development",
+      desc: "Responsive and modern websites tailored for businesses, startups, and academic projects.",
+      benefits: [
+        "Responsive Design",
+        "Frontend Development",
+        "Backend Integration",
+      ],
+    },
+    {
+      icon: <FaLaptopCode />,
+      title: "Technical Writing & Documentation",
+      desc: "Professional technical documentation, technical reports, dissertations, and project documentation.",
+      benefits: [
+        "Technical Reports",
+        "Documentation",
+        "Technical Dissertation",
+      ],
     },
     {
       icon: <FaChartLine />,
-      title: "Presentation Development",
-      desc: "Professional academic presentations with organized content, clean slides, speaker notes, and visual storytelling.",
-      benefits: ["Clean slides", "Speaker notes", "Visual flow"],
-      process: ["Plan outline", "Design slides", "Review delivery"],
+      title: "Finance & Accounting Services",
+      desc: "Expert assistance with financial analysis, accounting tasks, and finance-related academic projects.",
+      benefits: [
+        "Ratio Analysis",
+        "Balance Sheets",
+        "Finance Reports",
+      ],
     },
+
+    // NEW DIGITAL MARKETING CARD
     {
-      icon: <FaClipboardCheck />,
-      title: "Case Study Solutions",
-      desc: "Analytical case study answers with problem diagnosis, evidence-based discussion, recommendations, and conclusion.",
-      benefits: ["Deep analysis", "Practical insights", "Strong arguments"],
-      process: ["Review case", "Analyze evidence", "Write solution"],
+      icon: <FaBullhorn />,
+      title: "Digital Marketing Services",
+      desc: "Professional digital marketing solutions to improve online visibility, engagement, and business growth.",
+      benefits: [
+        "SEO Optimization",
+        "Blog Writing",
+        "Content Marketing",
+        "Social Media Marketing",
+      ],
     },
+
+    // NEW CREATIVE DESIGN CARD
     {
-      icon: <FaPenNib />,
-      title: "Proofreading & Editing",
-      desc: "Careful language, grammar, clarity, referencing, flow, and formatting edits to make your academic work submission-ready.",
-      benefits: ["Grammar polish", "Better flow", "Reference checks"],
-      process: ["Upload draft", "Edit details", "Return clean copy"],
-    },
-    {
-      icon: <FaComments />,
-      title: "Academic Consultation",
-      desc: "One-to-one academic guidance for planning, topic selection, research direction, writing strategy, and improvement feedback.",
-      benefits: ["Expert advice", "Study clarity", "Action plan"],
-      process: ["Book session", "Discuss goals", "Get roadmap"],
+      icon: <FaPenFancy />,
+      title: "Creative Design Services",
+      desc: "Professional creative design solutions for personal branding, promotions, advertising, and social media.",
+      benefits: [
+        "CV Writing",
+        "Poster Design",
+        "Banner Design",
+        "Ad Creatives",
+        "Reel Making",
+        "Infographics",
+      ],
     },
   ];
 
   return (
     <section className="services">
       <div className="section-title">
-        <span>SERVICES PAGE</span>
-        <h2>Academic Services Built Around Your Goals</h2>
+        <span>OUR SERVICES</span>
+
+        <h2>Academic, Technical & Professional Solutions</h2>
+
         <p>
-          Choose focused support for every stage of your academic work, from
-          first idea to final submission.
+          Comprehensive support for assignments, research, programming,
+          finance, cloud technologies, digital marketing, web development,
+          design services, and professional academic assistance.
         </p>
       </div>
 
@@ -82,21 +169,13 @@ function Services() {
             <p>{service.desc}</p>
 
             <div className="service-block">
-              <h4>Benefits</h4>
+              <h4>Services Include</h4>
+
               <div className="benefit-list">
                 {service.benefits.map((benefit) => (
                   <span key={benefit}>{benefit}</span>
                 ))}
               </div>
-            </div>
-
-            <div className="service-block">
-              <h4>Process</h4>
-              <ol className="process-list">
-                {service.process.map((step) => (
-                  <li key={step}>{step}</li>
-                ))}
-              </ol>
             </div>
 
             <button className="pricing-cta">Get Pricing</button>
