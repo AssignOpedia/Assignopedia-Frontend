@@ -10,6 +10,25 @@ import Careers from "./components/Careers";
 import Contact from "./components/Contact";
 import Footer from "./components/shared/Footer";
 import AuthForm from "./components/Auth";
+import EmployeeAttendance from "./pages/EmployeePortal/EmployeeAttendance";
+import EmployeeDashboard from "./pages/EmployeePortal/EmployeeDashboard";
+import EmployeeLeaveWFH from "./pages/EmployeePortal/EmployeeLeaveWFH";
+import EmployeeNotifications from "./pages/EmployeePortal/EmployeeNotifications";
+import EmployeePerformance from "./pages/EmployeePortal/EmployeePerformance";
+import EmployeeProfile from "./pages/EmployeePortal/EmployeeProfile";
+import EmployeeTasks from "./pages/EmployeePortal/EmployeeTasks";
+import EmployeeTeam from "./pages/EmployeePortal/EmployeeTeam";
+
+const employeePages = [
+  "employee-dashboard",
+  "employee-profile",
+  "employee-attendance",
+  "employee-team",
+  "employee-leave-wfh",
+  "employee-tasks",
+  "employee-performance",
+  "employee-notifications",
+];
 
 const getPageFromPath = () => {
   const page = window.location.pathname.replace(/^\/+|\/+$/g, "");
@@ -89,6 +108,38 @@ function App() {
       return <Contact onNavigate={handleNavigate} />;
     }
 
+    if (activePage === "employee-dashboard") {
+      return <EmployeeDashboard activePage={activePage} onNavigate={handleNavigate} />;
+    }
+
+    if (activePage === "employee-profile") {
+      return <EmployeeProfile activePage={activePage} onNavigate={handleNavigate} />;
+    }
+
+    if (activePage === "employee-attendance") {
+      return <EmployeeAttendance activePage={activePage} onNavigate={handleNavigate} />;
+    }
+
+    if (activePage === "employee-team") {
+      return <EmployeeTeam activePage={activePage} onNavigate={handleNavigate} />;
+    }
+
+    if (activePage === "employee-leave-wfh") {
+      return <EmployeeLeaveWFH activePage={activePage} onNavigate={handleNavigate} />;
+    }
+
+    if (activePage === "employee-tasks") {
+      return <EmployeeTasks activePage={activePage} onNavigate={handleNavigate} />;
+    }
+
+    if (activePage === "employee-performance") {
+      return <EmployeePerformance activePage={activePage} onNavigate={handleNavigate} />;
+    }
+
+    if (activePage === "employee-notifications") {
+      return <EmployeeNotifications activePage={activePage} onNavigate={handleNavigate} />;
+    }
+
     if (
       activePage === "hr-login" ||
       activePage === "admin-login" ||
@@ -123,17 +174,21 @@ function App() {
     );
   };
 
+  const isPortalPage = employeePages.includes(activePage);
+
   return (
     <>
-      <Navbar
-        activePage={activePage}
-        onNavigate={handleNavigate}
-        onSignUpClick={() => setShowAuth(true)}
-      />
+      {!isPortalPage && (
+        <Navbar
+          activePage={activePage}
+          onNavigate={handleNavigate}
+          onSignUpClick={() => setShowAuth(true)}
+        />
+      )}
 
       {renderPage()}
 
-      <Footer onNavigate={handleNavigate} />
+      {!isPortalPage && <Footer onNavigate={handleNavigate} />}
 
       {showAuth && (
         <AuthForm

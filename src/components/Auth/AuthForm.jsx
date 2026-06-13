@@ -57,6 +57,10 @@ const AuthForm = ({
 
   const handleSubmit = (event) => {
     event.preventDefault();
+
+    if (role === "employee" && !isSignup && onNavigate) {
+      onNavigate("employee-dashboard");
+    }
   };
 
   if (isRoleForm) {
