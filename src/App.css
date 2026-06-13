@@ -5516,3 +5516,76 @@ body{
   }
 }
 
+/* Compact homepage hero spacing on mobile only. */
+@media(max-width:768px){
+  .home-page-shell .home-hero{
+    padding:34px 16px 24px;
+  }
+
+  .home-page-shell .home-hero .hero-content{
+    gap:24px;
+  }
+
+  .home-page-shell .home-hero .features{
+    margin-bottom:20px;
+  }
+
+  .home-page-shell .home-hero .buttons{
+    gap:10px;
+    margin-bottom:0;
+  }
+
+  .home-page-shell .home-hero .primary-btn,
+  .home-page-shell .home-hero .secondary-btn{
+    min-height:52px;
+    padding-top:12px;
+    padding-bottom:12px;
+  }
+
+  .home-page-shell .home-hero .hero-right{
+    width:100%;
+    margin-top:0;
+  }
+
+  .home-page-shell .home-hero .hero-image-frame{
+    width:92%;
+    max-width:560px;
+    margin:0 auto;
+  }
+
+  .home-page-shell .home-hero .hero-image-frame img{
+    width:100%;
+    height:auto;
+    aspect-ratio:auto;
+    object-fit:contain;
+  }
+
+  .home-page-shell .home-hero .hero-stats-bar{
+    margin-top:34px;
+  }
+}
+
+@media(max-width:560px){
+  .home-page-shell .home-hero{
+    padding-top:28px;
+    padding-bottom:20px;
+  }
+
+  .home-page-shell .home-hero .hero-content{
+    gap:20px;
+  }
+
+  .home-page-shell .home-hero .features{
+    gap:10px;
+    margin-bottom:16px;
+  }
+
+  .home-page-shell .home-hero .hero-image-frame{
+    width:94%;
+  }
+
+  .home-page-shell .home-hero .hero-stats-bar{
+    margin-top:30px;
+  }
+}
+
