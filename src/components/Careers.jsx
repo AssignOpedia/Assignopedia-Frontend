@@ -1,35 +1,58 @@
+import { useState } from "react";
 import {
+  FaAlignLeft,
   FaBriefcase,
-  FaClock,
-  FaFileUpload,
-  FaLaptopHouse,
-  FaUserGraduate,
+  FaBullhorn,
+  FaChartLine,
+  FaEnvelope,
+  FaFilePdf,
+  FaFileSignature,
+  FaLaptopCode,
+  FaPenNib,
+  FaPhoneAlt,
+  FaUser,
 } from "react-icons/fa";
 
 function Careers() {
-  const vacancies = [
-    {
-      role: "Academic Writer",
-      type: "Remote",
-      detail: "Write assignments, reports, essays, and study support content.",
-    },
-    {
-      role: "Dissertation Specialist",
-      type: "Part-time",
-      detail: "Support students with chapters, research design, and editing.",
-    },
-    {
-      role: "Proofreader & Editor",
-      type: "Freelance",
-      detail: "Improve grammar, flow, formatting, clarity, and references.",
-    },
+  const [selectedPosition, setSelectedPosition] = useState("");
+  const [cvFileName, setCvFileName] = useState("");
+  const [cvError, setCvError] = useState("");
+
+  const positions = [
+    { name: "Academic Writer", icon: FaPenNib },
+    { name: "Technical Writer", icon: FaLaptopCode },
+    { name: "Digital Marketing", icon: FaBullhorn },
+    { name: "Finance Writer", icon: FaChartLine },
   ];
 
-  const freelancerItems = [
-    "Flexible project-based work",
-    "Choose subjects that match your expertise",
-    "Remote collaboration with academic support team",
-  ];
+  const handleCvChange = (event) => {
+    const file = event.target.files?.[0];
+
+    setCvError("");
+    setCvFileName("");
+
+    if (!file) {
+      return;
+    }
+
+    const isPdf =
+      file.type === "application/pdf" ||
+      file.name.toLowerCase().endsWith(".pdf");
+
+    if (!isPdf) {
+      setCvError("Please upload a PDF file only.");
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setCvError("File size must be less than 10 MB.");
+      event.target.value = "";
+      return;
+    }
+
+    setCvFileName(file.name);
+  };
 
   return (
     <main className="page careers-page">
@@ -42,97 +65,141 @@ function Careers() {
         </p>
       </section>
 
-      <section className="careers-layout">
-        <div className="vacancies-panel">
-          <div className="panel-heading">
-            <span>
-              <FaBriefcase />
+      <section className="careers-modern-section">
+        <div className="careers-modern-card">
+          <header className="careers-modern-heading">
+            <span className="careers-modern-heading-icon">
+              <FaBriefcase aria-hidden="true" />
             </span>
-            <div>
-              <h2>Current Vacancies</h2>
-              <p>Explore open roles and freelance academic opportunities.</p>
+            <div className="careers-modern-heading-copy">
+              <h2>Positions Offered</h2>
+              <div className="careers-position-cards">
+                {positions.map(({ name, icon: PositionIcon }) => (
+                  <button
+                    type="button"
+                    className={`careers-position-card${
+                      selectedPosition === name ? " is-selected" : ""
+                    }`}
+                    onClick={() => setSelectedPosition(name)}
+                    aria-pressed={selectedPosition === name}
+                    key={name}
+                  >
+                    <PositionIcon aria-hidden="true" />
+                    <span>{name}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          </header>
 
-          <div className="vacancy-list">
-            {vacancies.map((vacancy) => (
-              <article className="vacancy-card" key={vacancy.role}>
-                <div>
-                  <h3>{vacancy.role}</h3>
-                  <p>{vacancy.detail}</p>
-                </div>
-                <span>{vacancy.type}</span>
-              </article>
-            ))}
-          </div>
+          <div className="careers-modern-divider" aria-hidden="true" />
 
-          <div className="freelancer-box">
-            <div className="freelancer-title">
-              <FaLaptopHouse />
-              <h3>Freelancer Opportunities</h3>
+          <form className="careers-modern-form">
+            <div className="careers-modern-form-title">
+              <span>
+                <FaFileSignature aria-hidden="true" />
+              </span>
+              <h3>Application Form</h3>
             </div>
-            <ul>
-              {freelancerItems.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </div>
+
+            <div className="careers-modern-grid">
+              <label className="careers-modern-field">
+                <span className="sr-only">Full Name</span>
+                <FaUser aria-hidden="true" />
+                <input
+                  type="text"
+                  name="fullName"
+                  placeholder="Full Name"
+                  autoComplete="name"
+                  required
+                />
+              </label>
+
+              <label className="careers-modern-field">
+                <span className="sr-only">Email Address</span>
+                <FaEnvelope aria-hidden="true" />
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="Email Address"
+                  autoComplete="email"
+                  required
+                />
+              </label>
+
+              <label className="careers-modern-field">
+                <span className="sr-only">Phone Number</span>
+                <FaPhoneAlt aria-hidden="true" />
+                <input
+                  type="tel"
+                  name="phone"
+                  placeholder="Phone Number"
+                  autoComplete="tel"
+                  required
+                />
+              </label>
+
+              <label className="careers-modern-field">
+                <span className="sr-only">Position Applied For</span>
+                <FaBriefcase aria-hidden="true" />
+                <select
+                  name="position"
+                  value={selectedPosition}
+                  onChange={(event) => setSelectedPosition(event.target.value)}
+                  required
+                >
+                  <option value="" disabled>
+                    Position Applied For
+                  </option>
+                  {positions.map(({ name }) => (
+                    <option value={name} key={name}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div className="careers-cv-upload">
+              <label htmlFor="careers-cv">
+                <span className="careers-cv-label">Upload CV</span>
+                <span className="careers-cv-control">
+                  <FaFilePdf aria-hidden="true" />
+                  <span>{cvFileName || "Choose PDF file"}</span>
+                  <strong>Browse</strong>
+                </span>
+                <input
+                  id="careers-cv"
+                  type="file"
+                  name="cv"
+                  accept=".pdf,application/pdf"
+                  onChange={handleCvChange}
+                  required
+                />
+              </label>
+              <small>PDF only, maximum file size 10 MB</small>
+              {cvError && (
+                <p className="careers-cv-error" role="alert">
+                  {cvError}
+                </p>
+              )}
+            </div>
+
+            <label className="careers-modern-field careers-modern-message">
+              <span className="sr-only">Tell us about yourself</span>
+              <FaAlignLeft aria-hidden="true" />
+              <textarea
+                name="about"
+                placeholder="Tell us about yourself..."
+                required
+              />
+            </label>
+
+            <button type="submit" className="careers-modern-submit">
+              Submit Application
+            </button>
+          </form>
         </div>
-
-        <form className="apply-form">
-          <div className="form-title">
-            <span>
-              <FaUserGraduate />
-            </span>
-            <div>
-              <h2>Apply Form</h2>
-              <p>Send your details and preferred role.</p>
-            </div>
-          </div>
-
-          <div className="form-grid">
-            <label>
-              Full Name
-              <input type="text" placeholder="Your name" />
-            </label>
-            <label>
-              Email
-              <input type="email" placeholder="you@example.com" />
-            </label>
-          </div>
-
-          <label>
-            Position
-            <select defaultValue="">
-              <option value="" disabled>
-                Select a position
-              </option>
-              <option>Academic Writer</option>
-              <option>Dissertation Specialist</option>
-              <option>Proofreader & Editor</option>
-              <option>Freelance Subject Expert</option>
-            </select>
-          </label>
-
-          <label>
-            Expertise
-            <textarea placeholder="Subjects, experience, degrees, and availability" />
-          </label>
-
-          <div className="upload-row">
-            <FaFileUpload />
-            <span>Attach CV or writing sample after submitting inquiry.</span>
-          </div>
-
-          <button type="button" className="apply-btn">
-            Submit Application
-          </button>
-
-          <div className="response-note">
-            <FaClock />
-            <span>Our hiring team usually responds within 2 business days.</span>
-          </div>
-        </form>
       </section>
     </main>
   );
