@@ -14,15 +14,35 @@ const initialRequests = [
   { title: "Sick Leave", meta: "Reviewed - May 30" },
 ];
 
+const hrLeaveRequestStorageKey = "hrLeaveRequests";
+
+const getLeaveDays = (fromDate, toDate) => {
+  if (!fromDate || !toDate) {
+    return "1";
+  }
+
+  const start = new Date(fromDate);
+  const end = new Date(toDate);
+  const difference = end.getTime() - start.getTime();
+
+  if (Number.isNaN(difference) || difference < 0) {
+    return "1";
+  }
+
+  return String(Math.floor(difference / 86400000) + 1);
+};
+
 function EmployeeLeaveWFH({ activePage, onNavigate }) {
   const [activeModal, setActiveModal] = useState(null);
   const [successMessage, setSuccessMessage] = useState("");
+  const [pdfError, setPdfError] = useState("");
   const [requests, setRequests] = useState(initialRequests);
   const [leaveForm, setLeaveForm] = useState({
     type: "Casual Leave",
     fromDate: "",
     toDate: "",
     reason: "",
+    pdfFileName: "",
   });
   const [wfhForm, setWfhForm] = useState({
     date: "",
@@ -32,6 +52,7 @@ function EmployeeLeaveWFH({ activePage, onNavigate }) {
 
   const closeModal = () => {
     setActiveModal(null);
+    setPdfError("");
   };
 
   const handleLeaveChange = (event) => {
@@ -44,8 +65,41 @@ function EmployeeLeaveWFH({ activePage, onNavigate }) {
     setWfhForm((current) => ({ ...current, [name]: value }));
   };
 
+  const handlePdfChange = (event) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      setPdfError("Only PDF files are allowed.");
+      setLeaveForm((current) => ({ ...current, pdfFileName: "" }));
+      event.target.value = "";
+      return;
+    }
+
+    setPdfError("");
+    setLeaveForm((current) => ({ ...current, pdfFileName: file.name }));
+  };
+
   const handleLeaveSubmit = (event) => {
     event.preventDefault();
+    const leaveRequest = {
+      name: "Sandipan Mondal",
+      type: leaveForm.type,
+      dates: `${leaveForm.fromDate} - ${leaveForm.toDate}`,
+      days: getLeaveDays(leaveForm.fromDate, leaveForm.toDate),
+      status: "Pending",
+      reason: leaveForm.reason,
+      pdfFileName: leaveForm.pdfFileName,
+    };
+    const savedRequests = JSON.parse(localStorage.getItem(hrLeaveRequestStorageKey) || "[]");
+
+    localStorage.setItem(
+      hrLeaveRequestStorageKey,
+      JSON.stringify([leaveRequest, ...savedRequests])
+    );
     setRequests((current) => [
       {
         title: leaveForm.type,
@@ -53,7 +107,7 @@ function EmployeeLeaveWFH({ activePage, onNavigate }) {
       },
       ...current,
     ]);
-    setLeaveForm({ type: "Casual Leave", fromDate: "", toDate: "", reason: "" });
+    setLeaveForm({ type: "Casual Leave", fromDate: "", toDate: "", reason: "", pdfFileName: "" });
     setSuccessMessage("Leave request submitted successfully.");
     closeModal();
   };
@@ -166,6 +220,13 @@ function EmployeeLeaveWFH({ activePage, onNavigate }) {
                   <label>
                     <span>Reason</span>
                     <textarea name="reason" value={leaveForm.reason} onChange={handleLeaveChange} rows="4" required />
+                  </label>
+                  <label>
+                    <span>Supporting Document (PDF)</span>
+                    <input type="file" accept=".pdf,application/pdf" onChange={handlePdfChange} />
+                    <small className="request-helper-text">Upload supporting document if required.</small>
+                    {leaveForm.pdfFileName && <strong className="request-file-name">{leaveForm.pdfFileName}</strong>}
+                    {pdfError && <small className="request-error-text">{pdfError}</small>}
                   </label>
                   <button className="request-submit-btn" type="submit">Submit</button>
                 </form>

@@ -10,6 +10,15 @@ import Careers from "./components/Careers";
 import Contact from "./components/Contact";
 import Footer from "./components/shared/Footer";
 import AuthForm from "./components/Auth";
+import HRAttendanceChecking from "./pages/HRPortal/HRAttendanceChecking";
+import HRCVAccess from "./pages/HRPortal/HRCVAccess";
+import HRDashboard from "./pages/HRPortal/HRDashboard";
+import HREmployeeID from "./pages/HRPortal/HREmployeeID";
+import HRLeaveApproval from "./pages/HRPortal/HRLeaveApproval";
+import HRNoticeBoard from "./pages/HRPortal/HRNoticeBoard";
+import HROrganizationStructure from "./pages/HRPortal/HROrganizationStructure";
+import HRSettings from "./pages/HRPortal/HRSettings";
+import HRWFHApproval from "./pages/HRPortal/HRWFHApproval";
 import EmployeeAttendance from "./pages/EmployeePortal/EmployeeAttendance";
 import EmployeeDashboard from "./pages/EmployeePortal/EmployeeDashboard";
 import EmployeeLeaveWFH from "./pages/EmployeePortal/EmployeeLeaveWFH";
@@ -28,6 +37,18 @@ const employeePages = [
   "employee-tasks",
   "employee-performance",
   "employee-notifications",
+];
+
+const hrPages = [
+  "hr-dashboard",
+  "hr-leave-approval",
+  "hr-wfh-approval",
+  "hr-attendance-checking",
+  "hr-notice-board",
+  "hr-cv-access",
+  "hr-employee-id",
+  "hr-organization-structure",
+  "hr-settings",
 ];
 
 const getPageFromPath = () => {
@@ -108,6 +129,42 @@ function App() {
       return <Contact onNavigate={handleNavigate} />;
     }
 
+    if (activePage === "hr-dashboard") {
+      return <HRDashboard activePage={activePage} onNavigate={handleNavigate} />;
+    }
+
+    if (activePage === "hr-leave-approval") {
+      return <HRLeaveApproval activePage={activePage} onNavigate={handleNavigate} />;
+    }
+
+    if (activePage === "hr-wfh-approval") {
+      return <HRWFHApproval activePage={activePage} onNavigate={handleNavigate} />;
+    }
+
+    if (activePage === "hr-attendance-checking") {
+      return <HRAttendanceChecking activePage={activePage} onNavigate={handleNavigate} />;
+    }
+
+    if (activePage === "hr-notice-board") {
+      return <HRNoticeBoard activePage={activePage} onNavigate={handleNavigate} />;
+    }
+
+    if (activePage === "hr-cv-access") {
+      return <HRCVAccess activePage={activePage} onNavigate={handleNavigate} />;
+    }
+
+    if (activePage === "hr-employee-id") {
+      return <HREmployeeID activePage={activePage} onNavigate={handleNavigate} />;
+    }
+
+    if (activePage === "hr-organization-structure") {
+      return <HROrganizationStructure activePage={activePage} onNavigate={handleNavigate} />;
+    }
+
+    if (activePage === "hr-settings") {
+      return <HRSettings activePage={activePage} onNavigate={handleNavigate} />;
+    }
+
     if (activePage === "employee-dashboard") {
       return <EmployeeDashboard activePage={activePage} onNavigate={handleNavigate} />;
     }
@@ -174,7 +231,7 @@ function App() {
     );
   };
 
-  const isPortalPage = employeePages.includes(activePage);
+  const isPortalPage = [...employeePages, ...hrPages].includes(activePage);
 
   return (
     <>

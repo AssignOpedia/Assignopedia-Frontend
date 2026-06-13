@@ -893,6 +893,34 @@
   transition:border-color .2s ease, box-shadow .2s ease;
 }
 
+.request-form input[type="file"]{
+  display:flex;
+  align-items:center;
+  padding:10px 12px;
+  cursor:pointer;
+}
+
+.request-helper-text,
+.request-error-text,
+.request-file-name{
+  display:block;
+  font-size:12px;
+}
+
+.request-helper-text{
+  color:var(--portal-muted);
+}
+
+.request-file-name{
+  color:var(--portal-navy);
+  font-weight:800;
+}
+
+.request-error-text{
+  color:#842029;
+  font-weight:800;
+}
+
 .request-form textarea{
   resize:vertical;
 }

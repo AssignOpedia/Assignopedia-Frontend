@@ -61,6 +61,10 @@ const AuthForm = ({
     if (role === "employee" && !isSignup && onNavigate) {
       onNavigate("employee-dashboard");
     }
+
+    if (role === "hr" && !isSignup && onNavigate) {
+      onNavigate("hr-dashboard");
+    }
   };
 
   if (isRoleForm) {
