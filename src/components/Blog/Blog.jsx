@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import {
   FaBook,
   FaCheckCircle,
@@ -9,48 +8,15 @@ import {
   FaPenNib,
   FaSearch,
 } from "react-icons/fa";
+import useBlogUpload from "./hooks/useBlogUpload";
 
 function Blog() {
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState("");
-  const [uploadMessage, setUploadMessage] = useState(null);
-
-  useEffect(() => {
-    return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
-    };
-  }, [previewUrl]);
-
-  const handleCoverImageChange = (event) => {
-    const file = event.target.files?.[0];
-
-    if (!file) {
-      return;
-    }
-
-    const allowedTypes = ["image/png", "image/jpeg", "image/webp"];
-    const allowedExtension = /\.(png|jpe?g|webp)$/i.test(file.name);
-
-    if (!allowedTypes.includes(file.type) || !allowedExtension) {
-      setSelectedImage(null);
-      setPreviewUrl("");
-      setUploadMessage({
-        type: "error",
-        text: "Invalid file type. Please upload PNG, JPG, or WEBP.",
-      });
-      event.target.value = "";
-      return;
-    }
-
-    setSelectedImage(file);
-    setPreviewUrl(URL.createObjectURL(file));
-    setUploadMessage({
-      type: "success",
-      text: "Image uploaded successfully \u2713",
-    });
-  };
+  const {
+    selectedImage,
+    previewUrl,
+    uploadMessage,
+    handleCoverImageChange,
+  } = useBlogUpload();
 
   const categories = [
     "Academic Writing Tips",

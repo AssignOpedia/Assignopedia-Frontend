@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
 import { FaWhatsapp } from "react-icons/fa";
 import "./App.css";
-import Navbar from "./components/Navbar";
-import Hero from "./components/Hero";
+import Navbar from "./components/shared/Navbar";
+import Home from "./components/Home";
 import Services from "./components/Services";
 import About from "./components/About";
 import Blog from "./components/Blog";
 import Careers from "./components/Careers";
 import Contact from "./components/Contact";
-import Footer from "./components/Footer";
-import AuthForm from "./AuthForm/AuthForm";
+import Footer from "./components/shared/Footer";
+import AuthForm from "./components/Auth";
 
 const getPageFromPath = () => {
   const page = window.location.pathname.replace(/^\/+|\/+$/g, "");
@@ -118,7 +118,7 @@ function App() {
 
     return (
       <>
-        <Hero />
+        <Home />
       </>
     );
   };

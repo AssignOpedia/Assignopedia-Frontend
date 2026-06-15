@@ -8,8 +8,8 @@ import {
   FaCheckCircle,
   FaUsers,
 } from "react-icons/fa";
-import student from "../assets/student.png";
-import aboutTeam from "../assets/about-team.png";
+import student from "../../assets/student.png";
+import aboutTeam from "../../assets/about-team.png";
 
 const servicesPreview = [
   {
@@ -52,7 +52,7 @@ const highlights = [
   },
 ];
 
-function Hero() {
+function Home() {
   return (
     <div className="home-page-shell">
       <section className="hero home-hero">
@@ -222,4 +222,4 @@ function Hero() {
   );
 }
 
-export default Hero;
+export default Home;

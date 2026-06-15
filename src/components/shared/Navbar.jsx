@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { FaBars, FaTimes } from "react-icons/fa";
-import logo from "../assets/logo.PNG";
+import logo from "../../assets/logo.PNG";
 
 function Navbar({ activePage, onNavigate, onSignUpClick }) {
   const [menuOpen, setMenuOpen] = useState(false);
