@@ -10,6 +10,13 @@ import Careers from "./components/Careers";
 import Contact from "./components/Contact";
 import Footer from "./components/shared/Footer";
 import AuthForm from "./components/Auth";
+import AdminDashboard from "./pages/AdminPortal/AdminDashboard";
+import AdminEmployees from "./pages/AdminPortal/AdminEmployees";
+import AdminProjects from "./pages/AdminPortal/AdminProjects";
+import AdminReports from "./pages/AdminPortal/AdminReports";
+import AdminRevenue from "./pages/AdminPortal/AdminRevenue";
+import AdminSettings from "./pages/AdminPortal/AdminSettings";
+import AdminSystem from "./pages/AdminPortal/AdminSystem";
 import HRAttendanceChecking from "./pages/HRPortal/HRAttendanceChecking";
 import HRCVAccess from "./pages/HRPortal/HRCVAccess";
 import HRDashboard from "./pages/HRPortal/HRDashboard";
@@ -49,6 +56,16 @@ const hrPages = [
   "hr-employee-id",
   "hr-organization-structure",
   "hr-settings",
+];
+
+const adminPages = [
+  "admin-dashboard",
+  "admin-employees",
+  "admin-projects",
+  "admin-revenue",
+  "admin-reports",
+  "admin-settings",
+  "admin-system",
 ];
 
 const getPageFromPath = () => {
@@ -127,6 +144,34 @@ function App() {
 
     if (activePage === "contact") {
       return <Contact onNavigate={handleNavigate} />;
+    }
+
+    if (activePage === "admin-dashboard") {
+      return <AdminDashboard activePage={activePage} onNavigate={handleNavigate} />;
+    }
+
+    if (activePage === "admin-employees") {
+      return <AdminEmployees activePage={activePage} onNavigate={handleNavigate} />;
+    }
+
+    if (activePage === "admin-projects") {
+      return <AdminProjects activePage={activePage} onNavigate={handleNavigate} />;
+    }
+
+    if (activePage === "admin-revenue") {
+      return <AdminRevenue activePage={activePage} onNavigate={handleNavigate} />;
+    }
+
+    if (activePage === "admin-reports") {
+      return <AdminReports activePage={activePage} onNavigate={handleNavigate} />;
+    }
+
+    if (activePage === "admin-settings") {
+      return <AdminSettings activePage={activePage} onNavigate={handleNavigate} />;
+    }
+
+    if (activePage === "admin-system") {
+      return <AdminSystem activePage={activePage} onNavigate={handleNavigate} />;
     }
 
     if (activePage === "hr-dashboard") {
@@ -231,7 +276,7 @@ function App() {
     );
   };
 
-  const isPortalPage = [...employeePages, ...hrPages].includes(activePage);
+  const isPortalPage = [...employeePages, ...hrPages, ...adminPages].includes(activePage);
 
   return (
     <>

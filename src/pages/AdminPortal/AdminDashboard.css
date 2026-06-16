@@ -1,0 +1,1027 @@
+.admin-dashboard {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 292px minmax(0, 1fr);
+  background: #f5f7fb;
+  color: #111827;
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+
+.admin-sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  padding: 26px 20px;
+  background: linear-gradient(180deg, #08142c 0%, #111827 58%, #172554 100%);
+  color: #f8fafc;
+  box-shadow: 12px 0 32px rgba(15, 23, 42, 0.16);
+}
+
+.admin-brand,
+.admin-profile,
+.admin-panel-heading,
+.admin-topbar,
+.employee-row,
+.ranking-list div,
+.project-list p,
+.client-legend p,
+.analytics-list p {
+  display: flex;
+  align-items: center;
+}
+
+.admin-brand {
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.admin-brand > span {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #38bdf8, #8b5cf6);
+  color: #fff;
+  font-weight: 900;
+}
+
+.admin-brand strong,
+.admin-brand small,
+.admin-profile strong,
+.admin-profile small {
+  display: block;
+}
+
+.admin-brand strong {
+  font-size: 1.05rem;
+}
+
+.admin-brand small,
+.admin-sidebar-card span {
+  color: #b6c5dc;
+  font-size: 0.78rem;
+}
+
+.admin-menu {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-menu button,
+.admin-sidebar-logout,
+.admin-sidebar-card,
+.admin-icon-button,
+.admin-hero button,
+.report-actions button,
+.admin-table-row button,
+.report-card button {
+  border: 0;
+}
+
+.admin-menu button,
+.admin-sidebar-logout {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 46px;
+  padding: 0 14px;
+  border-radius: 8px;
+  background: transparent;
+  color: #cbd5e1;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-menu button svg,
+.admin-sidebar-logout svg {
+  color: #93c5fd;
+  flex: 0 0 auto;
+}
+
+.admin-menu button.active,
+.admin-menu button:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.admin-sidebar-logout {
+  margin-top: 18px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #fecaca;
+}
+
+.admin-sidebar-logout:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fff;
+}
+
+.admin-sidebar-card {
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.09);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.09);
+}
+
+.admin-sidebar-card svg {
+  color: #67e8f9;
+  font-size: 1.25rem;
+  margin-bottom: 12px;
+}
+
+.admin-sidebar-card strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.access-card svg {
+  color: #c4b5fd;
+}
+
+.admin-workspace {
+  min-width: 0;
+  padding: 24px;
+}
+
+.admin-topbar {
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.admin-search,
+.admin-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+}
+
+.admin-search {
+  width: min(560px, 100%);
+  min-height: 48px;
+  padding: 0 16px;
+  border-radius: 8px;
+  color: #64748b;
+}
+
+.admin-search input,
+.admin-filter select {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #0f172a;
+  font: inherit;
+}
+
+.admin-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.admin-icon-button {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #fff;
+  color: #475569;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07);
+  cursor: pointer;
+}
+
+.admin-icon-button i {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 2px solid #fff;
+}
+
+.admin-profile {
+  gap: 10px;
+  min-height: 48px;
+  padding: 6px 12px 6px 6px;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07);
+}
+
+.admin-profile > div {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  color: #fff;
+  font-weight: 900;
+}
+
+.admin-profile strong {
+  font-size: 0.9rem;
+}
+
+.admin-profile small {
+  color: #64748b;
+  font-size: 0.72rem;
+}
+
+.admin-filter {
+  min-height: 48px;
+  padding: 0 12px;
+  border-radius: 8px;
+  color: #2563eb;
+}
+
+.admin-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 22px;
+  padding: 26px;
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at right top, rgba(124, 58, 237, 0.18), transparent 34%),
+    linear-gradient(135deg, #fff, #eef6ff);
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
+}
+
+.admin-hero span,
+.admin-panel-heading span {
+  color: #2563eb;
+  font-weight: 800;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.admin-hero h1 {
+  margin: 6px 0 8px;
+  font-size: clamp(2rem, 4vw, 3.25rem);
+  line-height: 1;
+  color: #0f172a;
+}
+
+.admin-hero p {
+  max-width: 680px;
+  margin: 0;
+  color: #64748b;
+}
+
+.admin-hero button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 0 18px;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.admin-card-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(145px, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.compact-grid {
+  grid-template-columns: repeat(4, minmax(180px, 1fr));
+}
+
+.admin-stat-card,
+.admin-panel {
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.07);
+}
+
+.admin-stat-card {
+  min-height: 158px;
+  padding: 18px;
+}
+
+.admin-stat-card > div {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 14px;
+  border-radius: 8px;
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+.admin-stat-card span,
+.admin-stat-card small {
+  display: block;
+  color: #64748b;
+}
+
+.admin-stat-card span {
+  min-height: 34px;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.admin-stat-card strong {
+  display: block;
+  margin: 8px 0 4px;
+  color: #0f172a;
+  font-size: 1.65rem;
+  line-height: 1;
+}
+
+.admin-stat-card small {
+  font-size: 0.76rem;
+}
+
+.admin-content-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.admin-panel {
+  padding: 20px;
+  min-height: 260px;
+}
+
+.admin-panel-heading {
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.admin-panel-heading h2 {
+  margin: 4px 0 0;
+  color: #0f172a;
+  font-size: 1.1rem;
+}
+
+.admin-panel-heading > svg {
+  color: #8b5cf6;
+  font-size: 1.25rem;
+}
+
+.employee-directory,
+.project-monitoring {
+  grid-column: span 5;
+}
+
+.wide-panel {
+  grid-column: span 8;
+}
+
+.side-panel {
+  grid-column: span 4;
+}
+
+.revenue-overview,
+.employee-analytics,
+.performance-rankings,
+.team-comparison {
+  grid-column: span 4;
+}
+
+.client-statistics,
+.quick-report-generation {
+  grid-column: span 3;
+}
+
+.employee-table,
+.analytics-list,
+.project-list,
+.ranking-list {
+  display: grid;
+  gap: 12px;
+}
+
+.employee-row {
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.employee-row span,
+.ranking-list span {
+  display: grid;
+  gap: 3px;
+}
+
+.employee-row strong,
+.ranking-list strong,
+.project-list strong {
+  font-size: 0.92rem;
+  color: #0f172a;
+}
+
+.employee-row small,
+.ranking-list small,
+.project-list small {
+  color: #64748b;
+  font-size: 0.76rem;
+}
+
+.employee-row em {
+  min-width: 72px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 900;
+  text-align: center;
+}
+
+.employee-row em.leave {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.employee-row em.remote {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.employee-row b {
+  color: #4f46e5;
+}
+
+.revenue-chart {
+  height: 178px;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+  align-items: end;
+}
+
+.revenue-chart div {
+  min-width: 0;
+  height: 100%;
+  display: grid;
+  align-items: end;
+  gap: 8px;
+}
+
+.revenue-chart span {
+  display: block;
+  min-height: 34px;
+  border-radius: 8px 8px 4px 4px;
+  background: linear-gradient(180deg, #8b5cf6, #2563eb);
+}
+
+.revenue-chart small {
+  text-align: center;
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.client-stat-layout {
+  display: grid;
+  gap: 18px;
+  justify-items: center;
+}
+
+.client-donut {
+  width: 144px;
+  height: 144px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  border-radius: 50%;
+  background: conic-gradient(#4f46e5 0 46%, #06b6d4 46% 80%, #a855f7 80% 100%);
+  color: #fff;
+  box-shadow: inset 0 0 0 18px rgba(255, 255, 255, 0.16);
+}
+
+.client-donut strong {
+  font-size: 2rem;
+}
+
+.client-donut small {
+  font-weight: 800;
+}
+
+.client-legend {
+  width: 100%;
+  display: grid;
+  gap: 10px;
+}
+
+.client-legend p,
+.analytics-list p,
+.project-list p {
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0;
+}
+
+.client-legend i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.client-legend span {
+  margin-right: auto;
+  color: #475569;
+}
+
+.analytics-list > div,
+.project-list > div {
+  padding: 12px;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.admin-progress {
+  display: block;
+  height: 8px;
+  margin-top: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #e2e8f0;
+}
+
+.admin-progress i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2563eb, #a855f7);
+}
+
+.project-list p span {
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #4f46e5;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.ranking-list div {
+  gap: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.ranking-list b {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #fff7ed;
+  color: #f97316;
+}
+
+.ranking-list span {
+  margin-right: auto;
+}
+
+.ranking-list em {
+  color: #2563eb;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.team-grid div {
+  padding: 16px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #f8fafc, #eef2ff);
+}
+
+.team-grid span,
+.team-grid strong,
+.team-grid small {
+  display: block;
+}
+
+.team-grid span {
+  color: #64748b;
+  font-weight: 800;
+  font-size: 0.8rem;
+}
+
+.team-grid strong {
+  margin: 8px 0 4px;
+  color: #0f172a;
+  font-size: 1.45rem;
+}
+
+.team-grid small {
+  color: #16a34a;
+  font-weight: 900;
+}
+
+.report-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.report-actions button {
+  min-height: 76px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #1e3a8a;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px #e2e8f0;
+}
+
+.report-actions button:hover {
+  background: #2563eb;
+  color: #fff;
+}
+
+.admin-table {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-table-head,
+.admin-table-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: center;
+  gap: 12px;
+}
+
+.employee-management-table .admin-table-head,
+.employee-management-table .admin-table-row {
+  grid-template-columns: 1.4fr 0.9fr 0.8fr 0.8fr 1fr;
+}
+
+.admin-table-head {
+  padding: 0 12px;
+  color: #64748b;
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.admin-table-row {
+  min-height: 58px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.admin-table-row span,
+.admin-table-row strong,
+.admin-table-row small {
+  min-width: 0;
+}
+
+.admin-table-row strong,
+.admin-table-row small {
+  display: block;
+}
+
+.admin-table-row strong {
+  color: #0f172a;
+}
+
+.admin-table-row small {
+  color: #64748b;
+  font-size: 0.76rem;
+}
+
+.admin-table-row em,
+.project-list p span.active,
+.project-list p span.delayed,
+.project-list p span.completed {
+  width: fit-content;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.admin-table-row em.absent,
+.project-list p span.delayed,
+.admin-table-row em.blocked {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.project-list p span.completed {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.admin-table-row button,
+.report-card button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: #eef2ff;
+  color: #3730a3;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.admin-score {
+  color: #4f46e5;
+  font-weight: 900;
+}
+
+.large-list {
+  gap: 14px;
+}
+
+.timeline-list,
+.toggle-list,
+.alert-list,
+.settings-form {
+  display: grid;
+  gap: 12px;
+}
+
+.timeline-list p,
+.toggle-list p,
+.alert-list p {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  padding: 14px;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.timeline-list span,
+.alert-list span {
+  color: #2563eb;
+  font-weight: 900;
+}
+
+.alert-list span {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eef2ff;
+  font-size: 0.72rem;
+}
+
+.revenue-chart-tall {
+  height: 230px;
+}
+
+.revenue-chart-tall small b {
+  display: block;
+  margin-top: 4px;
+  color: #0f172a;
+}
+
+.report-card {
+  grid-column: span 3;
+  min-height: 280px;
+}
+
+.report-icon {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 18px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #2563eb, #8b5cf6);
+  color: #fff;
+  font-size: 1.25rem;
+}
+
+.report-card > span {
+  color: #2563eb;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.report-card h2 {
+  margin: 10px 0;
+  color: #0f172a;
+  font-size: 1.15rem;
+}
+
+.report-card p {
+  min-height: 54px;
+  margin: 0 0 18px;
+  color: #64748b;
+}
+
+.settings-profile {
+  grid-column: span 6;
+}
+
+.settings-card {
+  grid-column: span 6;
+}
+
+.settings-form label {
+  display: grid;
+  gap: 6px;
+}
+
+.settings-form span {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.settings-form input {
+  min-height: 46px;
+  padding: 0 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #0f172a;
+  font: inherit;
+}
+
+.toggle {
+  position: relative;
+  width: 46px;
+  height: 26px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #cbd5e1;
+}
+
+.toggle::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.22);
+}
+
+.toggle.on {
+  background: linear-gradient(90deg, #2563eb, #8b5cf6);
+}
+
+.toggle.on::after {
+  left: 24px;
+}
+
+.system-donut {
+  margin: 10px auto 0;
+  background: conic-gradient(#16a34a 0 98%, #e2e8f0 98% 100%);
+}
+
+@media (max-width: 1320px) {
+  .admin-card-grid {
+    grid-template-columns: repeat(3, minmax(180px, 1fr));
+  }
+
+  .employee-directory,
+  .project-monitoring,
+  .revenue-overview,
+  .employee-analytics,
+  .performance-rankings,
+  .team-comparison,
+  .wide-panel,
+  .side-panel,
+  .settings-profile,
+  .settings-card,
+  .report-card,
+  .client-statistics,
+  .quick-report-generation {
+    grid-column: span 6;
+  }
+}
+
+@media (max-width: 980px) {
+  .admin-dashboard {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-sidebar {
+    position: static;
+    height: auto;
+  }
+
+  .admin-menu {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-topbar,
+  .admin-hero {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-topbar-actions {
+    justify-content: flex-start;
+  }
+
+  .admin-search {
+    width: 100%;
+  }
+}
+
+@media (max-width: 720px) {
+  .admin-workspace,
+  .admin-sidebar {
+    padding: 18px;
+  }
+
+  .admin-card-grid,
+  .admin-menu,
+  .team-grid,
+  .report-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-table-head {
+    display: none;
+  }
+
+  .admin-table-row,
+  .employee-management-table .admin-table-row {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .employee-directory,
+  .project-monitoring,
+  .revenue-overview,
+  .employee-analytics,
+  .performance-rankings,
+  .team-comparison,
+  .wide-panel,
+  .side-panel,
+  .settings-profile,
+  .settings-card,
+  .report-card,
+  .client-statistics,
+  .quick-report-generation {
+    grid-column: 1 / -1;
+  }
+
+  .admin-topbar-actions {
+    display: grid;
+    grid-template-columns: 48px 1fr;
+  }
+
+  .admin-filter {
+    grid-column: 1 / -1;
+  }
+
+  .admin-hero h1 {
+    font-size: 2rem;
+  }
+
+  .employee-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
