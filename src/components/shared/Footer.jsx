@@ -6,7 +6,7 @@ import {
   FaMapMarkerAlt,
   FaPhoneAlt,
 } from "react-icons/fa";
-import logo from "../assets/logo.PNG";
+import logo from "../../assets/logo.PNG";
 
 function Footer() {
   const socials = [
