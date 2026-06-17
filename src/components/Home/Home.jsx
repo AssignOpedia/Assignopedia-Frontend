@@ -8,8 +8,9 @@ import {
   FaCheckCircle,
   FaUsers,
 } from "react-icons/fa";
-import student from "../../assets/student.png";
-import aboutTeam from "../../assets/about-team.png";
+import academicWritingHero from "../../assets/academic-writing-hero.png";
+import contentWritingTeam from "../../assets/content-writing-team.png";
+import ConstellationBackground from "../shared/ConstellationBackground";
 
 const servicesPreview = [
   {
@@ -56,6 +57,7 @@ function Home() {
   return (
     <div className="home-page-shell">
       <section className="hero home-hero">
+        <ConstellationBackground variant="home" />
         <div className="hero-bg-shape" aria-hidden="true" />
         <div className="hero-floating-elements" aria-hidden="true">
           <span className="hero-float hero-float-book">
@@ -110,8 +112,8 @@ function Home() {
           <div className="hero-right">
             <div className="hero-image-frame">
               <img
-                src={student}
-                alt="Student working on academic assignments at a laptop"
+                src={academicWritingHero}
+                alt="Professional academic writers reviewing research and content at a laptop"
               />
             </div>
           </div>
@@ -165,8 +167,8 @@ function Home() {
 
           <div className="about-summary-image">
             <img
-              src={aboutTeam}
-              alt="Assignopedia academic writing team collaborating"
+              src={contentWritingTeam}
+              alt="Professional academic and content writing team collaborating"
             />
           </div>
         </div>

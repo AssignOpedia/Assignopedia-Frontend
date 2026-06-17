@@ -11,6 +11,7 @@ import {
   FaPhoneAlt,
   FaUser,
 } from "react-icons/fa";
+import ConstellationBackground from "../shared/ConstellationBackground";
 import useCareerApplication from "./hooks/useCareerApplication";
 
 function Careers() {
@@ -31,6 +32,7 @@ function Careers() {
 
   return (
     <main className="page careers-page">
+      <ConstellationBackground variant="careers" />
       <section className="page-hero careers-hero">
         <span>Careers</span>
         <h1>Work With Assignopedia</h1>

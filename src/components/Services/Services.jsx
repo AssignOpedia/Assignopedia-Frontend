@@ -12,6 +12,7 @@ import {
   FaBullhorn,
   FaPenFancy,
 } from "react-icons/fa";
+import ConstellationBackground from "../shared/ConstellationBackground";
 
 function Services() {
   const services = [
@@ -147,6 +148,7 @@ function Services() {
 
   return (
     <section className="services">
+      <ConstellationBackground variant="services" />
       <div className="section-title">
         <span>OUR SERVICES</span>
 

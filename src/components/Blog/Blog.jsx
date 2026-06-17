@@ -8,6 +8,7 @@ import {
   FaPenNib,
   FaSearch,
 } from "react-icons/fa";
+import ConstellationBackground from "../shared/ConstellationBackground";
 import useBlogUpload from "./hooks/useBlogUpload";
 
 function Blog() {
@@ -54,6 +55,7 @@ function Blog() {
 
   return (
     <main className="page blog-page">
+      <ConstellationBackground variant="blog" />
       <section className="page-hero">
         <span>Blog / Resources</span>
         <h1>Academic Resources for Better Writing</h1>

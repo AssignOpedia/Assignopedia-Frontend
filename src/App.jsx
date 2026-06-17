@@ -34,6 +34,7 @@ import EmployeePerformance from "./pages/EmployeePortal/EmployeePerformance";
 import EmployeeProfile from "./pages/EmployeePortal/EmployeeProfile";
 import EmployeeTasks from "./pages/EmployeePortal/EmployeeTasks";
 import EmployeeTeam from "./pages/EmployeePortal/EmployeeTeam";
+import EmployeeChatbot from "./pages/EmployeePortal/EmployeeChatbot";
 
 const employeePages = [
   "employee-dashboard",
@@ -298,6 +299,8 @@ function App() {
           onRoleSelect={handleNavigate}
         />
       )}
+
+      <EmployeeChatbot />
 
       <a
         className="whatsapp-float"

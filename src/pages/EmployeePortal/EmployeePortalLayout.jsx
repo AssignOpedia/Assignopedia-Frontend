@@ -14,6 +14,7 @@ import {
 import assignopediaLogo from "../../assets/logo.PNG";
 import "./EmployeeDashboard.css";
 import { useEmployeeProfileImage } from "./useEmployeeProfileImage";
+import { getCurrentUser, getInitials } from "../../utils/authStorage";
 
 const sidebarItems = [
   { label: "Dashboard", icon: <FaHome />, page: "employee-dashboard" },
@@ -29,6 +30,9 @@ const sidebarItems = [
 
 function EmployeePortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
   const profileImage = useEmployeeProfileImage();
+  const currentUser = getCurrentUser();
+  const employeeName = currentUser.name || "Employee";
+  const employeeInitials = getInitials(employeeName);
 
   const handleMenuClick = (page) => {
     onNavigate(page);
@@ -81,10 +85,10 @@ function EmployeePortalLayout({ activePage, children, eyebrow, title, onNavigate
             </button>
             <div className="topbar-profile">
               <div className={`avatar${profileImage ? " has-image" : ""}`}>
-                {profileImage ? <img src={profileImage} alt="Sandipan Mondal" /> : "SM"}
+                {profileImage ? <img src={profileImage} alt={employeeName} /> : employeeInitials}
               </div>
               <div>
-                <strong>Sandipan Mondal</strong>
+                <strong>{employeeName}</strong>
                 <small>Technical Content Writer</small>
               </div>
             </div>

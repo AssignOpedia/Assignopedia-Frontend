@@ -17,6 +17,7 @@ import {
   FaShieldAlt,
   FaTools,
 } from "react-icons/fa";
+import ConstellationBackground from "../shared/ConstellationBackground";
 
 function About({ onNavigate }) {
   const stats = [
@@ -104,6 +105,7 @@ function About({ onNavigate }) {
 
   return (
     <main className="page about-page">
+      <ConstellationBackground variant="about" />
       <section className="about-hero-new">
         <div className="about-hero-content">
           <span className="eyebrow">About Assignopedia</span>

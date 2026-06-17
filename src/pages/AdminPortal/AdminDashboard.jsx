@@ -5,6 +5,7 @@ import {
   FaChartPie,
   FaDownload,
   FaLayerGroup,
+  FaLock,
   FaProjectDiagram,
   FaSlidersH,
   FaStar,
@@ -14,6 +15,7 @@ import {
   FaUsers,
 } from "react-icons/fa";
 import AdminPortalLayout from "./AdminPortalLayout";
+import { getPasswordResetRequests } from "../../utils/passwordResetRequests";
 
 const dashboardCards = [
   { label: "Total Active Employees", value: "248", trend: "+12 this month", icon: <FaUsers /> },
@@ -73,6 +75,8 @@ const teams = [
 ];
 
 function AdminDashboard({ activePage, onNavigate }) {
+  const passwordResetRequests = getPasswordResetRequests();
+
   return (
     <AdminPortalLayout
       activePage={activePage}
@@ -118,6 +122,39 @@ function AdminDashboard({ activePage, onNavigate }) {
                 <b>{employee.workload}</b>
               </div>
             ))}
+          </div>
+        </article>
+
+        <article className="admin-panel employee-directory">
+          <div className="admin-panel-heading">
+            <div>
+              <span>Security</span>
+              <h2>Password Reset Requests</h2>
+            </div>
+            <FaLock />
+          </div>
+          <div className="employee-table">
+            {passwordResetRequests.length > 0 ? (
+              passwordResetRequests.slice(0, 5).map((request) => (
+                <div className="employee-row" key={request.id}>
+                  <span>
+                    <strong>{request.name}</strong>
+                    <small>
+                      {request.email} | OTP: {request.otp}
+                    </small>
+                  </span>
+                  <em className="remote">{request.status}</em>
+                  <b>{request.requestedAt}</b>
+                </div>
+              ))
+            ) : (
+              <div className="employee-row">
+                <span>
+                  <strong>No employee password reset requests yet.</strong>
+                  <small>New employee requests will appear here.</small>
+                </span>
+              </div>
+            )}
           </div>
         </article>
 

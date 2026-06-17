@@ -12,6 +12,7 @@ import {
 } from "react-icons/fa";
 import EmployeePortalLayout from "./EmployeePortalLayout";
 import { useEmployeeProfileImage } from "./useEmployeeProfileImage";
+import { getCurrentUser, getInitials } from "../../utils/authStorage";
 
 const attendanceCards = [
   { label: "Today's Login", value: "09:18 AM", note: "On time", icon: <FaClock /> },
@@ -56,28 +57,32 @@ const announcements = [
 
 function EmployeeDashboard({ activePage, onNavigate }) {
   const profileImage = useEmployeeProfileImage();
+  const currentUser = getCurrentUser();
+  const employeeName = currentUser.name || "Employee";
+  const employeeEmail = currentUser.email || "employee@assignopedia.com";
+  const employeeInitials = getInitials(employeeName);
 
   return (
     <EmployeePortalLayout
       activePage={activePage}
       eyebrow="Employee Dashboard"
-      title="Welcome back, Sandipan"
+      title={`Welcome back, ${employeeName}`}
       onNavigate={onNavigate}
     >
       <section className="employee-profile-banner">
         <div className="profile-main">
           <div className={`profile-photo${profileImage ? " has-image" : ""}`}>
-            {profileImage ? <img src={profileImage} alt="Sandipan Mondal" /> : "SM"}
+            {profileImage ? <img src={profileImage} alt={employeeName} /> : employeeInitials}
           </div>
           <div className="profile-copy">
             <span>Employee Profile</span>
-            <h2>Sandipan Mondal</h2>
+            <h2>{employeeName}</h2>
             <p>Technical Content Writer - Development Team</p>
             <div className="profile-tags">
               <span>Employee ID: EMP-240128</span>
               <span>Job Code: FE-12</span>
               <span>
-                <FaEnvelope /> sandipan.aop0128@gmail.com
+                <FaEnvelope /> {employeeEmail}
               </span>
             </div>
           </div>

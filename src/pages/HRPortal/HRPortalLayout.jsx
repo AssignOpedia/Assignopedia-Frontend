@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   FaBell,
   FaBuilding,
@@ -12,6 +13,7 @@ import {
   FaSignOutAlt,
 } from "react-icons/fa";
 import "./HRDashboard.css";
+import { getPasswordResetRequests } from "../../utils/passwordResetRequests";
 
 const sidebarItems = [
   { label: "Dashboard", icon: <FaHome />, page: "hr-dashboard" },
@@ -26,6 +28,9 @@ const sidebarItems = [
 ];
 
 function HRPortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
+  const [showNotifications, setShowNotifications] = useState(false);
+  const passwordResetRequests = getPasswordResetRequests();
+
   const handleLogout = () => {
     localStorage.removeItem("hrSession");
     localStorage.removeItem("hrAuthToken");
@@ -77,10 +82,34 @@ function HRPortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
               <FaSearch aria-hidden="true" />
               <input type="search" placeholder="Search employees, requests..." />
             </label>
-            <button className="hr-icon-button" type="button" aria-label="Notifications">
-              <FaBell />
-              <i />
-            </button>
+            <div className="hr-notification-wrap">
+              <button
+                className="hr-icon-button"
+                type="button"
+                aria-label="Notifications"
+                aria-expanded={showNotifications}
+                onClick={() => setShowNotifications((current) => !current)}
+              >
+                <FaBell />
+                {passwordResetRequests.length > 0 && <i />}
+              </button>
+
+              {showNotifications && (
+                <div className="hr-notification-panel" role="status">
+                  <strong>Notifications</strong>
+                  {passwordResetRequests.length > 0 ? (
+                    passwordResetRequests.slice(0, 5).map((request) => (
+                      <p key={request.id}>
+                        {request.name} has sent OTP to change their account password.
+                        OTP: <b>{request.otp}</b>
+                      </p>
+                    ))
+                  ) : (
+                    <p>No new notifications.</p>
+                  )}
+                </div>
+              )}
+            </div>
             <div className="hr-profile">
               <div>HR</div>
               <span>

@@ -14,6 +14,7 @@ import {
   FaPhoneAlt,
   FaUsers,
 } from "react-icons/fa";
+import ConstellationBackground from "../shared/ConstellationBackground";
 
 function Contact({ onNavigate }) {
   const contactCards = [
@@ -56,6 +57,7 @@ function Contact({ onNavigate }) {
 
   return (
     <main className="page contact-page">
+      <ConstellationBackground variant="contact" />
       <section className="contact-hero">
         <span className="eyebrow">Contact Us</span>
         <h1>Have a query, need our services, or want to join our team?</h1>

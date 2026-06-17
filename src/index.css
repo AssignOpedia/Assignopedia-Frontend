@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
 * {
@@ -11,7 +12,7 @@ html {
 }
 
 body {
-  font-family: Inter, sans-serif;
+  font-family: "Lora", Georgia, serif;
   background: #f8f7f4;
   color: #1f2937;
 }

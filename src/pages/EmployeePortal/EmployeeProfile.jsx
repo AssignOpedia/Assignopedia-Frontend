@@ -12,18 +12,22 @@ import {
   saveEmployeeProfileImage,
   useEmployeeProfileImage,
 } from "./useEmployeeProfileImage";
-
-const details = [
-  { label: "Employee ID", value: "EMP-240128", icon: <FaIdBadge /> },
-  { label: "Job Code", value: "FE-12", icon: <FaLaptopCode /> },
-  { label: "Official Email", value: "sandipan.aop0128@gmail.com", icon: <FaEnvelope /> },
-  { label: "Phone", value: "+91 98765 43210", icon: <FaPhoneAlt /> },
-  { label: "Location", value: "Kolkata, India", icon: <FaMapMarkerAlt /> },
-];
+import { getCurrentUser, getInitials } from "../../utils/authStorage";
 
 function EmployeeProfile({ activePage, onNavigate }) {
   const fileInputRef = useRef(null);
   const profileImage = useEmployeeProfileImage();
+  const currentUser = getCurrentUser();
+  const employeeName = currentUser.name || "Employee";
+  const employeeEmail = currentUser.email || "employee@assignopedia.com";
+  const employeeInitials = getInitials(employeeName);
+  const details = [
+    { label: "Employee ID", value: "EMP-240128", icon: <FaIdBadge /> },
+    { label: "Job Code", value: "FE-12", icon: <FaLaptopCode /> },
+    { label: "Official Email", value: employeeEmail, icon: <FaEnvelope /> },
+    { label: "Phone", value: "+91 98765 43210", icon: <FaPhoneAlt /> },
+    { label: "Location", value: "Kolkata, India", icon: <FaMapMarkerAlt /> },
+  ];
 
   const openFilePicker = () => {
     fileInputRef.current?.click();
@@ -65,7 +69,7 @@ function EmployeeProfile({ activePage, onNavigate }) {
             onClick={openFilePicker}
             aria-label="Upload profile picture"
           >
-            {profileImage ? <img src={profileImage} alt="Sandipan Mondal" /> : "SM"}
+            {profileImage ? <img src={profileImage} alt={employeeName} /> : employeeInitials}
             <span className="profile-camera-icon" aria-hidden="true">
               <FaCamera />
             </span>
@@ -83,7 +87,7 @@ function EmployeeProfile({ activePage, onNavigate }) {
         </div>
         <div>
           <span>Technical Content Writer</span>
-          <h2>Sandipan Mondal</h2>
+          <h2>{employeeName}</h2>
           <p>Development Team member focused on technical documentation, frontend content, and delivery quality.</p>
         </div>
       </section>

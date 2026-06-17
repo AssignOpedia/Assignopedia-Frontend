@@ -1,4 +1,12 @@
 import { useEffect, useState } from "react";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
+import {
+  findAccountByEmail,
+  loginAccount,
+  registerAccount,
+  updateAccountPassword,
+} from "../../utils/authStorage";
+import { addPasswordResetRequest } from "../../utils/passwordResetRequests";
 
 const roleDetails = {
   hr: {
@@ -32,6 +40,17 @@ const AuthForm = ({
     email: "",
     password: "",
   });
+  const [authError, setAuthError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [resetStep, setResetStep] = useState("email");
+  const [resetData, setResetData] = useState({
+    email: "",
+    otp: "",
+    newPassword: "",
+  });
+  const [generatedOtp, setGeneratedOtp] = useState("");
+  const [resetMessage, setResetMessage] = useState("");
   const isRoleForm = Boolean(role);
   const isSignup = mode === "signup";
 
@@ -52,11 +71,81 @@ const AuthForm = ({
 
   const handleChange = (event) => {
     const { name, value } = event.target;
+    setAuthError("");
     setFormData((current) => ({ ...current, [name]: value }));
+  };
+
+  const handleResetChange = (event) => {
+    const { name, value } = event.target;
+    setAuthError("");
+    setResetMessage("");
+    setResetData((current) => ({ ...current, [name]: value }));
+  };
+
+  const handleOtpRequest = (event) => {
+    event.preventDefault();
+
+    const account = findAccountByEmail(resetData.email);
+
+    if (!account) {
+      setAuthError("No registered account found with this email.");
+      return;
+    }
+
+    const otp = String(Math.floor(100000 + Math.random() * 900000));
+
+    if (account.role === "employee") {
+      addPasswordResetRequest({ ...account, otp });
+    }
+
+    setGeneratedOtp(otp);
+    setResetStep("otp");
+    setResetMessage("OTP request sent to HR and Admin.");
+  };
+
+  const handlePasswordReset = (event) => {
+    event.preventDefault();
+
+    if (resetData.otp !== generatedOtp) {
+      setAuthError("Invalid OTP. Please check and try again.");
+      return;
+    }
+
+    updateAccountPassword({
+      email: resetData.email,
+      password: resetData.newPassword,
+    });
+
+    setFormData((current) => ({
+      ...current,
+      email: resetData.email,
+      password: resetData.newPassword,
+    }));
+    setShowResetPassword(false);
+    setResetStep("email");
+    setGeneratedOtp("");
+    setResetData({ email: "", otp: "", newPassword: "" });
+    setResetMessage("Password changed successfully. You can login now.");
   };
 
   const handleSubmit = (event) => {
     event.preventDefault();
+
+    if (isSignup) {
+      const account = registerAccount({ ...formData, role });
+
+      if (!account) {
+        setAuthError("This email is already registered. Please login instead.");
+        return;
+      }
+    } else {
+      const account = loginAccount({ ...formData, role });
+
+      if (!account) {
+        setAuthError("No registered account found with this email and password.");
+        return;
+      }
+    }
 
     if (role === "employee" && !isSignup && onNavigate) {
       onNavigate("employee-dashboard");
@@ -69,11 +158,132 @@ const AuthForm = ({
     if (role === "admin" && !isSignup && onNavigate) {
       onNavigate("admin-dashboard");
     }
+
+    if (role === "employee" && isSignup && onNavigate) {
+      onNavigate("employee-dashboard");
+    }
+
+    if (role === "hr" && isSignup && onNavigate) {
+      onNavigate("hr-dashboard");
+    }
+
+    if (role === "admin" && isSignup && onNavigate) {
+      onNavigate("admin-dashboard");
+    }
   };
 
   if (isRoleForm) {
     const details = roleDetails[role];
     const roleName = details.title.replace(" Login", "");
+
+    if (showResetPassword) {
+      return (
+        <main className="role-login-page">
+          <section className="role-login-card">
+            <span className="role-login-eyebrow">Assignopedia Portal</span>
+            <h1>Reset Password</h1>
+            <p>
+              {role === "employee"
+                ? "Enter your registered email. This request will be visible to HR and Admin."
+                : "Enter your registered email to request an OTP."}
+            </p>
+
+            <form
+              className="auth-form"
+              onSubmit={resetStep === "email" ? handleOtpRequest : handlePasswordReset}
+            >
+              <label className="auth-input-group">
+                <span className="auth-label">Registered Email</span>
+                <input
+                  className="auth-input"
+                  type="email"
+                  name="email"
+                  value={resetData.email}
+                  onChange={handleResetChange}
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                  required
+                  disabled={resetStep === "otp"}
+                />
+              </label>
+
+              {resetStep === "otp" && (
+                <>
+                  <label className="auth-input-group">
+                    <span className="auth-label">OTP</span>
+                    <input
+                      className="auth-input"
+                      type="text"
+                      name="otp"
+                      value={resetData.otp}
+                      onChange={handleResetChange}
+                      placeholder="Enter 6 digit OTP"
+                      inputMode="numeric"
+                      maxLength="6"
+                      required
+                    />
+                  </label>
+
+                  <label className="auth-input-group">
+                    <span className="auth-label">New Password</span>
+                    <span className="auth-password-field">
+                      <input
+                        className="auth-input"
+                        type={showPassword ? "text" : "password"}
+                        name="newPassword"
+                        value={resetData.newPassword}
+                        onChange={handleResetChange}
+                        placeholder="Enter new password"
+                        autoComplete="new-password"
+                        required
+                      />
+                      <button
+                        className="auth-password-toggle"
+                        type="button"
+                        onClick={() => setShowPassword((current) => !current)}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        title={showPassword ? "Hide password" : "Show password"}
+                      >
+                        {showPassword ? <FaEyeSlash /> : <FaEye />}
+                      </button>
+                    </span>
+                  </label>
+                </>
+              )}
+
+              {authError && (
+                <p className="auth-error-message" role="alert">
+                  {authError}
+                </p>
+              )}
+
+              {resetMessage && (
+                <p className="auth-success-message" role="status">
+                  {resetMessage}
+                </p>
+              )}
+
+              <button className="auth-submit-btn" type="submit">
+                {resetStep === "email" ? "Send OTP" : "Change Password"}
+              </button>
+            </form>
+
+            <div className="role-auth-switch">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowResetPassword(false);
+                  setAuthError("");
+                  setResetMessage("");
+                }}
+              >
+                Back to Login
+              </button>
+            </div>
+          </section>
+        </main>
+      );
+    }
 
     return (
       <main className="role-login-page">
@@ -117,17 +327,40 @@ const AuthForm = ({
 
             <label className="auth-input-group">
               <span className="auth-label">Password</span>
-              <input
-                className="auth-input"
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Enter your password"
-                autoComplete={isSignup ? "new-password" : "current-password"}
-                required
-              />
+              <span className="auth-password-field">
+                <input
+                  className="auth-input"
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="Enter your password"
+                  autoComplete={isSignup ? "new-password" : "current-password"}
+                  required
+                />
+                <button
+                  className="auth-password-toggle"
+                  type="button"
+                  onClick={() => setShowPassword((current) => !current)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  title={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </span>
             </label>
+
+            {authError && (
+              <p className="auth-error-message" role="alert">
+                {authError}
+              </p>
+            )}
+
+            {resetMessage && (
+              <p className="auth-success-message" role="status">
+                {resetMessage}
+              </p>
+            )}
 
             <button className="auth-submit-btn" type="submit">
               {isSignup ? `Sign Up as ${roleName}` : `Login as ${roleName}`}
@@ -135,6 +368,18 @@ const AuthForm = ({
           </form>
 
           <div className="role-auth-switch">
+            {!isSignup && role === "employee" && (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowResetPassword(true);
+                  setAuthError("");
+                  setResetMessage("");
+                }}
+              >
+                Forgot Password?
+              </button>
+            )}
             <span>
               {isSignup
                 ? "Already have an account?"

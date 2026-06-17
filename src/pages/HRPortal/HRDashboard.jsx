@@ -7,11 +7,13 @@ import {
   FaFileAlt,
   FaIdBadge,
   FaLaptopHouse,
+  FaLock,
   FaRegCalendarAlt,
   FaUsers,
   FaUserTie,
 } from "react-icons/fa";
 import HRPortalLayout from "./HRPortalLayout";
+import { getPasswordResetRequests } from "../../utils/passwordResetRequests";
 
 const summaryCards = [
   { label: "Total Employees", value: "126", note: "Active workforce", icon: <FaUsers /> },
@@ -53,6 +55,8 @@ const quickActions = [
 ];
 
 function HRDashboard({ activePage, onNavigate }) {
+  const passwordResetRequests = getPasswordResetRequests();
+
   return (
     <HRPortalLayout
       activePage={activePage}
@@ -109,6 +113,29 @@ function HRDashboard({ activePage, onNavigate }) {
             {notices.map((notice) => (
               <p key={notice}>{notice}</p>
             ))}
+          </div>
+        </article>
+
+        <article className="hr-panel notices-card">
+          <div className="hr-panel-heading">
+            <div>
+              <span>Employee Accounts</span>
+              <h2>Password Reset Requests</h2>
+            </div>
+            <FaLock />
+          </div>
+          <div className="hr-notice-list">
+            {passwordResetRequests.length > 0 ? (
+              passwordResetRequests.slice(0, 4).map((request) => (
+                <p key={request.id}>
+                  <strong>{request.name}</strong> requested a password change for{" "}
+                  {request.email}. OTP: <strong>{request.otp}</strong>. Status:{" "}
+                  {request.status}. {request.requestedAt}
+                </p>
+              ))
+            ) : (
+              <p>No employee password reset requests yet.</p>
+            )}
           </div>
         </article>
 
