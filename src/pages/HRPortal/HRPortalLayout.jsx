@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   FaBell,
   FaBuilding,
@@ -14,6 +14,8 @@ import {
 } from "react-icons/fa";
 import "./HRDashboard.css";
 import { getPasswordResetRequests } from "../../utils/passwordResetRequests";
+import { getInitialsFromProfile, getPortalProfile } from "../../utils/profileStorage";
+import { getHrRequestNotifications, notificationEvent } from "../../utils/requestNotifications";
 
 const sidebarItems = [
   { label: "Dashboard", icon: <FaHome />, page: "hr-dashboard" },
@@ -29,7 +31,39 @@ const sidebarItems = [
 
 function HRPortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
   const [showNotifications, setShowNotifications] = useState(false);
+  const [requestNotifications, setRequestNotifications] = useState(getHrRequestNotifications);
+  const notificationRef = useRef(null);
   const passwordResetRequests = getPasswordResetRequests();
+  const hasNotifications = passwordResetRequests.length > 0 || requestNotifications.length > 0;
+  const profile = getPortalProfile("hr");
+
+  useEffect(() => {
+    const refreshNotifications = () => {
+      setRequestNotifications(getHrRequestNotifications());
+    };
+
+    window.addEventListener(notificationEvent, refreshNotifications);
+    window.addEventListener("storage", refreshNotifications);
+    return () => {
+      window.removeEventListener(notificationEvent, refreshNotifications);
+      window.removeEventListener("storage", refreshNotifications);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!showNotifications) {
+      return undefined;
+    }
+
+    const handleOutsideClick = (event) => {
+      if (!notificationRef.current?.contains(event.target)) {
+        setShowNotifications(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [showNotifications]);
 
   const handleLogout = () => {
     localStorage.removeItem("hrSession");
@@ -37,6 +71,17 @@ function HRPortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
     localStorage.removeItem("authToken");
     localStorage.removeItem("userRole");
     onNavigate("hr-login");
+  };
+
+  const handleRequestNotificationClick = (type) => {
+    setShowNotifications(false);
+
+    if (type === "WFH") {
+      onNavigate("hr-wfh-approval");
+      return;
+    }
+
+    onNavigate("hr-leave-approval");
   };
 
   return (
@@ -82,7 +127,10 @@ function HRPortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
               <FaSearch aria-hidden="true" />
               <input type="search" placeholder="Search employees, requests..." />
             </label>
-            <div className="hr-notification-wrap">
+            <div
+              className="hr-notification-wrap"
+              ref={notificationRef}
+            >
               <button
                 className="hr-icon-button"
                 type="button"
@@ -91,19 +139,32 @@ function HRPortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
                 onClick={() => setShowNotifications((current) => !current)}
               >
                 <FaBell />
-                {passwordResetRequests.length > 0 && <i />}
+                {hasNotifications && <i />}
               </button>
 
               {showNotifications && (
                 <div className="hr-notification-panel" role="status">
                   <strong>Notifications</strong>
-                  {passwordResetRequests.length > 0 ? (
-                    passwordResetRequests.slice(0, 5).map((request) => (
+                  {hasNotifications ? (
+                    <>
+                      {requestNotifications.slice(0, 5).map((notification) => (
+                        <button
+                          className="hr-notification-item"
+                          type="button"
+                          key={notification.id}
+                          onClick={() => handleRequestNotificationClick(notification.type)}
+                        >
+                          <b>{notification.employeeName}</b> sent {notification.type} request on <b>{notification.date}</b>.
+                          {notification.detail && <> {notification.detail}</>}
+                        </button>
+                      ))}
+                      {passwordResetRequests.slice(0, 5).map((request) => (
                       <p key={request.id}>
                         {request.name} has sent OTP to change their account password.
                         OTP: <b>{request.otp}</b>
                       </p>
-                    ))
+                      ))}
+                    </>
                   ) : (
                     <p>No new notifications.</p>
                   )}
@@ -111,10 +172,10 @@ function HRPortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
               )}
             </div>
             <div className="hr-profile">
-              <div>HR</div>
+              <div>{getInitialsFromProfile(profile)}</div>
               <span>
-                <strong>HR Admin</strong>
-                <small>Human Resources</small>
+                <strong>{profile.name}</strong>
+                <small>{profile.title}</small>
               </span>
             </div>
           </div>

@@ -10,32 +10,11 @@ import {
   FaRegCalendarAlt,
   FaSitemap,
 } from "react-icons/fa";
+import { useState } from "react";
 import EmployeePortalLayout from "./EmployeePortalLayout";
 import { useEmployeeProfileImage } from "./useEmployeeProfileImage";
-import { getCurrentUser, getInitials } from "../../utils/authStorage";
-
-const attendanceCards = [
-  { label: "Today's Login", value: "09:18 AM", note: "On time", icon: <FaClock /> },
-  { label: "Logout Attendance", value: "06:42 PM", note: "Yesterday", icon: <FaRegCalendarAlt /> },
-  { label: "Late Login", value: "02 Days", note: "This month", icon: <FaCalendarCheck /> },
-  { label: "Leave Balance", value: "12 Days", note: "Available", icon: <FaListAlt /> },
-  { label: "WFH Days", value: "04 Days", note: "Approved", icon: <FaLaptopHouse /> },
-];
-
-const workProgressBars = [
-  { month: "Jan", value: 68, completed: "18K words" },
-  { month: "Feb", value: 74, completed: "22K words" },
-  { month: "Mar", value: 81, completed: "27K words" },
-  { month: "Apr", value: 76, completed: "24K words" },
-  { month: "May", value: 88, completed: "31K words" },
-  { month: "Jun", value: 92, completed: "36K words" },
-  { month: "Jul", value: 84, completed: "29K words" },
-  { month: "Aug", value: 96, completed: "40K words" },
-  { month: "Sep", value: 89, completed: "34K words" },
-  { month: "Oct", value: 93, completed: "38K words" },
-  { month: "Nov", value: 87, completed: "33K words" },
-  { month: "Dec", value: 98, completed: "42K words" },
-];
+import { getEmployeeDashboardMetrics } from "../../utils/employeeDashboardMetrics";
+import { getInitialsFromProfile, getPortalProfile } from "../../utils/profileStorage";
 
 const projects = [
   { name: "Client Research Portal", progress: 82, status: "In Review" },
@@ -56,11 +35,19 @@ const announcements = [
 ];
 
 function EmployeeDashboard({ activePage, onNavigate }) {
+  const [showWorkReport, setShowWorkReport] = useState(false);
   const profileImage = useEmployeeProfileImage();
-  const currentUser = getCurrentUser();
-  const employeeName = currentUser.name || "Employee";
-  const employeeEmail = currentUser.email || "employee@assignopedia.com";
-  const employeeInitials = getInitials(employeeName);
+  const profile = getPortalProfile("employee");
+  const dashboardMetrics = getEmployeeDashboardMetrics();
+  const employeeName = profile.name || "Employee";
+  const employeeInitials = getInitialsFromProfile(profile);
+  const attendanceCards = [
+    { label: "Today's Login", value: dashboardMetrics.cards.todayLogin, note: dashboardMetrics.notes.todayLogin, icon: <FaClock /> },
+    { label: "Logout Attendance", value: dashboardMetrics.cards.logoutAttendance, note: dashboardMetrics.notes.logoutAttendance, icon: <FaRegCalendarAlt /> },
+    { label: "Late Login", value: dashboardMetrics.cards.lateLogin, note: dashboardMetrics.notes.lateLogin, icon: <FaCalendarCheck /> },
+    { label: "Leave Balance", value: dashboardMetrics.cards.leaveBalance, note: dashboardMetrics.notes.leaveBalance, icon: <FaListAlt /> },
+    { label: "WFH Days", value: dashboardMetrics.cards.wfhDays, note: dashboardMetrics.notes.wfhDays, icon: <FaLaptopHouse /> },
+  ];
 
   return (
     <EmployeePortalLayout
@@ -77,12 +64,12 @@ function EmployeeDashboard({ activePage, onNavigate }) {
           <div className="profile-copy">
             <span>Employee Profile</span>
             <h2>{employeeName}</h2>
-            <p>Technical Content Writer - Development Team</p>
+            <p>{profile.title}</p>
             <div className="profile-tags">
-              <span>Employee ID: EMP-240128</span>
-              <span>Job Code: FE-12</span>
+              <span>Employee ID: {profile.employeeId}</span>
+              <span>Job Code: {profile.jobCode}</span>
               <span>
-                <FaEnvelope /> {employeeEmail}
+                <FaEnvelope /> {profile.email}
               </span>
             </div>
           </div>
@@ -108,19 +95,43 @@ function EmployeeDashboard({ activePage, onNavigate }) {
               <span>Work Progress</span>
               <h3>Monthly Work Progress</h3>
             </div>
-            <button type="button">
+            <button type="button" onClick={() => setShowWorkReport((current) => !current)}>
               View Work Report <FaChevronRight />
             </button>
           </div>
-          <p className="chart-summary">Total work completed this year: 374K words</p>
-          <div className="attendance-chart">
-            {workProgressBars.map((item) => (
-              <div className="chart-column" key={item.month} title={item.completed}>
-                <span style={{ height: `${item.value}%` }} />
-                <small>{item.month}</small>
-              </div>
-            ))}
+          <div className="chart-summary-row">
+            <p className="chart-summary">Total work completed this year: {dashboardMetrics.totalWorkHours}h</p>
+            <span>Monthly completion trend</span>
           </div>
+          <div className="attendance-chart professional-chart" aria-label="Monthly work progress chart">
+            <div className="chart-y-axis" aria-hidden="true">
+              <span>100%</span>
+              <span>75%</span>
+              <span>50%</span>
+              <span>25%</span>
+              <span>0%</span>
+            </div>
+            <div className="chart-plot">
+              {dashboardMetrics.workProgressBars.map((item) => (
+                <div className="chart-column" key={item.month} title={item.completed}>
+                  <div className="chart-bar-track">
+                    <span className="chart-value">{item.value}%</span>
+                    <i style={{ height: `${item.value}%` }} />
+                  </div>
+                  <small>{item.month}</small>
+                </div>
+              ))}
+            </div>
+          </div>
+          {showWorkReport && (
+            <div className="timeline-list">
+              <p><strong>Present days</strong><span>{dashboardMetrics.workReport.presentDays}</span></p>
+              <p><strong>Late logins</strong><span>{dashboardMetrics.workReport.lateLoginCount}</span></p>
+              <p><strong>This month work</strong><span>{dashboardMetrics.workReport.monthlyWorkHours}h / {dashboardMetrics.workReport.monthlyTargetHours}h</span></p>
+              <p><strong>Leave used</strong><span>{dashboardMetrics.workReport.leaveDaysUsed} days</span></p>
+              <p><strong>WFH requests</strong><span>{dashboardMetrics.workReport.wfhDays}</span></p>
+            </div>
+          )}
         </article>
 
         <article className="portal-card performance-card">
@@ -130,11 +141,23 @@ function EmployeeDashboard({ activePage, onNavigate }) {
               <h3>Score Card</h3>
             </div>
           </div>
-          <div className="score-orbit">
-            <strong>92</strong>
-            <span>Excellent</span>
+          <div
+            className="score-orbit"
+            style={{
+              background: `radial-gradient(circle closest-side,#fff 69%,transparent 71%), conic-gradient(var(--portal-blue) ${dashboardMetrics.performance.score}%,rgba(11,34,85,.12) 0)`,
+            }}
+          >
+            <strong>{dashboardMetrics.performance.score}</strong>
+            <span>{dashboardMetrics.performance.label}</span>
           </div>
-          <p>Quality, punctuality, collaboration, and task completion are above target this month.</p>
+          <p>
+            Score is calculated from punctuality, attendance, work progress, and collaboration activity this month.
+          </p>
+          <div className="timeline-list">
+            <p><strong>Punctuality</strong><span>{dashboardMetrics.performance.punctualityScore}%</span></p>
+            <p><strong>Attendance</strong><span>{dashboardMetrics.performance.attendanceScore}%</span></p>
+            <p><strong>Work progress</strong><span>{dashboardMetrics.performance.workScore}%</span></p>
+          </div>
         </article>
 
         <article className="portal-card projects-card">

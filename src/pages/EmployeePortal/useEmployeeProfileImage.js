@@ -1,14 +1,64 @@
 import { useEffect, useState } from "react";
+import { currentUserEvent, getCurrentUser } from "../../utils/authStorage";
 
-const profileImageKey = "employeeProfileImage";
+const legacyProfileImageKey = "employeeProfileImage";
+const profileImageKeyPrefix = "employeeProfileImage:";
 const profileImageEvent = "employee-profile-image-updated";
 
-export const getEmployeeProfileImage = () =>
-  localStorage.getItem(profileImageKey) || "";
+const getProfileImageKey = (user = getCurrentUser()) => {
+  const accountId = user.email?.trim().toLowerCase() || "employee";
+
+  return `${profileImageKeyPrefix}${user.role || "employee"}:${accountId}`;
+};
+
+const migrateLegacyProfileImage = (profileImageKey) => {
+  const savedImage = localStorage.getItem(profileImageKey);
+  const legacyImage = localStorage.getItem(legacyProfileImageKey);
+
+  if (!savedImage && legacyImage) {
+    localStorage.setItem(profileImageKey, legacyImage);
+    localStorage.removeItem(legacyProfileImageKey);
+    return legacyImage;
+  }
+
+  return savedImage || "";
+};
+
+export const getEmployeeProfileImage = () => {
+  const profileImageKey = getProfileImageKey();
+
+  return migrateLegacyProfileImage(profileImageKey);
+};
 
 export const saveEmployeeProfileImage = (imageData) => {
+  const profileImageKey = getProfileImageKey();
+
   localStorage.setItem(profileImageKey, imageData);
-  window.dispatchEvent(new CustomEvent(profileImageEvent, { detail: imageData }));
+  window.dispatchEvent(
+    new CustomEvent(profileImageEvent, {
+      detail: { imageData, profileImageKey },
+    })
+  );
+};
+
+export const moveEmployeeProfileImage = (previousUser, nextUser) => {
+  const previousKey = getProfileImageKey(previousUser);
+  const nextKey = getProfileImageKey(nextUser);
+  const savedImage = localStorage.getItem(previousKey);
+
+  if (previousKey !== nextKey && savedImage && !localStorage.getItem(nextKey)) {
+    localStorage.setItem(nextKey, savedImage);
+    localStorage.removeItem(previousKey);
+  }
+
+  window.dispatchEvent(
+    new CustomEvent(profileImageEvent, {
+      detail: {
+        imageData: localStorage.getItem(nextKey) || "",
+        profileImageKey: nextKey,
+      },
+    })
+  );
 };
 
 export const useEmployeeProfileImage = () => {
@@ -16,21 +66,29 @@ export const useEmployeeProfileImage = () => {
 
   useEffect(() => {
     const handleProfileImageUpdate = (event) => {
-      setProfileImage(event.detail || getEmployeeProfileImage());
+      if (!event.detail?.profileImageKey || event.detail.profileImageKey === getProfileImageKey()) {
+        setProfileImage(event.detail?.imageData || getEmployeeProfileImage());
+      }
     };
 
     const handleStorageUpdate = (event) => {
-      if (event.key === profileImageKey) {
+      if (event.key === getProfileImageKey()) {
         setProfileImage(event.newValue || "");
       }
     };
 
+    const handleCurrentUserUpdate = () => {
+      setProfileImage(getEmployeeProfileImage());
+    };
+
     window.addEventListener(profileImageEvent, handleProfileImageUpdate);
     window.addEventListener("storage", handleStorageUpdate);
+    window.addEventListener(currentUserEvent, handleCurrentUserUpdate);
 
     return () => {
       window.removeEventListener(profileImageEvent, handleProfileImageUpdate);
       window.removeEventListener("storage", handleStorageUpdate);
+      window.removeEventListener(currentUserEvent, handleCurrentUserUpdate);
     };
   }, []);
 

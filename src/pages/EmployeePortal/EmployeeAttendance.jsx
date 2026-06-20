@@ -1,86 +1,76 @@
 import { useState } from "react";
 import { FaCalendarAlt, FaClock, FaSignInAlt, FaSignOutAlt } from "react-icons/fa";
+import {
+  formatCurrentTime,
+  getEmployeeAttendanceForToday,
+  getEmployeeMonthlyAttendanceSummary,
+  getEmployeeMonthlyAttendanceTrend,
+  upsertTodayAttendance,
+} from "../../utils/attendanceStorage";
 import EmployeePortalLayout from "./EmployeePortalLayout";
 
-const stats = [
-  { label: "Present Days", value: "22", note: "This month", icon: <FaCalendarAlt /> },
-  { label: "Average Login", value: "09:21 AM", note: "On schedule", icon: <FaSignInAlt /> },
-  { label: "Average Logout", value: "06:38 PM", note: "Healthy hours", icon: <FaSignOutAlt /> },
-  { label: "Work Hours", value: "176h", note: "Monthly total", icon: <FaClock /> },
-];
-
-const storageKey = "employeeAttendanceRecord";
-
-const getTodayKey = () => {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, "0");
-  const day = String(today.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-};
-
-const formatCurrentTime = () =>
-  new Date().toLocaleTimeString("en-IN", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
-
-const getStoredAttendance = () => {
-  const storedRecord = localStorage.getItem(storageKey);
-
-  if (!storedRecord) {
-    return { date: getTodayKey(), loginTime: "", logoutTime: "" };
-  }
-
-  try {
-    const parsedRecord = JSON.parse(storedRecord);
-
-    if (parsedRecord.date === getTodayKey()) {
-      return {
-        date: parsedRecord.date,
-        loginTime: parsedRecord.loginTime || "",
-        logoutTime: parsedRecord.logoutTime || "",
-      };
-    }
-  } catch {
-    localStorage.removeItem(storageKey);
-  }
-
-  return { date: getTodayKey(), loginTime: "", logoutTime: "" };
-};
-
 function EmployeeAttendance({ activePage, onNavigate }) {
-  const [attendanceRecord, setAttendanceRecord] = useState(getStoredAttendance);
+  const [attendanceRecord, setAttendanceRecord] = useState(getEmployeeAttendanceForToday);
+  const [attendanceSummary, setAttendanceSummary] = useState(getEmployeeMonthlyAttendanceSummary);
+  const [attendanceTrend, setAttendanceTrend] = useState(getEmployeeMonthlyAttendanceTrend);
   const [statusMessage, setStatusMessage] = useState("");
+  const today = new Date();
+  const currentDay = today.getDate();
+  const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth();
+  const monthLabel = today.toLocaleDateString("en-IN", {
+    month: "long",
+    year: "numeric",
+  });
+  const firstWeekday = new Date(currentYear, currentMonth, 1).getDay();
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const attendanceByDay = new Map(attendanceTrend.map((item) => [item.day, item]));
+  const calendarDays = [
+    ...Array.from({ length: firstWeekday }, (_, index) => ({ type: "blank", id: `blank-${index}` })),
+    ...Array.from({ length: daysInMonth }, (_, index) => {
+      const day = index + 1;
+      const record = attendanceByDay.get(day);
+      const isFuture = day > currentDay;
+      const hasLogin = Boolean(record?.loginTime);
+      const status = isFuture ? "upcoming" : hasLogin ? "present" : "absent";
+
+      return {
+        type: "day",
+        day,
+        record,
+        status,
+        label: isFuture ? "Upcoming" : hasLogin ? "Present" : "Absent",
+      };
+    }),
+  ];
+  const absentDays = attendanceTrend.filter((item) => !item.loginTime).length;
+  const stats = [
+    { label: "Present Days", value: attendanceSummary.presentDays, note: "This month", icon: <FaCalendarAlt /> },
+    { label: "Average Login", value: attendanceSummary.averageLogin, note: "Based on logins", icon: <FaSignInAlt /> },
+    { label: "Average Logout", value: attendanceSummary.averageLogout, note: "Based on logouts", icon: <FaSignOutAlt /> },
+    { label: "Work Hours", value: attendanceSummary.workHours, note: "Monthly total", icon: <FaClock /> },
+  ];
 
   const showMessage = (message) => {
     setStatusMessage(message);
   };
 
-  const saveAttendanceRecord = (record) => {
-    localStorage.setItem(storageKey, JSON.stringify(record));
-    setAttendanceRecord(record);
-  };
-
   const handleLoginClick = () => {
-    const record = {
-      date: getTodayKey(),
-      loginTime: formatCurrentTime(),
-      logoutTime: attendanceRecord.logoutTime,
-    };
+    const record = upsertTodayAttendance({ loginTime: formatCurrentTime() });
 
-    saveAttendanceRecord(record);
-    showMessage("Login recorded successfully.");
+    setAttendanceRecord(record);
+    setAttendanceSummary(getEmployeeMonthlyAttendanceSummary());
+    setAttendanceTrend(getEmployeeMonthlyAttendanceTrend());
+    showMessage("Login recorded successfully. HR and Admin can now see it.");
   };
 
   const handleLogoutClick = () => {
-    saveAttendanceRecord({
-      ...attendanceRecord,
-      logoutTime: formatCurrentTime(),
-    });
-    showMessage("Logout recorded successfully.");
+    const record = upsertTodayAttendance({ logoutTime: formatCurrentTime() });
+
+    setAttendanceRecord(record);
+    setAttendanceSummary(getEmployeeMonthlyAttendanceSummary());
+    setAttendanceTrend(getEmployeeMonthlyAttendanceTrend());
+    showMessage("Logout recorded successfully. Attendance report updated.");
   };
 
   return (
@@ -128,16 +118,45 @@ function EmployeeAttendance({ activePage, onNavigate }) {
           <div className="card-heading">
             <div>
               <span>Monthly Log</span>
-              <h3>Attendance Trend</h3>
+              <h3>Attendance Calendar</h3>
             </div>
           </div>
-          <div className="attendance-chart">
-            {[82, 90, 86, 92, 78, 88, 95, 84, 91, 87, 93, 89].map((value, index) => (
-              <div className="chart-column" key={value + index}>
-                <span style={{ height: `${value}%` }} />
-                <small>{index + 1}</small>
+          <div className="attendance-calendar-panel">
+            <div className="attendance-calendar-summary">
+              <div>
+                <strong>{monthLabel}</strong>
+                <span>{attendanceSummary.presentDays} present days - {absentDays} absent days</span>
               </div>
-            ))}
+              <div className="attendance-calendar-legend" aria-label="Attendance calendar legend">
+                <span><i className="present" /> Present</span>
+                <span><i className="absent" /> Absent</span>
+                <span><i className="upcoming" /> Upcoming</span>
+              </div>
+            </div>
+
+            <div className="attendance-calendar-weekdays" aria-hidden="true">
+              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                <span key={day}>{day}</span>
+              ))}
+            </div>
+
+            <div className="attendance-calendar-grid">
+              {calendarDays.map((item) =>
+                item.type === "blank" ? (
+                  <span className="attendance-calendar-empty" key={item.id} />
+                ) : (
+                  <div
+                    className={`attendance-calendar-day ${item.status}`}
+                    key={item.day}
+                    title={`${item.day} ${monthLabel} | ${item.label} | Login: ${item.record?.loginTime || "-"} | Logout: ${item.record?.logoutTime || "-"} | Work: ${item.record?.workHours || "0h 0m"}`}
+                  >
+                    <strong>{item.day}</strong>
+                    <span>{item.label}</span>
+                    {item.record?.loginTime && <small>{item.record.loginTime}</small>}
+                  </div>
+                )
+              )}
+            </div>
           </div>
         </article>
 

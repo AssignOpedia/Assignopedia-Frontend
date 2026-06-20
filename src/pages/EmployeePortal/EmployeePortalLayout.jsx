@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import {
   FaBell,
   FaBullhorn,
@@ -14,7 +15,8 @@ import {
 import assignopediaLogo from "../../assets/logo.PNG";
 import "./EmployeeDashboard.css";
 import { useEmployeeProfileImage } from "./useEmployeeProfileImage";
-import { getCurrentUser, getInitials } from "../../utils/authStorage";
+import { getCurrentEmployeeNotifications, notificationEvent } from "../../utils/requestNotifications";
+import { getInitialsFromProfile, getPortalProfile } from "../../utils/profileStorage";
 
 const sidebarItems = [
   { label: "Dashboard", icon: <FaHome />, page: "employee-dashboard" },
@@ -29,14 +31,45 @@ const sidebarItems = [
 ];
 
 function EmployeePortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
+  const [showNotifications, setShowNotifications] = useState(false);
   const profileImage = useEmployeeProfileImage();
-  const currentUser = getCurrentUser();
-  const employeeName = currentUser.name || "Employee";
-  const employeeInitials = getInitials(employeeName);
+  const [employeeNotifications, setEmployeeNotifications] = useState(getCurrentEmployeeNotifications);
+  const notificationRef = useRef(null);
+  const profile = getPortalProfile("employee");
+  const employeeName = profile.name || "Employee";
+  const employeeInitials = getInitialsFromProfile(profile);
 
   const handleMenuClick = (page) => {
     onNavigate(page);
   };
+
+  useEffect(() => {
+    const refreshNotifications = () => {
+      setEmployeeNotifications(getCurrentEmployeeNotifications());
+    };
+
+    window.addEventListener(notificationEvent, refreshNotifications);
+    window.addEventListener("storage", refreshNotifications);
+    return () => {
+      window.removeEventListener(notificationEvent, refreshNotifications);
+      window.removeEventListener("storage", refreshNotifications);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!showNotifications) {
+      return undefined;
+    }
+
+    const handleOutsideClick = (event) => {
+      if (!notificationRef.current?.contains(event.target)) {
+        setShowNotifications(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [showNotifications]);
 
   return (
     <main className="employee-dashboard">
@@ -76,10 +109,33 @@ function EmployeePortalLayout({ activePage, children, eyebrow, title, onNavigate
               <FaSearch aria-hidden="true" />
               <input type="search" placeholder="Search projects, tasks..." />
             </label>
-            <button className="topbar-icon-btn" type="button" aria-label="Notifications">
-              <FaBell />
-              <span />
-            </button>
+            <div
+              className="employee-notification-wrap"
+              ref={notificationRef}
+            >
+              <button
+                className="topbar-icon-btn"
+                type="button"
+                aria-label="Notifications"
+                aria-expanded={showNotifications}
+                onClick={() => setShowNotifications((current) => !current)}
+              >
+                <FaBell />
+                {employeeNotifications.length > 0 && <span />}
+              </button>
+              {showNotifications && (
+                <div className="employee-notification-panel" role="status">
+                  <strong>Notifications</strong>
+                  {employeeNotifications.length > 0 ? (
+                    employeeNotifications.slice(0, 5).map((notification) => (
+                      <p key={notification.id}>{notification.message}</p>
+                    ))
+                  ) : (
+                    <p>No new notifications.</p>
+                  )}
+                </div>
+              )}
+            </div>
             <button className="topbar-icon-btn" type="button" aria-label="Announcements">
               <FaBullhorn />
             </button>
@@ -89,7 +145,7 @@ function EmployeePortalLayout({ activePage, children, eyebrow, title, onNavigate
               </div>
               <div>
                 <strong>{employeeName}</strong>
-                <small>Technical Content Writer</small>
+                <small>{profile.title}</small>
               </div>
             </div>
           </div>

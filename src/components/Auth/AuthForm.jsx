@@ -135,6 +135,24 @@ const AuthForm = ({
       const account = registerAccount({ ...formData, role });
 
       if (!account) {
+        const existingAccount = loginAccount({ ...formData, role });
+
+        if (existingAccount) {
+          if (role === "employee" && onNavigate) {
+            onNavigate("employee-dashboard");
+          }
+
+          if (role === "hr" && onNavigate) {
+            onNavigate("hr-dashboard");
+          }
+
+          if (role === "admin" && onNavigate) {
+            onNavigate("admin-dashboard");
+          }
+
+          return;
+        }
+
         setAuthError("This email is already registered. Please login instead.");
         return;
       }

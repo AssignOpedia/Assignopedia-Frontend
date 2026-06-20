@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import {
   FaCamera,
   FaEnvelope,
@@ -9,25 +9,52 @@ import {
 } from "react-icons/fa";
 import EmployeePortalLayout from "./EmployeePortalLayout";
 import {
+  moveEmployeeProfileImage,
   saveEmployeeProfileImage,
   useEmployeeProfileImage,
 } from "./useEmployeeProfileImage";
-import { getCurrentUser, getInitials } from "../../utils/authStorage";
+import {
+  getInitialsFromProfile,
+  getPortalProfile,
+  savePortalProfile,
+} from "../../utils/profileStorage";
+import { getCurrentUser } from "../../utils/authStorage";
+
+const maxProfilePhotoSize = 1024 * 1024;
 
 function EmployeeProfile({ activePage, onNavigate }) {
   const fileInputRef = useRef(null);
   const profileImage = useEmployeeProfileImage();
-  const currentUser = getCurrentUser();
-  const employeeName = currentUser.name || "Employee";
-  const employeeEmail = currentUser.email || "employee@assignopedia.com";
-  const employeeInitials = getInitials(employeeName);
+  const [profile, setProfile] = useState(() => getPortalProfile("employee"));
+  const [statusMessage, setStatusMessage] = useState("");
+  const [photoError, setPhotoError] = useState("");
+  const employeeInitials = getInitialsFromProfile(profile);
   const details = [
-    { label: "Employee ID", value: "EMP-240128", icon: <FaIdBadge /> },
-    { label: "Job Code", value: "FE-12", icon: <FaLaptopCode /> },
-    { label: "Official Email", value: employeeEmail, icon: <FaEnvelope /> },
-    { label: "Phone", value: "+91 98765 43210", icon: <FaPhoneAlt /> },
-    { label: "Location", value: "Kolkata, India", icon: <FaMapMarkerAlt /> },
+    { label: "Employee ID", value: profile.employeeId, icon: <FaIdBadge /> },
+    { label: "Job Code", value: profile.jobCode, icon: <FaLaptopCode /> },
+    { label: "Official Email", value: profile.email, icon: <FaEnvelope /> },
+    { label: "Phone", value: profile.phone, icon: <FaPhoneAlt /> },
+    { label: "Location", value: profile.location, icon: <FaMapMarkerAlt /> },
   ];
+
+  const handleProfileChange = (event) => {
+    const { name, value } = event.target;
+
+    setStatusMessage("");
+    setProfile((current) => ({ ...current, [name]: value }));
+  };
+
+  const handleProfileSave = (event) => {
+    event.preventDefault();
+
+    const previousUser = getCurrentUser();
+    const savedProfile = savePortalProfile("employee", profile);
+    const nextUser = getCurrentUser();
+
+    moveEmployeeProfileImage(previousUser, nextUser);
+    setProfile(savedProfile);
+    setStatusMessage("Profile details saved successfully.");
+  };
 
   const openFilePicker = () => {
     fileInputRef.current?.click();
@@ -37,6 +64,14 @@ function EmployeeProfile({ activePage, onNavigate }) {
     const file = event.target.files?.[0];
 
     if (!file) {
+      return;
+    }
+
+    setPhotoError("");
+
+    if (file.size > maxProfilePhotoSize) {
+      setPhotoError("Profile picture must be 1 MB or smaller.");
+      event.target.value = "";
       return;
     }
 
@@ -69,7 +104,7 @@ function EmployeeProfile({ activePage, onNavigate }) {
             onClick={openFilePicker}
             aria-label="Upload profile picture"
           >
-            {profileImage ? <img src={profileImage} alt={employeeName} /> : employeeInitials}
+            {profileImage ? <img src={profileImage} alt={profile.name} /> : employeeInitials}
             <span className="profile-camera-icon" aria-hidden="true">
               <FaCamera />
             </span>
@@ -77,6 +112,7 @@ function EmployeeProfile({ activePage, onNavigate }) {
           <button className="profile-upload-link" type="button" onClick={openFilePicker}>
             Upload Profile Picture
           </button>
+          {photoError && <span className="request-error-text" role="alert">{photoError}</span>}
           <input
             ref={fileInputRef}
             className="profile-file-input"
@@ -86,10 +122,43 @@ function EmployeeProfile({ activePage, onNavigate }) {
           />
         </div>
         <div>
-          <span>Technical Content Writer</span>
-          <h2>{employeeName}</h2>
-          <p>Development Team member focused on technical documentation, frontend content, and delivery quality.</p>
+          <span>{profile.title}</span>
+          <h2>{profile.name}</h2>
+          <p>{profile.summary}</p>
         </div>
+      </section>
+
+      <section className="portal-card">
+        <div className="card-heading">
+          <div>
+            <span>Edit Details</span>
+            <h3>Update Employee Profile</h3>
+          </div>
+        </div>
+        <form className="request-form" onSubmit={handleProfileSave}>
+          <div className="request-form-row">
+            <label><span>Full Name</span><input name="name" value={profile.name} onChange={handleProfileChange} required /></label>
+            <label><span>Official Email</span><input type="email" name="email" value={profile.email} onChange={handleProfileChange} required /></label>
+          </div>
+          <div className="request-form-row">
+            <label><span>Job Title</span><input name="title" value={profile.title} onChange={handleProfileChange} required /></label>
+            <label><span>Employee ID</span><input name="employeeId" value={profile.employeeId} onChange={handleProfileChange} required /></label>
+          </div>
+          <div className="request-form-row">
+            <label><span>Job Code</span><input name="jobCode" value={profile.jobCode} onChange={handleProfileChange} required /></label>
+            <label><span>Phone</span><input name="phone" value={profile.phone} onChange={handleProfileChange} required /></label>
+          </div>
+          <div className="request-form-row">
+            <label><span>Location</span><input name="location" value={profile.location} onChange={handleProfileChange} required /></label>
+            <label><span>Availability</span><input name="availability" value={profile.availability} onChange={handleProfileChange} required /></label>
+          </div>
+          <label>
+            <span>Professional Summary</span>
+            <textarea name="summary" rows="4" value={profile.summary} onChange={handleProfileChange} required />
+          </label>
+          {statusMessage && <p className="request-success" role="status">{statusMessage}</p>}
+          <button className="request-submit-btn" type="submit">Save Profile Details</button>
+        </form>
       </section>
 
       <section className="portal-insight-grid">
@@ -113,7 +182,7 @@ function EmployeeProfile({ activePage, onNavigate }) {
               <h3>Professional Summary</h3>
             </div>
           </div>
-          <p className="portal-copy">Experienced technical content writer supporting Assignopedia with structured project writeups, user-focused documentation, and quality-first delivery.</p>
+          <p className="portal-copy">{profile.summary}</p>
         </article>
 
         <article className="portal-card">
@@ -123,7 +192,7 @@ function EmployeeProfile({ activePage, onNavigate }) {
               <h3>Current Availability</h3>
             </div>
           </div>
-          <div className="status-pill">Available for assigned work</div>
+          <div className="status-pill">{profile.availability}</div>
         </article>
       </section>
     </EmployeePortalLayout>

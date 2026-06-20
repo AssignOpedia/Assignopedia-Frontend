@@ -24,7 +24,7 @@ export const registerAccount = ({ name, email, password, role }) => {
   const normalizedEmail = email.trim().toLowerCase();
   const accounts = readAccounts();
   const emailAlreadyRegistered = accounts.some(
-    (account) => account.email === normalizedEmail
+    (account) => account.email === normalizedEmail && account.role === role
   );
 
   if (emailAlreadyRegistered) {
@@ -87,6 +87,34 @@ export const updateAccountPassword = ({ email, password }) => {
 
   saveAccounts(accounts);
   return accounts[accountIndex];
+};
+
+export const updateCurrentUserProfile = ({ name, email }) => {
+  const currentUser = getCurrentUser();
+  const normalizedEmail = email.trim().toLowerCase();
+  const accounts = readAccounts();
+  const accountIndex = accounts.findIndex(
+    (account) =>
+      account.email === currentUser.email && account.role === currentUser.role
+  );
+
+  if (accountIndex >= 0) {
+    accounts[accountIndex] = {
+      ...accounts[accountIndex],
+      name: name.trim(),
+      email: normalizedEmail,
+    };
+    saveAccounts(accounts);
+  }
+
+  const updatedUser = {
+    ...currentUser,
+    name: name.trim(),
+    email: normalizedEmail,
+  };
+
+  setCurrentUser(updatedUser);
+  return updatedUser;
 };
 
 export const getCurrentUser = () => {

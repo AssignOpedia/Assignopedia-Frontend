@@ -1,7 +1,26 @@
+import { useState } from "react";
 import { FaBell, FaLock, FaSave, FaShieldAlt, FaUserCog } from "react-icons/fa";
+import { getPortalProfile, savePortalProfile } from "../../utils/profileStorage";
 import AdminPortalLayout from "./AdminPortalLayout";
 
 function AdminSettings({ activePage, onNavigate }) {
+  const [profile, setProfile] = useState(() => getPortalProfile("admin"));
+  const [statusMessage, setStatusMessage] = useState("");
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+
+    setStatusMessage("");
+    setProfile((current) => ({ ...current, [name]: value }));
+  };
+
+  const handleSave = (event) => {
+    event.preventDefault();
+
+    setProfile(savePortalProfile("admin", profile));
+    setStatusMessage("Admin profile details saved successfully.");
+  };
+
   return (
     <AdminPortalLayout
       activePage={activePage}
@@ -9,7 +28,7 @@ function AdminSettings({ activePage, onNavigate }) {
       title="Settings"
       description="Manage administrator profile preferences, notifications, and access control defaults."
       onNavigate={onNavigate}
-      action={<button type="button"><FaSave /> Save Changes</button>}
+      action={<button type="submit" form="admin-profile-form"><FaSave /> Save Changes</button>}
     >
       <section className="admin-content-grid">
         <article className="admin-panel settings-profile">
@@ -17,11 +36,16 @@ function AdminSettings({ activePage, onNavigate }) {
             <div><span>Profile</span><h2>Admin Profile Settings</h2></div>
             <FaUserCog />
           </div>
-          <div className="settings-form">
-            <label><span>Display Name</span><input value="Raj Da" readOnly /></label>
-            <label><span>Email</span><input value="raj.admin@assignopedia.com" readOnly /></label>
-            <label><span>Role</span><input value="Administrator" readOnly /></label>
-          </div>
+          <form className="settings-form" id="admin-profile-form" onSubmit={handleSave}>
+            <label><span>Display Name</span><input name="name" value={profile.name} onChange={handleChange} required /></label>
+            <label><span>Email</span><input type="email" name="email" value={profile.email} onChange={handleChange} required /></label>
+            <label><span>Role</span><input name="title" value={profile.title} onChange={handleChange} required /></label>
+            <label><span>Department</span><input name="department" value={profile.department} onChange={handleChange} required /></label>
+            <label><span>Phone</span><input name="phone" value={profile.phone} onChange={handleChange} required /></label>
+            <label><span>Location</span><input name="location" value={profile.location} onChange={handleChange} required /></label>
+            {statusMessage && <p className="request-success" role="status">{statusMessage}</p>}
+            <button type="submit"><FaSave /> Save Profile</button>
+          </form>
         </article>
 
         <article className="admin-panel settings-card">

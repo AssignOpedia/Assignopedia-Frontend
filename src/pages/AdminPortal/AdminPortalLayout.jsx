@@ -16,6 +16,7 @@ import {
 } from "react-icons/fa";
 import "./AdminDashboard.css";
 import { getPasswordResetRequests } from "../../utils/passwordResetRequests";
+import { getInitialsFromProfile, getPortalProfile } from "../../utils/profileStorage";
 
 const sidebarItems = [
   { label: "Dashboard", icon: <FaHome />, page: "admin-dashboard" },
@@ -30,6 +31,7 @@ const sidebarItems = [
 function AdminPortalLayout({ activePage, children, title, eyebrow, description, action, onNavigate }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const passwordResetRequests = getPasswordResetRequests();
+  const profile = getPortalProfile("admin");
 
   const handleLogout = () => {
     localStorage.removeItem("adminSession");
@@ -120,10 +122,10 @@ function AdminPortalLayout({ activePage, children, title, eyebrow, description, 
             </div>
 
             <div className="admin-profile">
-              <div>RD</div>
+              <div>{getInitialsFromProfile(profile)}</div>
               <span>
-                <strong>Raj Da</strong>
-                <small>Administrator</small>
+                <strong>{profile.name}</strong>
+                <small>{profile.title}</small>
               </span>
             </div>
 

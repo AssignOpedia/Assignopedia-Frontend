@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { FaCalendarCheck, FaHome, FaPlaneDeparture } from "react-icons/fa";
+import { getCurrentUser } from "../../utils/authStorage";
+import { saveEmployeeWfhRequest } from "../../utils/employeeDashboardMetrics";
+import { addHrRequestNotification, formatNotificationDate } from "../../utils/requestNotifications";
 import EmployeePortalLayout from "./EmployeePortalLayout";
 
 const leaveItems = [
@@ -85,14 +88,19 @@ function EmployeeLeaveWFH({ activePage, onNavigate }) {
 
   const handleLeaveSubmit = (event) => {
     event.preventDefault();
+    const currentUser = getCurrentUser();
+    const requestDate = formatNotificationDate();
     const leaveRequest = {
-      name: "Sandipan Mondal",
+      id: `leave-${Date.now()}`,
+      name: currentUser.name,
+      email: currentUser.email,
       type: leaveForm.type,
       dates: `${leaveForm.fromDate} - ${leaveForm.toDate}`,
       days: getLeaveDays(leaveForm.fromDate, leaveForm.toDate),
       status: "Pending",
       reason: leaveForm.reason,
       pdfFileName: leaveForm.pdfFileName,
+      requestDate,
     };
     const savedRequests = JSON.parse(localStorage.getItem(hrLeaveRequestStorageKey) || "[]");
 
@@ -100,6 +108,12 @@ function EmployeeLeaveWFH({ activePage, onNavigate }) {
       hrLeaveRequestStorageKey,
       JSON.stringify([leaveRequest, ...savedRequests])
     );
+    addHrRequestNotification({
+      type: "Leave",
+      employeeName: currentUser.name,
+      requestDate,
+      detail: `${leaveForm.type} for ${leaveRequest.dates}`,
+    });
     setRequests((current) => [
       {
         title: leaveForm.type,
@@ -114,6 +128,24 @@ function EmployeeLeaveWFH({ activePage, onNavigate }) {
 
   const handleWfhSubmit = (event) => {
     event.preventDefault();
+    const currentUser = getCurrentUser();
+    const requestDate = formatNotificationDate();
+    saveEmployeeWfhRequest({
+      id: `wfh-${Date.now()}`,
+      name: currentUser.name,
+      email: currentUser.email,
+      date: wfhForm.date,
+      task: wfhForm.project,
+      reason: wfhForm.reason,
+      status: "Pending",
+      requestDate,
+    });
+    addHrRequestNotification({
+      type: "WFH",
+      employeeName: currentUser.name,
+      requestDate,
+      detail: `${wfhForm.project} on ${wfhForm.date}`,
+    });
     setRequests((current) => [
       {
         title: "WFH Request",

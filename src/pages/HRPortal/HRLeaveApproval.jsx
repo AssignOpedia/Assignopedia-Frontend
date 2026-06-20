@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { FaCalendarCheck } from "react-icons/fa";
+import { addEmployeeDecisionNotification, formatNotificationDate } from "../../utils/requestNotifications";
 import HRPortalLayout from "./HRPortalLayout";
 
 const leaveRequests = [
@@ -42,9 +43,45 @@ const getStoredLeaveRequests = () => {
   }
 };
 
+const getRequestKey = (request) =>
+  request.id || `${request.email || request.name}-${request.type}-${request.dates}-${request.reason}`;
+
 function HRLeaveApproval({ activePage, onNavigate }) {
   const [selectedRequest, setSelectedRequest] = useState(null);
-  const [allLeaveRequests] = useState(() => [...getStoredLeaveRequests(), ...leaveRequests]);
+  const [allLeaveRequests, setAllLeaveRequests] = useState(() => [...getStoredLeaveRequests(), ...leaveRequests]);
+
+  const updateStoredLeaveStatus = (request, status) => {
+    const requestKey = getRequestKey(request);
+    const decisionDate = formatNotificationDate();
+    const storedRequests = getStoredLeaveRequests();
+    const updatedStoredRequests = storedRequests.map((storedRequest) =>
+      getRequestKey(storedRequest) === requestKey
+        ? { ...storedRequest, status, decisionDate }
+        : storedRequest
+    );
+
+    localStorage.setItem(hrLeaveRequestStorageKey, JSON.stringify(updatedStoredRequests));
+    setAllLeaveRequests((current) =>
+      current.map((currentRequest) =>
+        getRequestKey(currentRequest) === requestKey
+          ? { ...currentRequest, status, decisionDate }
+          : currentRequest
+      )
+    );
+    setSelectedRequest((current) =>
+      current && getRequestKey(current) === requestKey ? { ...current, status, decisionDate } : current
+    );
+
+    if (request.email) {
+      addEmployeeDecisionNotification({
+        type: "Leave",
+        employeeEmail: request.email,
+        status,
+        decisionDate,
+        detail: `${request.type} for ${request.dates}`,
+      });
+    }
+  };
 
   return (
     <HRPortalLayout activePage={activePage} eyebrow="Leave Approval" title="Leave Approval" onNavigate={onNavigate}>
@@ -62,12 +99,12 @@ function HRLeaveApproval({ activePage, onNavigate }) {
               {allLeaveRequests.map((request, index) => (
                 <tr key={`${request.name}-${request.dates}-${index}`}>
                   <td>{request.name}</td><td>{request.type}</td><td>{request.dates}</td><td>{request.days}</td>
-                  <td><span className="hr-status pending">{request.status}</span></td>
+                  <td><span className={`hr-status ${request.status.toLowerCase()}`}>{request.status}</span></td>
                   <td>
                     <div className="hr-action-pair">
                       <button className="outline" type="button" onClick={() => setSelectedRequest(request)}>View</button>
-                      <button type="button">Approve</button>
-                      <button className="danger" type="button">Reject</button>
+                      <button type="button" onClick={() => updateStoredLeaveStatus(request, "Approved")}>Approve</button>
+                      <button className="danger" type="button" onClick={() => updateStoredLeaveStatus(request, "Rejected")}>Reject</button>
                     </div>
                   </td>
                 </tr>

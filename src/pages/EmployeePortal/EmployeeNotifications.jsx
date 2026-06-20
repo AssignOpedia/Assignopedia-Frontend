@@ -1,4 +1,5 @@
 import { FaBell, FaBullhorn } from "react-icons/fa";
+import { getCurrentEmployeeNotifications } from "../../utils/requestNotifications";
 import EmployeePortalLayout from "./EmployeePortalLayout";
 
 const notifications = [
@@ -9,13 +10,19 @@ const notifications = [
 ];
 
 function EmployeeNotifications({ activePage, onNavigate }) {
+  const employeeNotifications = getCurrentEmployeeNotifications();
+  const allNotifications = [
+    ...employeeNotifications.map((notification) => notification.message),
+    ...notifications,
+  ];
+
   return (
     <EmployeePortalLayout activePage={activePage} eyebrow="Notifications" title="Notifications Center" onNavigate={onNavigate}>
       <section className="dashboard-grid">
         <article className="portal-card">
           <div className="card-heading"><div><span>Inbox</span><h3>Latest Notifications</h3></div><FaBell /></div>
           <div className="announcement-list">
-            {notifications.map((item) => <p key={item}>{item}</p>)}
+            {allNotifications.map((item) => <p key={item}>{item}</p>)}
           </div>
         </article>
         <article className="portal-card">

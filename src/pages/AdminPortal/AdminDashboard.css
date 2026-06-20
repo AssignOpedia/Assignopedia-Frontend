@@ -925,6 +925,32 @@
   font: inherit;
 }
 
+.settings-form button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #fff;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.settings-form .request-success {
+  margin: 0;
+  padding: 12px 14px;
+  color: #0f5132;
+  background: #dff7e9;
+  border: 1px solid rgba(15, 81, 50, 0.12);
+  border-radius: 8px;
+  font-weight: 800;
+}
+
 .toggle {
   position: relative;
   width: 46px;
