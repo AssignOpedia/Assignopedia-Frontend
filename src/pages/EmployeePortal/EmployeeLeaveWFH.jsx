@@ -46,6 +46,7 @@ function EmployeeLeaveWFH({ activePage, onNavigate }) {
     toDate: "",
     reason: "",
     pdfFileName: "",
+    pdfData: "",
   });
   const [wfhForm, setWfhForm] = useState({
     date: "",
@@ -77,13 +78,23 @@ function EmployeeLeaveWFH({ activePage, onNavigate }) {
 
     if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
       setPdfError("Only PDF files are allowed.");
-      setLeaveForm((current) => ({ ...current, pdfFileName: "" }));
+      setLeaveForm((current) => ({ ...current, pdfFileName: "", pdfData: "" }));
       event.target.value = "";
       return;
     }
 
-    setPdfError("");
-    setLeaveForm((current) => ({ ...current, pdfFileName: file.name }));
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      setPdfError("");
+      setLeaveForm((current) => ({
+        ...current,
+        pdfFileName: file.name,
+        pdfData: typeof reader.result === "string" ? reader.result : "",
+      }));
+    };
+
+    reader.readAsDataURL(file);
   };
 
   const handleLeaveSubmit = (event) => {
@@ -100,6 +111,7 @@ function EmployeeLeaveWFH({ activePage, onNavigate }) {
       status: "Pending",
       reason: leaveForm.reason,
       pdfFileName: leaveForm.pdfFileName,
+      pdfData: leaveForm.pdfData,
       requestDate,
     };
     const savedRequests = JSON.parse(localStorage.getItem(hrLeaveRequestStorageKey) || "[]");
@@ -108,6 +120,7 @@ function EmployeeLeaveWFH({ activePage, onNavigate }) {
       hrLeaveRequestStorageKey,
       JSON.stringify([leaveRequest, ...savedRequests])
     );
+    window.dispatchEvent(new CustomEvent("hr-leave-request-updated"));
     addHrRequestNotification({
       type: "Leave",
       employeeName: currentUser.name,
@@ -121,7 +134,7 @@ function EmployeeLeaveWFH({ activePage, onNavigate }) {
       },
       ...current,
     ]);
-    setLeaveForm({ type: "Casual Leave", fromDate: "", toDate: "", reason: "", pdfFileName: "" });
+    setLeaveForm({ type: "Casual Leave", fromDate: "", toDate: "", reason: "", pdfFileName: "", pdfData: "" });
     setSuccessMessage("Leave request submitted successfully.");
     closeModal();
   };

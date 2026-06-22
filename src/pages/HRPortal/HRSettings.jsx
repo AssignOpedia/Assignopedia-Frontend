@@ -6,6 +6,25 @@ import HRPortalLayout from "./HRPortalLayout";
 function HRSettings({ activePage, onNavigate }) {
   const [profile, setProfile] = useState(() => getPortalProfile("hr"));
   const [statusMessage, setStatusMessage] = useState("");
+  const [settings, setSettings] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("assignopediaHrSettings")) || {
+        passwordApproval: true,
+        adminResetNotify: true,
+        leaveAlerts: true,
+        wfhAlerts: true,
+        attendanceDigest: "Daily",
+      };
+    } catch {
+      return {
+        passwordApproval: true,
+        adminResetNotify: true,
+        leaveAlerts: true,
+        wfhAlerts: true,
+        attendanceDigest: "Daily",
+      };
+    }
+  });
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -19,6 +38,22 @@ function HRSettings({ activePage, onNavigate }) {
 
     setProfile(savePortalProfile("hr", profile));
     setStatusMessage("HR profile details saved successfully.");
+  };
+
+  const saveSettings = (nextSettings) => {
+    setSettings(nextSettings);
+    localStorage.setItem("assignopediaHrSettings", JSON.stringify(nextSettings));
+  };
+
+  const toggleSetting = (key) => {
+    saveSettings({ ...settings, [key]: !settings[key] });
+  };
+
+  const toggleDigest = () => {
+    saveSettings({
+      ...settings,
+      attendanceDigest: settings.attendanceDigest === "Daily" ? "Weekly" : "Daily",
+    });
   };
 
   return (
@@ -39,11 +74,18 @@ function HRSettings({ activePage, onNavigate }) {
         </article>
         <article className="hr-panel">
           <div className="hr-panel-heading"><div><span>Security</span><h2>Password Approval Settings</h2></div><FaLock /></div>
-          <div className="hr-toggle-list"><p><strong>Require HR approval for password reset</strong><span>Enabled</span></p><p><strong>Notify admin on reset request</strong><span>Enabled</span></p></div>
+          <div className="hr-toggle-list">
+            <button type="button" onClick={() => toggleSetting("passwordApproval")}><strong>Require HR approval for password reset</strong><span>{settings.passwordApproval ? "Enabled" : "Disabled"}</span></button>
+            <button type="button" onClick={() => toggleSetting("adminResetNotify")}><strong>Notify admin on reset request</strong><span>{settings.adminResetNotify ? "Enabled" : "Disabled"}</span></button>
+          </div>
         </article>
         <article className="hr-panel">
           <div className="hr-panel-heading"><div><span>Alerts</span><h2>Notification Settings</h2></div><FaBell /></div>
-          <div className="hr-toggle-list"><p><strong>Leave approval alerts</strong><span>On</span></p><p><strong>WFH request alerts</strong><span>On</span></p><p><strong>Attendance digest</strong><span>Daily</span></p></div>
+          <div className="hr-toggle-list">
+            <button type="button" onClick={() => toggleSetting("leaveAlerts")}><strong>Leave approval alerts</strong><span>{settings.leaveAlerts ? "On" : "Off"}</span></button>
+            <button type="button" onClick={() => toggleSetting("wfhAlerts")}><strong>WFH request alerts</strong><span>{settings.wfhAlerts ? "On" : "Off"}</span></button>
+            <button type="button" onClick={toggleDigest}><strong>Attendance digest</strong><span>{settings.attendanceDigest}</span></button>
+          </div>
         </article>
       </section>
     </HRPortalLayout>

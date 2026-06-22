@@ -6,12 +6,15 @@ import {
   getAttendanceStatusFromLogin,
   getTodayKey,
 } from "../../utils/attendanceStorage";
+import { itemMatchesSearch, useHrSearchQuery } from "../../utils/hrSearch";
 import HRPortalLayout from "./HRPortalLayout";
 
 function HRAttendanceChecking({ activePage, onNavigate }) {
   const [rows, setRows] = useState(() =>
     getAttendanceRecords().filter((record) => record.date === getTodayKey())
   );
+  const searchQuery = useHrSearchQuery();
+  const filteredRows = rows.filter((row) => itemMatchesSearch(row, searchQuery));
 
   useEffect(() => {
     const refreshRows = () => {
@@ -34,7 +37,7 @@ function HRAttendanceChecking({ activePage, onNavigate }) {
           <table className="hr-table">
             <thead><tr><th>Employee</th><th>Email</th><th>Login</th><th>Logout</th><th>Status</th></tr></thead>
             <tbody>
-              {rows.length > 0 ? rows.map((row) => {
+              {filteredRows.length > 0 ? filteredRows.map((row) => {
                 const status = getAttendanceStatusFromLogin(row.loginTime);
 
                 return (
@@ -45,7 +48,11 @@ function HRAttendanceChecking({ activePage, onNavigate }) {
                 );
               }) : (
                 <tr>
-                  <td colSpan="5">No employee attendance has been recorded today.</td>
+                  <td colSpan="5">
+                    {rows.length === 0
+                      ? "No employee attendance has been recorded today."
+                      : "No attendance records match the current search."}
+                  </td>
                 </tr>
               )}
             </tbody>

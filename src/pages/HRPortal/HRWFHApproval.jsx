@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FaLaptopHouse } from "react-icons/fa";
 import { addEmployeeDecisionNotification, formatNotificationDate } from "../../utils/requestNotifications";
+import { itemMatchesSearch, useHrSearchQuery } from "../../utils/hrSearch";
 import HRPortalLayout from "./HRPortalLayout";
 
 const requests = [
@@ -24,6 +25,8 @@ const getRequestKey = (request) =>
 
 function HRWFHApproval({ activePage, onNavigate }) {
   const [allRequests, setAllRequests] = useState(() => [...getStoredWfhRequests(), ...requests]);
+  const searchQuery = useHrSearchQuery();
+  const filteredRequests = allRequests.filter((request) => itemMatchesSearch(request, searchQuery));
 
   const updateWfhStatus = (request, status) => {
     const requestKey = getRequestKey(request);
@@ -36,6 +39,7 @@ function HRWFHApproval({ activePage, onNavigate }) {
     );
 
     localStorage.setItem(wfhRequestStorageKey, JSON.stringify(updatedStoredRequests));
+    window.dispatchEvent(new CustomEvent("employee-wfh-request-updated"));
     setAllRequests((current) =>
       current.map((currentRequest) =>
         getRequestKey(currentRequest) === requestKey
@@ -58,7 +62,7 @@ function HRWFHApproval({ activePage, onNavigate }) {
   return (
     <HRPortalLayout activePage={activePage} eyebrow="WFH Approval" title="WFH Approval" onNavigate={onNavigate}>
       <section className="hr-page-card-grid">
-        {allRequests.map((request, index) => (
+        {filteredRequests.length > 0 ? filteredRequests.map((request, index) => (
           <article className="hr-panel hr-request-card" key={`${request.name}-${request.date}-${index}`}>
             <div className="hr-panel-heading"><div><span>{request.date}</span><h2>{request.name}</h2></div><FaLaptopHouse /></div>
             <p><strong>Project / Task:</strong> {request.task}</p>
@@ -71,7 +75,9 @@ function HRWFHApproval({ activePage, onNavigate }) {
               <button className="danger" type="button" onClick={() => updateWfhStatus(request, "Rejected")}>Reject</button>
             </div>
           </article>
-        ))}
+        )) : (
+          <article className="hr-panel"><p className="hr-empty-state">No WFH requests match the current search.</p></article>
+        )}
       </section>
     </HRPortalLayout>
   );

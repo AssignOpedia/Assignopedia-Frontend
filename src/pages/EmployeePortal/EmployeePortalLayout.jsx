@@ -121,7 +121,9 @@ function EmployeePortalLayout({ activePage, children, eyebrow, title, onNavigate
                 onClick={() => setShowNotifications((current) => !current)}
               >
                 <FaBell />
-                {employeeNotifications.length > 0 && <span />}
+                {employeeNotifications.length > 0 && (
+                  <span className="portal-notification-count">{employeeNotifications.length}</span>
+                )}
               </button>
               {showNotifications && (
                 <div className="employee-notification-panel" role="status">

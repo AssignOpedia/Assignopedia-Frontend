@@ -179,15 +179,22 @@
   box-shadow:0 18px 38px rgba(11,34,85,.13);
 }
 
-.topbar-icon-btn span{
+.topbar-icon-btn .portal-notification-count{
   position:absolute;
-  top:12px;
-  right:12px;
-  width:8px;
-  height:8px;
+  top:7px;
+  right:7px;
+  min-width:18px;
+  height:18px;
+  padding:0 5px;
+  display:grid;
+  place-items:center;
   background:var(--portal-yellow);
+  color:var(--portal-navy);
   border:2px solid #fff;
   border-radius:999px;
+  font-size:.68rem;
+  font-weight:800;
+  line-height:1;
 }
 
 .employee-notification-wrap{

@@ -21,6 +21,9 @@ function Careers() {
     cvFileName,
     cvError,
     handleCvChange,
+    handleSubmit,
+    successMessage,
+    isSubmitting,
   } = useCareerApplication();
 
   const positions = [
@@ -54,9 +57,7 @@ function Careers() {
                 {positions.map(({ name, icon: PositionIcon }) => (
                   <button
                     type="button"
-                    className={`careers-position-card${
-                      selectedPosition === name ? " is-selected" : ""
-                    }`}
+                    className={`careers-position-card${selectedPosition === name ? " is-selected" : ""}`}
                     onClick={() => setSelectedPosition(name)}
                     aria-pressed={selectedPosition === name}
                     key={name}
@@ -71,7 +72,7 @@ function Careers() {
 
           <div className="careers-modern-divider" aria-hidden="true" />
 
-          <form className="careers-modern-form">
+          <form className="careers-modern-form" onSubmit={handleSubmit}>
             <div className="careers-modern-form-title">
               <span>
                 <FaFileSignature aria-hidden="true" />
@@ -79,41 +80,29 @@ function Careers() {
               <h3>Application Form</h3>
             </div>
 
+            {successMessage && (
+              <p className="careers-application-success" role="status">
+                {successMessage}
+              </p>
+            )}
+
             <div className="careers-modern-grid">
               <label className="careers-modern-field">
                 <span className="sr-only">Full Name</span>
                 <FaUser aria-hidden="true" />
-                <input
-                  type="text"
-                  name="fullName"
-                  placeholder="Full Name"
-                  autoComplete="name"
-                  required
-                />
+                <input type="text" name="fullName" placeholder="Full Name" autoComplete="name" required />
               </label>
 
               <label className="careers-modern-field">
                 <span className="sr-only">Email Address</span>
                 <FaEnvelope aria-hidden="true" />
-                <input
-                  type="email"
-                  name="email"
-                  placeholder="Email Address"
-                  autoComplete="email"
-                  required
-                />
+                <input type="email" name="email" placeholder="Email Address" autoComplete="email" required />
               </label>
 
               <label className="careers-modern-field">
                 <span className="sr-only">Phone Number</span>
                 <FaPhoneAlt aria-hidden="true" />
-                <input
-                  type="tel"
-                  name="phone"
-                  placeholder="Phone Number"
-                  autoComplete="tel"
-                  required
-                />
+                <input type="tel" name="phone" placeholder="Phone Number" autoComplete="tel" required />
               </label>
 
               <label className="careers-modern-field">
@@ -165,15 +154,11 @@ function Careers() {
             <label className="careers-modern-field careers-modern-message">
               <span className="sr-only">Tell us about yourself</span>
               <FaAlignLeft aria-hidden="true" />
-              <textarea
-                name="about"
-                placeholder="Tell us about yourself..."
-                required
-              />
+              <textarea name="about" placeholder="Tell us about yourself..." required />
             </label>
 
-            <button type="submit" className="careers-modern-submit">
-              Submit Application
+            <button type="submit" className="careers-modern-submit" disabled={isSubmitting}>
+              {isSubmitting ? "Submitting..." : "Submit Application"}
             </button>
           </form>
         </div>

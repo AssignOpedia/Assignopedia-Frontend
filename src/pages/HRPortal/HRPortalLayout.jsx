@@ -13,9 +13,10 @@ import {
   FaSignOutAlt,
 } from "react-icons/fa";
 import "./HRDashboard.css";
-import { getPasswordResetRequests } from "../../utils/passwordResetRequests";
+import { getPasswordResetRequests, passwordResetRequestEvent } from "../../utils/passwordResetRequests";
 import { getInitialsFromProfile, getPortalProfile } from "../../utils/profileStorage";
 import { getHrRequestNotifications, notificationEvent } from "../../utils/requestNotifications";
+import { getHrSearchQuery, setHrSearchQuery } from "../../utils/hrSearch";
 
 const sidebarItems = [
   { label: "Dashboard", icon: <FaHome />, page: "hr-dashboard" },
@@ -32,20 +33,25 @@ const sidebarItems = [
 function HRPortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [requestNotifications, setRequestNotifications] = useState(getHrRequestNotifications);
+  const [passwordResetRequests, setPasswordResetRequests] = useState(getPasswordResetRequests);
+  const [searchQuery, setSearchQuery] = useState(getHrSearchQuery);
   const notificationRef = useRef(null);
-  const passwordResetRequests = getPasswordResetRequests();
-  const hasNotifications = passwordResetRequests.length > 0 || requestNotifications.length > 0;
+  const notificationCount = passwordResetRequests.length + requestNotifications.length;
+  const hasNotifications = notificationCount > 0;
   const profile = getPortalProfile("hr");
 
   useEffect(() => {
     const refreshNotifications = () => {
       setRequestNotifications(getHrRequestNotifications());
+      setPasswordResetRequests(getPasswordResetRequests());
     };
 
     window.addEventListener(notificationEvent, refreshNotifications);
+    window.addEventListener(passwordResetRequestEvent, refreshNotifications);
     window.addEventListener("storage", refreshNotifications);
     return () => {
       window.removeEventListener(notificationEvent, refreshNotifications);
+      window.removeEventListener(passwordResetRequestEvent, refreshNotifications);
       window.removeEventListener("storage", refreshNotifications);
     };
   }, []);
@@ -82,6 +88,13 @@ function HRPortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
     }
 
     onNavigate("hr-leave-approval");
+  };
+
+  const handleSearchChange = (event) => {
+    const nextQuery = event.target.value;
+
+    setSearchQuery(nextQuery);
+    setHrSearchQuery(nextQuery);
   };
 
   return (
@@ -125,7 +138,12 @@ function HRPortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
           <div className="hr-topbar-actions">
             <label className="hr-search">
               <FaSearch aria-hidden="true" />
-              <input type="search" placeholder="Search employees, requests..." />
+              <input
+                type="search"
+                placeholder="Search this HR section..."
+                value={searchQuery}
+                onChange={handleSearchChange}
+              />
             </label>
             <div
               className="hr-notification-wrap"
@@ -139,7 +157,9 @@ function HRPortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
                 onClick={() => setShowNotifications((current) => !current)}
               >
                 <FaBell />
-                {hasNotifications && <i />}
+                {hasNotifications && (
+                  <span className="hr-notification-count">{notificationCount}</span>
+                )}
               </button>
 
               {showNotifications && (

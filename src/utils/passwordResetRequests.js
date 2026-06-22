@@ -1,4 +1,5 @@
 const passwordResetRequestsKey = "assignopediaPasswordResetRequests";
+const passwordResetRequestEvent = "assignopedia-password-reset-request-updated";
 
 export const getPasswordResetRequests = () => {
   try {
@@ -21,5 +22,8 @@ export const addPasswordResetRequest = ({ name, email, role, otp }) => {
   const requests = [request, ...getPasswordResetRequests()];
 
   localStorage.setItem(passwordResetRequestsKey, JSON.stringify(requests));
+  window.dispatchEvent(new CustomEvent(passwordResetRequestEvent));
   return request;
 };
+
+export { passwordResetRequestEvent };

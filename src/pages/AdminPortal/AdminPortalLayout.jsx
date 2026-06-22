@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   FaBell,
   FaBolt,
@@ -15,7 +15,7 @@ import {
   FaWallet,
 } from "react-icons/fa";
 import "./AdminDashboard.css";
-import { getPasswordResetRequests } from "../../utils/passwordResetRequests";
+import { getPasswordResetRequests, passwordResetRequestEvent } from "../../utils/passwordResetRequests";
 import { getInitialsFromProfile, getPortalProfile } from "../../utils/profileStorage";
 
 const sidebarItems = [
@@ -30,8 +30,37 @@ const sidebarItems = [
 
 function AdminPortalLayout({ activePage, children, title, eyebrow, description, action, onNavigate }) {
   const [showNotifications, setShowNotifications] = useState(false);
-  const passwordResetRequests = getPasswordResetRequests();
+  const [passwordResetRequests, setPasswordResetRequests] = useState(getPasswordResetRequests);
+  const notificationRef = useRef(null);
   const profile = getPortalProfile("admin");
+
+  useEffect(() => {
+    const refreshNotifications = () => {
+      setPasswordResetRequests(getPasswordResetRequests());
+    };
+
+    window.addEventListener(passwordResetRequestEvent, refreshNotifications);
+    window.addEventListener("storage", refreshNotifications);
+    return () => {
+      window.removeEventListener(passwordResetRequestEvent, refreshNotifications);
+      window.removeEventListener("storage", refreshNotifications);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!showNotifications) {
+      return undefined;
+    }
+
+    const handleOutsideClick = (event) => {
+      if (!notificationRef.current?.contains(event.target)) {
+        setShowNotifications(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [showNotifications]);
 
   const handleLogout = () => {
     localStorage.removeItem("adminSession");
@@ -92,7 +121,7 @@ function AdminPortalLayout({ activePage, children, title, eyebrow, description, 
           </label>
 
           <div className="admin-topbar-actions">
-            <div className="admin-notification-wrap">
+            <div className="admin-notification-wrap" ref={notificationRef}>
               <button
                 className="admin-icon-button"
                 type="button"
@@ -101,7 +130,9 @@ function AdminPortalLayout({ activePage, children, title, eyebrow, description, 
                 onClick={() => setShowNotifications((current) => !current)}
               >
                 <FaBell />
-                {passwordResetRequests.length > 0 && <i />}
+                {passwordResetRequests.length > 0 && (
+                  <span className="admin-notification-count">{passwordResetRequests.length}</span>
+                )}
               </button>
 
               {showNotifications && (

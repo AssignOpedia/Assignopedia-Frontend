@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   FaBell,
   FaBuilding,
@@ -11,51 +12,183 @@ import {
   FaRegCalendarAlt,
   FaUsers,
   FaUserTie,
+  FaEdit,
+  FaSave,
+  FaTimes,
 } from "react-icons/fa";
 import HRPortalLayout from "./HRPortalLayout";
 import { getPasswordResetRequests } from "../../utils/passwordResetRequests";
+import { getSavedTotalEmployees, setTotalEmployees } from "../../utils/organizationStorage";
+import { getNotices, getNoticeEvent } from "../../utils/noticeStorage";
+import { attendanceEvent, getAttendanceRecords, getAttendanceStatusFromLogin, getTodayKey } from "../../utils/attendanceStorage";
+import { getCVEvent, getStoredCVs } from "../../utils/cvStorage";
 
-const summaryCards = [
-  { label: "Total Employees", value: "126", note: "Active workforce", icon: <FaUsers /> },
-  { label: "Leave Requests", value: "18", note: "7 pending", icon: <FaCalendarCheck /> },
-  { label: "WFH Requests", value: "09", note: "4 awaiting review", icon: <FaLaptopHouse /> },
-  { label: "Attendance Today", value: "92%", note: "116 present", icon: <FaClipboardList /> },
-  { label: "Notices", value: "05", note: "This week", icon: <FaBell /> },
-];
+const leaveRequestStorageKey = "hrLeaveRequests";
+const wfhRequestStorageKey = "employeeWfhRequests";
 
-const leaveTypes = [
-  { label: "Annual Leave", value: 42, color: "#2563eb" },
-  { label: "Personal Leave", value: 24, color: "#60a5fa" },
-  { label: "Medical Leave", value: 21, color: "#f4a300" },
-  { label: "Other Leave", value: 13, color: "#94a3b8" },
-];
+const readStoredList = (key) => {
+  try {
+    return JSON.parse(localStorage.getItem(key) || "[]");
+  } catch {
+    return [];
+  }
+};
 
-const notices = [
-  "Updated holiday calendar is available for review.",
-  "June payroll inputs close on Friday at 5 PM.",
-  "WFH approval SLA revised to one working day.",
-  "Quarterly engagement survey opens next week.",
-];
+const getDashboardSnapshot = () => {
+  const totalEmployees = getSavedTotalEmployees();
+  const notices = getNotices();
+  const todayAttendance = getAttendanceRecords().filter((record) => record.date === getTodayKey());
+  const leaveRequests = readStoredList(leaveRequestStorageKey);
+  const wfhRequests = readStoredList(wfhRequestStorageKey);
+  const presentCount = todayAttendance.filter((record) => record.loginTime).length;
+  const lateCount = todayAttendance.filter((record) => getAttendanceStatusFromLogin(record.loginTime) === "Late").length;
+  const absentCount = Math.max(totalEmployees - presentCount, 0);
+  const pendingLeaveCount = leaveRequests.filter((request) => (request.status || "Pending") === "Pending").length;
+  const pendingWfhCount = wfhRequests.filter((request) => (request.status || "Pending") === "Pending").length;
 
-const attendance = [
-  { label: "Present", value: "116" },
-  { label: "Absent", value: "05" },
-  { label: "On Leave", value: "04" },
-  { label: "Half Day", value: "01" },
-];
+  return {
+    totalEmployees,
+    notices,
+    todayAttendance,
+    leaveRequests,
+    wfhRequests,
+    cvApplications: getStoredCVs(),
+    attendanceStats: [
+      { label: "Present", value: String(presentCount).padStart(2, "0") },
+      { label: "Absent", value: String(absentCount).padStart(2, "0") },
+      { label: "Late", value: String(lateCount).padStart(2, "0") },
+      { label: "Logged Records", value: String(todayAttendance.length).padStart(2, "0") },
+    ],
+    leaveBreakdown: [
+      { label: "Pending", value: pendingLeaveCount, color: "#f4a300" },
+      { label: "Approved", value: leaveRequests.filter((request) => request.status === "Approved").length, color: "#16a34a" },
+      { label: "Rejected", value: leaveRequests.filter((request) => request.status === "Rejected").length, color: "#ef4444" },
+      { label: "Total", value: leaveRequests.length, color: "#2563eb" },
+    ],
+    pendingLeaveCount,
+    pendingWfhCount,
+    attendancePercent: totalEmployees ? Math.round((presentCount / totalEmployees) * 100) : 0,
+  };
+};
 
 const quickActions = [
-  { label: "CV Access", icon: <FaFileAlt /> },
-  { label: "Employee ID", icon: <FaIdBadge /> },
-  { label: "Organization Structure", icon: <FaBuilding /> },
-  { label: "WFH Approval", icon: <FaLaptopHouse /> },
-  { label: "Leave Approval", icon: <FaCalendarCheck /> },
-  { label: "Attendance Checking", icon: <FaClipboardList /> },
-  { label: "Notice Board", icon: <FaBell /> },
+  { label: "CV Access", icon: <FaFileAlt />, page: "hr-cv-access" },
+  { label: "Employee ID", icon: <FaIdBadge />, page: "hr-employee-id" },
+  { label: "Organization Structure", icon: <FaBuilding />, page: "hr-organization-structure" },
+  { label: "WFH Approval", icon: <FaLaptopHouse />, page: "hr-wfh-approval" },
+  { label: "Leave Approval", icon: <FaCalendarCheck />, page: "hr-leave-approval" },
+  { label: "Attendance Checking", icon: <FaClipboardList />, page: "hr-attendance-checking" },
+  { label: "Notice Board", icon: <FaBell />, page: "hr-notice-board" },
 ];
 
 function HRDashboard({ activePage, onNavigate }) {
+  const [dashboardData, setDashboardData] = useState(getDashboardSnapshot);
+  const [editingEmployees, setEditingEmployees] = useState(false);
+  const [editValue, setEditValue] = useState(String(getSavedTotalEmployees()));
   const passwordResetRequests = getPasswordResetRequests();
+  const {
+    attendancePercent,
+    attendanceStats,
+    cvApplications,
+    leaveBreakdown,
+    leaveRequests,
+    notices,
+    pendingLeaveCount,
+    pendingWfhCount,
+    todayAttendance,
+    totalEmployees,
+    wfhRequests,
+  } = dashboardData;
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setDashboardData(getDashboardSnapshot());
+    };
+
+    window.addEventListener("assignopedia-employee-count-updated", handleUpdate);
+    window.addEventListener("hr-leave-request-updated", handleUpdate);
+    window.addEventListener("employee-wfh-request-updated", handleUpdate);
+    window.addEventListener(attendanceEvent, handleUpdate);
+    window.addEventListener(getCVEvent(), handleUpdate);
+    window.addEventListener(getNoticeEvent(), handleUpdate);
+    window.addEventListener("storage", handleUpdate);
+
+    return () => {
+      window.removeEventListener("assignopedia-employee-count-updated", handleUpdate);
+      window.removeEventListener("hr-leave-request-updated", handleUpdate);
+      window.removeEventListener("employee-wfh-request-updated", handleUpdate);
+      window.removeEventListener(attendanceEvent, handleUpdate);
+      window.removeEventListener(getCVEvent(), handleUpdate);
+      window.removeEventListener(getNoticeEvent(), handleUpdate);
+      window.removeEventListener("storage", handleUpdate);
+    };
+  }, []);
+
+  const handleEditEmployees = () => {
+    setEditValue(String(totalEmployees));
+    setEditingEmployees(true);
+  };
+
+  const handleSaveEmployees = () => {
+    const newCount = parseInt(editValue, 10);
+    if (!isNaN(newCount) && newCount > 0) {
+      setTotalEmployees(newCount);
+      setDashboardData(getDashboardSnapshot());
+      setEditingEmployees(false);
+    } else {
+      alert("Please enter a valid number");
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingEmployees(false);
+    setEditValue(String(totalEmployees));
+  };
+
+  const summaryCards = [
+    {
+      label: "Total Employees",
+      value: String(totalEmployees),
+      note: "Active workforce",
+      icon: <FaUsers />,
+      editable: true,
+    },
+    {
+      label: "Leave Requests",
+      value: String(leaveRequests.length),
+      note: `${pendingLeaveCount} pending`,
+      icon: <FaCalendarCheck />,
+      page: "hr-leave-approval",
+    },
+    {
+      label: "WFH Requests",
+      value: String(wfhRequests.length),
+      note: `${pendingWfhCount} awaiting review`,
+      icon: <FaLaptopHouse />,
+      page: "hr-wfh-approval",
+    },
+    {
+      label: "Attendance Today",
+      value: `${attendancePercent}%`,
+      note: `${todayAttendance.length} present`,
+      icon: <FaClipboardList />,
+      page: "hr-attendance-checking",
+    },
+    {
+      label: "Notices",
+      value: String(notices.length),
+      note: "Published notices",
+      icon: <FaBell />,
+      page: "hr-notice-board",
+    },
+    {
+      label: "CV Applications",
+      value: String(cvApplications.length),
+      note: "Candidate files",
+      icon: <FaFileAlt />,
+      page: "hr-cv-access",
+    },
+  ];
 
   return (
     <HRPortalLayout
@@ -66,9 +199,48 @@ function HRDashboard({ activePage, onNavigate }) {
     >
       <section className="hr-summary-grid" aria-label="HR summary">
         {summaryCards.map((card) => (
-          <article className="hr-summary-card" key={card.label}>
-            <div>{card.icon}</div>
+          <article
+            className={`hr-summary-card${card.editable ? " editable" : ""}${card.page ? " actionable" : ""}`}
+            key={card.label}
+            onClick={() => {
+              if (card.page) {
+                onNavigate(card.page);
+              }
+            }}
+          >
+            <div className="hr-summary-icon">{card.icon}</div>
             <span>{card.label}</span>
+            {card.editable && (
+              editingEmployees ? (
+                <div className="hr-employee-edit" onClick={(event) => event.stopPropagation()}>
+                  <input
+                    type="number"
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    autoFocus
+                    aria-label="Total employees"
+                  />
+                  <button type="button" className="save" onClick={handleSaveEmployees} aria-label="Save employee count">
+                    <FaSave />
+                  </button>
+                  <button type="button" className="cancel" onClick={handleCancelEdit} aria-label="Cancel employee count edit">
+                    <FaTimes />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  className="hr-card-corner-action"
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    handleEditEmployees();
+                  }}
+                  aria-label="Edit total employees"
+                >
+                  <FaEdit />
+                </button>
+              )
+            )}
             <strong>{card.value}</strong>
             <small>{card.note}</small>
           </article>
@@ -86,15 +258,15 @@ function HRDashboard({ activePage, onNavigate }) {
           </div>
           <div className="leave-overview-content">
             <div className="leave-donut" aria-label="Leave requests donut chart">
-              <span>100</span>
-              <small>Total</small>
+              <span>{leaveRequests.length}</span>
+              <small>Requests</small>
             </div>
             <div className="leave-legend">
-              {leaveTypes.map((item) => (
+              {leaveBreakdown.map((item) => (
                 <div key={item.label}>
                   <i style={{ background: item.color }} />
                   <span>{item.label}</span>
-                  <strong>{item.value}%</strong>
+                  <strong>{item.value}</strong>
                 </div>
               ))}
             </div>
@@ -110,9 +282,19 @@ function HRDashboard({ activePage, onNavigate }) {
             <FaBell />
           </div>
           <div className="hr-notice-list">
-            {notices.map((notice) => (
-              <p key={notice}>{notice}</p>
-            ))}
+            {notices.length > 0 ? (
+              notices.map((notice) => (
+                <p className="hr-dashboard-notice" key={notice.id}>
+                  <strong>
+                    {notice.title}
+                    <small>{notice.date}</small>
+                  </strong>
+                  <span>{notice.body}</span>
+                </p>
+              ))
+            ) : (
+              <p>No notices created yet.</p>
+            )}
           </div>
         </article>
 
@@ -149,11 +331,11 @@ function HRDashboard({ activePage, onNavigate }) {
           </div>
           <div className="attendance-content">
             <div className="attendance-ring">
-              <strong>92%</strong>
+              <strong>{attendancePercent}%</strong>
               <small>Present</small>
             </div>
             <div className="attendance-stats">
-              {attendance.map((item) => (
+              {attendanceStats.map((item) => (
                 <div key={item.label}>
                   <span>{item.label}</span>
                   <strong>{item.value}</strong>
@@ -173,7 +355,7 @@ function HRDashboard({ activePage, onNavigate }) {
           </div>
           <div className="hr-quick-grid">
             {quickActions.map((action) => (
-              <button type="button" key={action.label}>
+              <button type="button" key={action.label} onClick={() => onNavigate(action.page)}>
                 {action.icon}
                 <span>{action.label}</span>
               </button>

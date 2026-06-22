@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FaCalendarCheck } from "react-icons/fa";
 import { addEmployeeDecisionNotification, formatNotificationDate } from "../../utils/requestNotifications";
+import { itemMatchesSearch, useHrSearchQuery } from "../../utils/hrSearch";
 import HRPortalLayout from "./HRPortalLayout";
 
 const leaveRequests = [
@@ -49,6 +50,10 @@ const getRequestKey = (request) =>
 function HRLeaveApproval({ activePage, onNavigate }) {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [allLeaveRequests, setAllLeaveRequests] = useState(() => [...getStoredLeaveRequests(), ...leaveRequests]);
+  const searchQuery = useHrSearchQuery();
+  const filteredLeaveRequests = allLeaveRequests.filter((request) =>
+    itemMatchesSearch(request, searchQuery)
+  );
 
   const updateStoredLeaveStatus = (request, status) => {
     const requestKey = getRequestKey(request);
@@ -61,6 +66,7 @@ function HRLeaveApproval({ activePage, onNavigate }) {
     );
 
     localStorage.setItem(hrLeaveRequestStorageKey, JSON.stringify(updatedStoredRequests));
+    window.dispatchEvent(new CustomEvent("hr-leave-request-updated"));
     setAllLeaveRequests((current) =>
       current.map((currentRequest) =>
         getRequestKey(currentRequest) === requestKey
@@ -83,6 +89,35 @@ function HRLeaveApproval({ activePage, onNavigate }) {
     }
   };
 
+  const handleViewDocument = (request) => {
+    if (!request.pdfData) {
+      alert("Only the file name is available for this older request. New uploads can be viewed here.");
+      return;
+    }
+
+    const previewWindow = window.open();
+    if (previewWindow) {
+      previewWindow.document.write(
+        `<iframe src="${request.pdfData}" title="${request.pdfFileName || "Supporting document"}" style="border:0;width:100%;height:100vh;"></iframe>`
+      );
+      previewWindow.document.close();
+    }
+  };
+
+  const handleDownloadDocument = (request) => {
+    if (!request.pdfData) {
+      alert("Only the file name is available for this older request. New uploads can be downloaded here.");
+      return;
+    }
+
+    const link = document.createElement("a");
+    link.href = request.pdfData;
+    link.download = request.pdfFileName || "leave-document.pdf";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <HRPortalLayout activePage={activePage} eyebrow="Leave Approval" title="Leave Approval" onNavigate={onNavigate}>
       <article className="hr-panel">
@@ -96,7 +131,7 @@ function HRLeaveApproval({ activePage, onNavigate }) {
               <tr><th>Employee</th><th>Leave Type</th><th>Dates</th><th>Days</th><th>Status</th><th>Action</th></tr>
             </thead>
             <tbody>
-              {allLeaveRequests.map((request, index) => (
+              {filteredLeaveRequests.length > 0 ? filteredLeaveRequests.map((request, index) => (
                 <tr key={`${request.name}-${request.dates}-${index}`}>
                   <td>{request.name}</td><td>{request.type}</td><td>{request.dates}</td><td>{request.days}</td>
                   <td><span className={`hr-status ${request.status.toLowerCase()}`}>{request.status}</span></td>
@@ -108,7 +143,11 @@ function HRLeaveApproval({ activePage, onNavigate }) {
                     </div>
                   </td>
                 </tr>
-              ))}
+              )) : (
+                <tr>
+                  <td colSpan="6">No leave requests match the current search.</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -143,8 +182,8 @@ function HRLeaveApproval({ activePage, onNavigate }) {
                   {selectedRequest.pdfFileName || "No document uploaded"}
                   {selectedRequest.pdfFileName && (
                     <span className="hr-document-actions">
-                      <button type="button">View</button>
-                      <button type="button">Download</button>
+                      <button type="button" onClick={() => handleViewDocument(selectedRequest)}>View</button>
+                      <button type="button" onClick={() => handleDownloadDocument(selectedRequest)}>Download</button>
                     </span>
                   )}
                 </span>

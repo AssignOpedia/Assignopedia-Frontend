@@ -203,15 +203,22 @@
   cursor: pointer;
 }
 
-.admin-icon-button i {
+.admin-notification-count {
   position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
+  top: 6px;
+  right: 6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
   background: #ef4444;
+  color: #fff;
   border: 2px solid #fff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .admin-notification-wrap {
