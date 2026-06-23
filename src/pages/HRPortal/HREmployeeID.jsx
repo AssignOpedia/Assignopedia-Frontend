@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { FaIdBadge, FaTrash } from "react-icons/fa";
+import { FaEdit, FaIdBadge, FaTrash } from "react-icons/fa";
 import { createEmployeeID, getEmployees, updateEmployeeID, deleteEmployee, getEmployeeEvent } from "../../utils/organizationStorage";
 import { itemMatchesSearch, useHrSearchQuery } from "../../utils/hrSearch";
 import HRPortalLayout from "./HRPortalLayout";
 
 function HREmployeeID({ activePage, onNavigate }) {
   const [employees, setEmployees] = useState(() => getEmployees());
+  const [createId, setCreateId] = useState("");
   const [createName, setCreateName] = useState("");
   const [createDept, setCreateDept] = useState("");
   const [createJobCode, setCreateJobCode] = useState("");
@@ -33,14 +34,27 @@ function HREmployeeID({ activePage, onNavigate }) {
 
   const handleCreate = (e) => {
     e.preventDefault();
+    const employeeId = createId.trim();
 
-    if (!createName.trim() || !createDept.trim() || !createJobCode.trim() || !createEmail.trim()) {
+    if (!employeeId || !createName.trim() || !createDept.trim() || !createJobCode.trim() || !createEmail.trim()) {
       alert("Please fill in all fields");
       return;
     }
 
-    const newEmployee = createEmployeeID(createName, createDept, createJobCode, createEmail);
+    if (employees.some((employee) => employee.id.trim().toLowerCase() === employeeId.toLowerCase())) {
+      alert("This Employee ID already exists");
+      return;
+    }
+
+    const newEmployee = createEmployeeID(
+      employeeId,
+      createName.trim(),
+      createDept.trim(),
+      createJobCode.trim(),
+      createEmail.trim()
+    );
     setEmployees(getEmployees());
+    setCreateId("");
     setCreateName("");
     setCreateDept("");
     setCreateJobCode("");
@@ -51,13 +65,14 @@ function HREmployeeID({ activePage, onNavigate }) {
 
   const handleUpdate = (e) => {
     e.preventDefault();
+    const employeeId = editId.trim();
 
-    if (!editId.trim() || !editEmail.trim()) {
+    if (!employeeId || !editEmail.trim()) {
       alert("Please fill in all fields");
       return;
     }
 
-    const updated = updateEmployeeID(editId, { email: editEmail });
+    const updated = updateEmployeeID(employeeId, { email: editEmail.trim() });
     if (updated) {
       setEmployees(getEmployees());
       setEditId("");
@@ -76,6 +91,13 @@ function HREmployeeID({ activePage, onNavigate }) {
     }
   };
 
+  const handleEditEmployee = (employee) => {
+    setEditId(employee.id);
+    setEditEmail(employee.email);
+    setSuccessMessage(`Editing ${employee.id}. Update the official email and submit.`);
+    setTimeout(() => setSuccessMessage(""), 2500);
+  };
+
   return (
     <HRPortalLayout activePage={activePage} eyebrow="Employee ID" title="Employee ID" onNavigate={onNavigate}>
       {successMessage && (
@@ -90,7 +112,7 @@ function HREmployeeID({ activePage, onNavigate }) {
             fontWeight: "500",
           }}
         >
-          ✓ {successMessage}
+          Success: {successMessage}
         </div>
       )}
 
@@ -104,6 +126,14 @@ function HREmployeeID({ activePage, onNavigate }) {
             <FaIdBadge />
           </div>
           <form className="hr-form" onSubmit={handleCreate}>
+            <label>
+              <span>Employee ID</span>
+              <input
+                placeholder="EMP-240128"
+                value={createId}
+                onChange={(e) => setCreateId(e.target.value)}
+              />
+            </label>
             <label>
               <span>Employee Name</span>
               <input
@@ -172,36 +202,57 @@ function HREmployeeID({ activePage, onNavigate }) {
         </article>
       </section>
 
-      {employees.length > 0 && (
-        <article className="hr-panel" style={{ marginTop: "20px" }}>
-          <div className="hr-panel-heading">
-            <div>
-              <span>Records</span>
-              <h2>Created Employee IDs ({filteredEmployees.length})</h2>
-            </div>
+      <article className="hr-panel" style={{ marginTop: "20px" }}>
+        <div className="hr-panel-heading">
+          <div>
+            <span>Records</span>
+            <h2>Created Employee IDs ({filteredEmployees.length})</h2>
           </div>
-          <div style={{ overflowX: "auto" }}>
-            <table className="hr-table">
-              <thead>
-                <tr>
-                  <th>Employee ID</th>
-                  <th>Name</th>
-                  <th>Department</th>
-                  <th>Email</th>
-                  <th>Created</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredEmployees.length > 0 ? filteredEmployees.map((emp) => (
-                  <tr key={emp.id}>
-                    <td>{emp.id}</td>
-                    <td>{emp.name}</td>
-                    <td>{emp.department}</td>
-                    <td>{emp.email}</td>
-                    <td>{emp.createdAt}</td>
-                    <td>
+        </div>
+        <div style={{ overflowX: "auto" }}>
+          <table className="hr-table">
+            <thead>
+              <tr>
+                <th>Employee ID</th>
+                <th>Name</th>
+                <th>Department</th>
+                <th>Job Code</th>
+                <th>Email</th>
+                <th>Created</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredEmployees.length > 0 ? filteredEmployees.map((emp) => (
+                <tr key={emp.id}>
+                  <td>{emp.id}</td>
+                  <td>{emp.name}</td>
+                  <td>{emp.department}</td>
+                  <td>{emp.jobCode}</td>
+                  <td>{emp.email}</td>
+                  <td>{emp.createdAt}</td>
+                  <td>
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                       <button
+                        type="button"
+                        onClick={() => handleEditEmployee(emp)}
+                        style={{
+                          background: "#dbeafe",
+                          color: "#1d4ed8",
+                          border: "none",
+                          padding: "6px 12px",
+                          borderRadius: "4px",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          fontSize: "12px",
+                        }}
+                      >
+                        <FaEdit /> Edit
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => handleDelete(emp.id)}
                         style={{
                           background: "#fee2e2",
@@ -218,18 +269,22 @@ function HREmployeeID({ activePage, onNavigate }) {
                       >
                         <FaTrash /> Delete
                       </button>
-                    </td>
-                  </tr>
-                )) : (
-                  <tr>
-                    <td colSpan="6">No employee IDs match the current search.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </article>
-      )}
+                    </div>
+                  </td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan="7">
+                    {employees.length > 0
+                      ? "No employee IDs match the current search."
+                      : "No employee IDs created yet."}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </article>
     </HRPortalLayout>
   );
 }

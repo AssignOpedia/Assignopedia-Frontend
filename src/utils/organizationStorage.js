@@ -16,10 +16,12 @@ const saveEmployees = (employees) => {
   window.dispatchEvent(new CustomEvent(employeeEvent));
 };
 
-export const createEmployeeID = (name, department, jobCode, email) => {
+const normalizeEmployeeId = (id) => String(id || "").trim().toLowerCase();
+
+export const createEmployeeID = (id, name, department, jobCode, email) => {
   const employees = readEmployees();
   const newEmployee = {
-    id: `EMP-${Date.now()}`,
+    id,
     name,
     department,
     jobCode,
@@ -38,7 +40,8 @@ export const getEmployees = () => {
 
 export const updateEmployeeID = (id, updates) => {
   const employees = readEmployees();
-  const index = employees.findIndex((emp) => emp.id === id);
+  const normalizedId = normalizeEmployeeId(id);
+  const index = employees.findIndex((emp) => normalizeEmployeeId(emp.id) === normalizedId);
 
   if (index !== -1) {
     employees[index] = { ...employees[index], ...updates };
