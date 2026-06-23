@@ -272,7 +272,7 @@ function App() {
 
     return (
       <>
-        <Home />
+        <Home onNavigate={handleNavigate} />
       </>
     );
   };

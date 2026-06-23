@@ -28,7 +28,7 @@ function Footer() {
   ];
 
   return (
-    <footer className="site-footer">
+    <footer className="site-footer" id="site-footer">
       <div className="footer-shell">
         <section className="footer-brand-block">
           <div className="footer-brand-main">

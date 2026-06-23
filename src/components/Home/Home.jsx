@@ -53,7 +53,13 @@ const highlights = [
   },
 ];
 
-function Home() {
+function Home({ onNavigate }) {
+  const scrollToFooter = () => {
+    document
+      .getElementById("site-footer")
+      ?.scrollIntoView({ behavior: "smooth" });
+  };
+
   return (
     <div className="home-page-shell">
       <section className="hero home-hero">
@@ -104,8 +110,20 @@ function Home() {
             </div>
 
             <div className="buttons">
-              <button className="primary-btn">Get Assignment Help</button>
-              <button className="secondary-btn">View Services</button>
+              <button
+                className="primary-btn"
+                type="button"
+                onClick={scrollToFooter}
+              >
+                Get Assignment Help
+              </button>
+              <button
+                className="secondary-btn"
+                type="button"
+                onClick={() => onNavigate("services")}
+              >
+                View Services
+              </button>
             </div>
           </div>
 
@@ -216,8 +234,20 @@ function Home() {
           </p>
         </div>
         <div className="cta-actions">
-          <button className="primary-btn">Start Your Project</button>
-          <button className="secondary-btn">Contact Us</button>
+          <button
+            className="primary-btn"
+            type="button"
+            onClick={() => onNavigate("services")}
+          >
+            Start Your Project
+          </button>
+          <button
+            className="secondary-btn"
+            type="button"
+            onClick={() => onNavigate("contact")}
+          >
+            Contact Us
+          </button>
         </div>
       </section>
     </div>
