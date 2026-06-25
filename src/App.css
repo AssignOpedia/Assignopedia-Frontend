@@ -6787,3 +6787,143 @@ body{
   background:rgba(242,247,255,.88);
 }
 
+/* Compact premium footer */
+.site-footer{
+  margin-top:4vh;
+  padding:42px 80px 20px;
+}
+
+.site-footer .footer-shell{
+  grid-template-columns:minmax(0,1.18fr) minmax(320px,.82fr);
+  gap:20px;
+}
+
+.site-footer .footer-brand-block{
+  padding:26px 28px;
+}
+
+.site-footer .footer-brand-main{
+  gap:16px;
+}
+
+.site-footer .footer-logo-wrap{
+  width:58px;
+  height:58px;
+  border-radius:16px;
+  padding:7px;
+}
+
+.site-footer .footer-brand-block span{
+  font-size:10px;
+  letter-spacing:1.6px;
+}
+
+.site-footer .footer-brand-block h2{
+  max-width:500px;
+  margin-top:5px;
+  font-size:24px;
+  line-height:1.2;
+}
+
+.site-footer .footer-description{
+  max-width:580px;
+  margin-top:14px;
+  font-size:14px;
+  line-height:1.6;
+}
+
+.site-footer .footer-contact-card{
+  gap:9px;
+  padding:22px;
+}
+
+.site-footer .footer-contact-item{
+  gap:10px;
+  padding:10px 14px;
+  font-size:13px;
+  line-height:1.35;
+}
+
+.site-footer .footer-bottom{
+  margin-top:22px;
+  padding-top:16px;
+}
+
+.site-footer .footer-bottom p{
+  font-size:12px;
+}
+
+.site-footer .footer-socials{
+  gap:9px;
+}
+
+.site-footer .footer-socials a{
+  width:36px;
+  height:36px;
+  font-size:13px;
+}
+
+@media(max-width:991px){
+  .site-footer{
+    margin-top:3vh;
+    padding:36px 24px 20px;
+  }
+
+  .site-footer .footer-shell{
+    gap:16px;
+  }
+
+  .site-footer .footer-brand-block,
+  .site-footer .footer-contact-card{
+    padding:22px;
+  }
+}
+
+@media(max-width:600px){
+  .site-footer{
+    margin-top:24px;
+    padding:30px 16px 18px;
+  }
+
+  .site-footer .footer-brand-block,
+  .site-footer .footer-contact-card{
+    padding:19px;
+    border-radius:17px;
+  }
+
+  .site-footer .footer-brand-main{
+    gap:12px;
+  }
+
+  .site-footer .footer-logo-wrap{
+    width:52px;
+    height:52px;
+    border-radius:14px;
+  }
+
+  .site-footer .footer-brand-block h2{
+    font-size:21px;
+  }
+
+  .site-footer .footer-description{
+    margin-top:12px;
+    font-size:13px;
+  }
+
+  .site-footer .footer-contact-item{
+    padding:10px 12px;
+    font-size:12px;
+  }
+
+  .site-footer .footer-bottom{
+    gap:14px;
+    margin-top:20px;
+    padding-top:14px;
+  }
+
+  .site-footer .footer-socials a{
+    width:34px;
+    height:34px;
+  }
+}
+

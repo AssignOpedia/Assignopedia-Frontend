@@ -82,7 +82,7 @@ export const getDepartments = () => {
   const stored = readOrganization();
   if (stored.length === 0) {
     return [
-      { id: "dept-1", name: "Development Team", lead: "Tapajit Da", members: "12 Members" },
+      { id: "dept-1", name: "Technical Team", lead: "Tapajit Da", members: "12 Members" },
       { id: "dept-2", name: "Content Team", lead: "Ritika Sharma", members: "18 Members" },
       { id: "dept-3", name: "HR Operations", lead: "HR Admin", members: "5 Members" },
       { id: "dept-4", name: "Quality Review", lead: "Nisha Roy", members: "9 Members" },
