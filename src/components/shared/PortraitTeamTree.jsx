@@ -37,60 +37,49 @@ function TeamTreeNode({ person, variant = "aqua", large = false, canManage = fal
 }
 
 function PortraitTeamTree({ team, canManage = false, onEditLeader, onEditMember, onDeleteMember, onAddMember }) {
+  const levels = [
+    { className: "level-two", members: team.members.slice(0, 3), variant: "aqua" },
+    { className: "level-three", members: team.members.slice(3, 7), variant: "gold" },
+    { className: "level-four", members: team.members.slice(7), variant: "violet" },
+  ];
+
   return (
-    <div className="team-portrait-tree">
+    <div className="team-portrait-tree" role="tree" aria-label="Team organization chart">
       {canManage && (
         <button className="portrait-add-node" type="button" onClick={onAddMember}>
           <FaPlus /> Add Node
         </button>
       )}
-      <div className="portrait-root">
-        <TeamTreeNode person={team.leader} variant="coral" large canManage={canManage} onEdit={onEditLeader} />
-      </div>
+      <div className="portrait-chart">
+        <div className="portrait-level portrait-level-root" role="group" aria-label="CEO">
+          <div className="portrait-row">
+            <TeamTreeNode person={team.leader} variant="coral" large canManage={canManage} onEdit={onEditLeader} />
+          </div>
+        </div>
 
-      <div className="portrait-branches" aria-hidden="true">
-        <span className="branch top" />
-        <span className="branch middle" />
-        <span className="branch bottom" />
-      </div>
-
-      <div className="portrait-row portrait-row-top">
-        {team.members.slice(0, 3).map((member) => (
-          <TeamTreeNode
-            person={member}
-            variant="aqua"
-            key={member.id}
-            canManage={canManage}
-            onEdit={onEditMember}
-            onDelete={onDeleteMember}
-          />
-        ))}
-      </div>
-
-      <div className="portrait-row portrait-row-middle">
-        {team.members.slice(3, 7).map((member) => (
-          <TeamTreeNode
-            person={member}
-            variant="gold"
-            key={member.id}
-            canManage={canManage}
-            onEdit={onEditMember}
-            onDelete={onDeleteMember}
-          />
-        ))}
-      </div>
-
-      <div className="portrait-row portrait-row-bottom">
-        {team.members.slice(7).map((member) => (
-          <TeamTreeNode
-            person={member}
-            variant="violet"
-            key={member.id}
-            canManage={canManage}
-            onEdit={onEditMember}
-            onDelete={onDeleteMember}
-          />
-        ))}
+        {levels.map((level, index) =>
+          level.members.length > 0 ? (
+            <div
+              className={`portrait-level ${level.className}`}
+              role="group"
+              aria-label={`Organization level ${index + 2}`}
+              key={level.className}
+            >
+              <div className="portrait-row">
+                {level.members.map((member) => (
+                  <TeamTreeNode
+                    person={member}
+                    variant={level.variant}
+                    key={member.id}
+                    canManage={canManage}
+                    onEdit={onEditMember}
+                    onDelete={onDeleteMember}
+                  />
+                ))}
+              </div>
+            </div>
+          ) : null
+        )}
       </div>
     </div>
   );
