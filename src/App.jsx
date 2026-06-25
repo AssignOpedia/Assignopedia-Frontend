@@ -9,6 +9,7 @@ import Blog from "./components/Blog";
 import Careers from "./components/Careers";
 import Contact from "./components/Contact";
 import Footer from "./components/shared/Footer";
+import TestimonialCarousel from "./components/shared/TestimonialCarousel";
 import AuthForm from "./components/Auth";
 import AdminDashboard from "./pages/AdminPortal/AdminDashboard";
 import AdminEmployees from "./pages/AdminPortal/AdminEmployees";
@@ -297,6 +298,7 @@ function App() {
 
       {renderPage()}
 
+      {!isPortalPage && <TestimonialCarousel />}
       {!isPortalPage && <Footer onNavigate={handleNavigate} />}
 
       {showAuth && (

@@ -16,22 +16,22 @@ const servicesPreview = [
   {
     icon: <FaBookOpen />,
     title: "Assignment Help",
-    desc: "Custom essays, reports, case studies and coursework written to your brief.",
+    desc: "Guidance on structuring assignments, understanding requirements, and improving academic writing clarity.",
   },
   {
     icon: <FaGraduationCap />,
     title: "Dissertation Support",
-    desc: "Structured chapter assistance from proposal to final thesis submission.",
+    desc: "Step-by-step support for planning, organizing, and refining dissertation chapters with academic guidance.",
   },
   {
     icon: <FaFileAlt />,
     title: "Technical Writing",
-    desc: "Clear documentation, IT reports and system write-ups for academic and professional needs.",
+    desc: "Support for improving technical documentation, research presentation, and professional report clarity.",
   },
   {
     icon: <FaPenNib />,
     title: "Proofreading & Editing",
-    desc: "Grammar, structure and citation review that makes your work ready for submission.",
+    desc: "Detailed review for grammar, structure, formatting, and citation accuracy to strengthen your final draft.",
   },
 ];
 
