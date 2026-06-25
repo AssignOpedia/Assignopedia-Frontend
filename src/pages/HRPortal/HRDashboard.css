@@ -1116,7 +1116,8 @@
   font-weight:900;
 }
 
-.hr-form input{
+.hr-form input,
+.hr-form select{
   width:100%;
   min-height:48px;
   padding:0 14px;
@@ -1126,6 +1127,70 @@
   border-radius:15px;
   outline:0;
   font:inherit;
+}
+
+.hr-team-structure-panel{
+  margin-bottom:18px;
+}
+
+.hr-team-structure-panel .team-portrait-tree{
+  margin-bottom:16px;
+}
+
+.hr-team-edit-form{
+  margin-top:16px;
+  padding:16px;
+  background:#f8fbff;
+  border:1px solid rgba(37,99,235,.1);
+  border-radius:18px;
+}
+
+.hr-team-edit-form .hr-panel-heading{
+  margin-bottom:4px;
+}
+
+.hr-team-image-upload input{
+  padding:10px 14px;
+}
+
+.hr-team-image-upload small{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  color:var(--hr-blue);
+  font-size:12px;
+  font-weight:900;
+}
+
+.hr-team-image-preview{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:12px;
+  background:#fff;
+  border:1px solid rgba(37,99,235,.12);
+  border-radius:16px;
+}
+
+.hr-team-image-preview img{
+  width:74px;
+  height:74px;
+  border-radius:999px;
+  object-fit:cover;
+  border:3px solid #dbeafe;
+}
+
+.hr-team-image-preview button{
+  min-height:36px;
+  padding:0 12px;
+  color:#b91c1c;
+  background:#fee2e2;
+  border:0;
+  border-radius:12px;
+  cursor:pointer;
+  font:inherit;
+  font-size:12px;
+  font-weight:900;
 }
 
 .hr-structure-card{

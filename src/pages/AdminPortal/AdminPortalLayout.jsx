@@ -6,6 +6,7 @@ import {
   FaDatabase,
   FaFileAlt,
   FaHome,
+  FaPenNib,
   FaProjectDiagram,
   FaRegCalendarAlt,
   FaSearch,
@@ -24,6 +25,7 @@ const sidebarItems = [
   { label: "Project Management", icon: <FaProjectDiagram />, page: "admin-projects" },
   { label: "Revenue Tracking", icon: <FaWallet />, page: "admin-revenue" },
   { label: "Reports", icon: <FaFileAlt />, page: "admin-reports" },
+  { label: "Blog Post", icon: <FaPenNib />, page: "admin-blog-posts" },
   { label: "Settings", icon: <FaCog />, page: "admin-settings" },
   { label: "System Management", icon: <FaShieldAlt />, page: "admin-system" },
 ];

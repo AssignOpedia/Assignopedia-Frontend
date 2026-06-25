@@ -1,50 +1,23 @@
-import { useState } from "react";
 import { FaPlus, FaSave, FaSitemap, FaTrash, FaUserTie, FaUsers } from "react-icons/fa";
+import { useEffect, useState } from "react";
+import PortraitTeamTree from "../../components/shared/PortraitTeamTree";
+import { createTeamMember, getTeam, saveTeam, teamEvent } from "../../utils/teamStorage";
 import EmployeePortalLayout from "./EmployeePortalLayout";
 
-const teamStorageKey = "assignopediaEmployeeTeam";
-
-const defaultTeam = {
-  leader: {
-    name: "Tapajit Chakraborty",
-    role: "Team Leader",
-  },
-  members: [
-    { id: "supriyo-braman", name: "Supriyo Braman", role: "Technical Content Writer" },
-    { id: "tuhin-paul", name: "Tuhin Paul", role: "Technical Content Writer" },
-    { id: "tushar-paul", name: "Tushar Paul", role: "Technical Content Writer" },
-    { id: "sayan-datta", name: "Sayan Datta", role: "Technical Content Writer" },
-    { id: "sandipan-mondal", name: "Sandipan Mondal", role: "Technical Content Writer" },
-    { id: "nisha-rajak", name: "Nisha Rajak", role: "Technical Content Writer" },
-    { id: "paradeepti-sharma", name: "Paradeepti Sharma", role: "Technical Content Writer" },
-    { id: "pratim-banerjee", name: "Pratim Banerjee", role: "Technical Content Writer" },
-    { id: "sharmi-karmakar", name: "Sharmi Karmakar", role: "Technical Content Writer" },
-  ],
-};
-
-const createTeamMember = () => ({
-  id: `member-${Date.now()}`,
-  name: "",
-  role: "Technical Content Writer",
-});
-
-const getStoredTeam = () => {
-  try {
-    const savedTeam = JSON.parse(localStorage.getItem(teamStorageKey));
-
-    if (savedTeam?.leader && Array.isArray(savedTeam.members)) {
-      return savedTeam;
-    }
-  } catch {
-    localStorage.removeItem(teamStorageKey);
-  }
-
-  return defaultTeam;
-};
-
 function EmployeeTeam({ activePage, onNavigate }) {
-  const [team, setTeam] = useState(getStoredTeam);
+  const [team, setTeam] = useState(() => getTeam());
   const [statusMessage, setStatusMessage] = useState("");
+
+  useEffect(() => {
+    const refreshTeam = () => setTeam(getTeam());
+
+    window.addEventListener(teamEvent, refreshTeam);
+    window.addEventListener("storage", refreshTeam);
+    return () => {
+      window.removeEventListener(teamEvent, refreshTeam);
+      window.removeEventListener("storage", refreshTeam);
+    };
+  }, []);
 
   const handleLeaderChange = (event) => {
     const { name, value } = event.target;
@@ -90,8 +63,10 @@ function EmployeeTeam({ activePage, onNavigate }) {
 
     const cleanedTeam = {
       leader: {
-        name: team.leader.name.trim() || defaultTeam.leader.name,
-        role: team.leader.role.trim() || defaultTeam.leader.role,
+        ...team.leader,
+        id: "leader",
+        name: team.leader.name.trim() || "Team Leader",
+        role: team.leader.role.trim() || "Team Leader",
       },
       members: team.members
         .map((member) => ({
@@ -102,8 +77,7 @@ function EmployeeTeam({ activePage, onNavigate }) {
         .filter((member) => member.name),
     };
 
-    localStorage.setItem(teamStorageKey, JSON.stringify(cleanedTeam));
-    setTeam(cleanedTeam);
+    setTeam(saveTeam(cleanedTeam));
     setStatusMessage("Team details saved successfully.");
   };
 
@@ -131,27 +105,10 @@ function EmployeeTeam({ activePage, onNavigate }) {
         <div className="card-heading">
           <div>
             <span>Team Structure</span>
-            <h3>Hierarchy Reporting Flow</h3>
+            <h3>Organization Reporting Tree</h3>
           </div>
         </div>
-        <div className="team-flow">
-          <div className="team-lead-card">
-            <div className="card-icon"><FaUserTie /></div>
-            <strong>{team.leader.name}</strong>
-            <small>{team.leader.role}</small>
-          </div>
-
-          <div className="team-flow-connector" aria-hidden="true" />
-
-          <div className="team-member-grid">
-            {team.members.map((member) => (
-              <div className="team-member-card" key={member.id}>
-                <strong>{member.name}</strong>
-                <small>{member.role}</small>
-              </div>
-            ))}
-          </div>
-        </div>
+        <PortraitTeamTree team={team} />
       </section>
 
       <section className="portal-card team-editor-card">
