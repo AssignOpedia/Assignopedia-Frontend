@@ -4,6 +4,7 @@ import PortraitTeamTree from "../../components/shared/PortraitTeamTree";
 import { getDepartments, createDepartment, updateDepartment, deleteDepartment } from "../../utils/organizationStorage";
 import { itemMatchesSearch, useHrSearchQuery } from "../../utils/hrSearch";
 import { createTeamMember, getTeam, saveTeam, teamEvent } from "../../utils/teamStorage";
+import { getCurrentUser } from "../../utils/authStorage";
 import HRPortalLayout from "./HRPortalLayout";
 
 function HROrganizationStructure({ activePage, onNavigate }) {
@@ -18,6 +19,7 @@ function HROrganizationStructure({ activePage, onNavigate }) {
   const [editingPerson, setEditingPerson] = useState(null);
   const [teamMessage, setTeamMessage] = useState("");
   const searchQuery = useHrSearchQuery();
+  const isHrUser = String(getCurrentUser().role || "").toLowerCase() === "hr";
   const filteredDepartments = departments.filter((department) =>
     itemMatchesSearch(department, searchQuery)
   );
@@ -104,11 +106,19 @@ function HROrganizationStructure({ activePage, onNavigate }) {
   };
 
   const handleEditLeader = () => {
+    if (!isHrUser) {
+      return;
+    }
+
     setEditingPerson({ ...team.leader, type: "leader" });
     setTeamMessage("");
   };
 
   const handleEditMember = (member) => {
+    if (!isHrUser) {
+      return;
+    }
+
     setEditingPerson({ ...member, type: "member" });
     setTeamMessage("");
   };
@@ -118,6 +128,10 @@ function HROrganizationStructure({ activePage, onNavigate }) {
   };
 
   const handleAddMember = () => {
+    if (!isHrUser) {
+      return;
+    }
+
     const newMember = createTeamMember();
     const nextTeam = saveTeam({ ...team, members: [...team.members, newMember] });
 
@@ -127,6 +141,10 @@ function HROrganizationStructure({ activePage, onNavigate }) {
   };
 
   const handleDeleteMember = (memberId) => {
+    if (!isHrUser) {
+      return;
+    }
+
     const nextTeam = saveTeam({
       ...team,
       members: team.members.filter((member) => member.id !== memberId),
@@ -168,6 +186,11 @@ function HROrganizationStructure({ activePage, onNavigate }) {
 
   const handleSavePerson = (event) => {
     event.preventDefault();
+
+    if (!isHrUser) {
+      setEditingPerson(null);
+      return;
+    }
 
     if (!editingPerson?.name?.trim()) {
       setTeamMessage("Please enter a node name.");
@@ -227,14 +250,16 @@ function HROrganizationStructure({ activePage, onNavigate }) {
             <span>Team</span>
             <h2>Team Structure</h2>
           </div>
-          <button className="hr-primary-action" type="button" onClick={handleAddMember}>
-            <FaPlus /> Add Node
-          </button>
+          {isHrUser && (
+            <button className="hr-primary-action" type="button" onClick={handleAddMember}>
+              <FaPlus /> Add Node
+            </button>
+          )}
         </div>
 
         <PortraitTeamTree
           team={team}
-          canManage
+          canManage={isHrUser}
           onEditLeader={handleEditLeader}
           onEditMember={handleEditMember}
           onDeleteMember={handleDeleteMember}
@@ -245,7 +270,7 @@ function HROrganizationStructure({ activePage, onNavigate }) {
 
       </article>
 
-      {editingPerson && (
+      {editingPerson && isHrUser && (
         <div className="hr-team-modal-backdrop" role="presentation" onMouseDown={handleCancelPersonEdit}>
           <section
             className="hr-team-modal"
