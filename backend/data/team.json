@@ -1,0 +1,102 @@
+{
+  "leader": {
+    "id": "leader",
+    "name": "Raj Da",
+    "role": "CEO",
+    "imageDataUrl": "",
+    "imageName": ""
+  },
+  "members": [
+    {
+      "id": "hr-management",
+      "name": "HR Management",
+      "role": "Team Member",
+      "imageDataUrl": "",
+      "imageName": ""
+    },
+    {
+      "id": "hr-name-1",
+      "name": "HR Name",
+      "role": "Team Member",
+      "imageDataUrl": "",
+      "imageName": ""
+    },
+    {
+      "id": "hr-name-2",
+      "name": "HR Name",
+      "role": "Team Member",
+      "imageDataUrl": "",
+      "imageName": ""
+    },
+    {
+      "id": "operation-management",
+      "name": "Operation Management",
+      "role": "Team Member",
+      "imageDataUrl": "",
+      "imageName": ""
+    },
+    {
+      "id": "bdm-name",
+      "name": "BDM Name",
+      "role": "Team Member",
+      "imageDataUrl": "",
+      "imageName": ""
+    },
+    {
+      "id": "digital-marketing",
+      "name": "Digital Marketing Executive Name",
+      "role": "Team Member",
+      "imageDataUrl": "",
+      "imageName": ""
+    },
+    {
+      "id": "bdm-name-2",
+      "name": "BDM Name",
+      "role": "Team Member",
+      "imageDataUrl": "",
+      "imageName": ""
+    },
+    {
+      "id": "team-lead",
+      "name": "Team Lead",
+      "role": "Team Member",
+      "imageDataUrl": "",
+      "imageName": ""
+    },
+    {
+      "id": "team-lead-name",
+      "name": "Team Lead name",
+      "role": "Team Member",
+      "imageDataUrl": "",
+      "imageName": ""
+    },
+    {
+      "id": "writer-1",
+      "name": "Technical Content Writer Name",
+      "role": "Team Member",
+      "imageDataUrl": "",
+      "imageName": ""
+    },
+    {
+      "id": "writer-2",
+      "name": "Technical Content Writer Name",
+      "role": "Team Member",
+      "imageDataUrl": "",
+      "imageName": ""
+    },
+    {
+      "id": "writer-3",
+      "name": "Technical Content Writer Name",
+      "role": "Team Member",
+      "imageDataUrl": "",
+      "imageName": ""
+    },
+    {
+      "id": "writer-4",
+      "name": "Technical Content Writer Name",
+      "role": "Team Member",
+      "imageDataUrl": "",
+      "imageName": ""
+    }
+  ]
+}

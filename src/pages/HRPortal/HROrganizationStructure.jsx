@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
-import { FaBuilding, FaEdit, FaTrash, FaPlus } from "react-icons/fa";
+import { FaBuilding, FaEdit, FaTrash, FaPlus, FaSave, FaTimes, FaUpload, FaUsers } from "react-icons/fa";
+import PortraitTeamTree from "../../components/shared/PortraitTeamTree";
 import { getDepartments, createDepartment, updateDepartment, deleteDepartment } from "../../utils/organizationStorage";
 import { itemMatchesSearch, useHrSearchQuery } from "../../utils/hrSearch";
+import { createTeamMember, getTeam, saveTeam, teamEvent } from "../../utils/teamStorage";
 import HRPortalLayout from "./HRPortalLayout";
 
 function HROrganizationStructure({ activePage, onNavigate }) {
@@ -12,6 +14,9 @@ function HROrganizationStructure({ activePage, onNavigate }) {
   const [lead, setLead] = useState("");
   const [members, setMembers] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [team, setTeam] = useState(() => getTeam());
+  const [editingPerson, setEditingPerson] = useState(null);
+  const [teamMessage, setTeamMessage] = useState("");
   const searchQuery = useHrSearchQuery();
   const filteredDepartments = departments.filter((department) =>
     itemMatchesSearch(department, searchQuery)
@@ -28,6 +33,17 @@ function HROrganizationStructure({ activePage, onNavigate }) {
     return () => {
       window.removeEventListener("assignopedia-organization-updated", refreshDepts);
       window.removeEventListener("storage", refreshDepts);
+    };
+  }, []);
+
+  useEffect(() => {
+    const refreshTeam = () => setTeam(getTeam());
+
+    window.addEventListener(teamEvent, refreshTeam);
+    window.addEventListener("storage", refreshTeam);
+    return () => {
+      window.removeEventListener(teamEvent, refreshTeam);
+      window.removeEventListener("storage", refreshTeam);
     };
   }, []);
 
@@ -87,6 +103,104 @@ function HROrganizationStructure({ activePage, onNavigate }) {
     setEditingDept(null);
   };
 
+  const handleEditLeader = () => {
+    setEditingPerson({ ...team.leader, type: "leader" });
+    setTeamMessage("");
+  };
+
+  const handleEditMember = (member) => {
+    setEditingPerson({ ...member, type: "member" });
+    setTeamMessage("");
+  };
+
+  const handleTeamFieldChange = (field, value) => {
+    setEditingPerson((current) => ({ ...current, [field]: value }));
+  };
+
+  const handleAddMember = () => {
+    const newMember = createTeamMember();
+    const nextTeam = saveTeam({ ...team, members: [...team.members, newMember] });
+
+    setTeam(nextTeam);
+    setEditingPerson({ ...newMember, type: "member" });
+    setTeamMessage("New node added. Update the details and save.");
+  };
+
+  const handleDeleteMember = (memberId) => {
+    const nextTeam = saveTeam({
+      ...team,
+      members: team.members.filter((member) => member.id !== memberId),
+    });
+
+    setTeam(nextTeam);
+    setEditingPerson((current) => (current?.id === memberId ? null : current));
+    setTeamMessage("Node deleted successfully.");
+  };
+
+  const handleTeamImageChange = (event) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    const allowedTypes = ["image/png", "image/jpeg", "image/webp"];
+    const allowedExtension = /\.(png|jpe?g|webp)$/i.test(file.name);
+
+    if (!allowedTypes.includes(file.type) || !allowedExtension) {
+      setTeamMessage("Please upload a PNG, JPG, or WEBP team image.");
+      event.target.value = "";
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.addEventListener("load", () => {
+      setEditingPerson((current) => ({
+        ...current,
+        imageDataUrl: reader.result || "",
+        imageName: file.name,
+      }));
+      setTeamMessage("Image ready. Save to update the team circle.");
+    });
+    reader.readAsDataURL(file);
+  };
+
+  const handleSavePerson = (event) => {
+    event.preventDefault();
+
+    if (!editingPerson?.name?.trim()) {
+      setTeamMessage("Please enter a node name.");
+      return;
+    }
+
+    const cleanedPerson = {
+      id: editingPerson.id,
+      name: editingPerson.name.trim(),
+      role: editingPerson.role.trim() || "Team Member",
+      imageDataUrl: editingPerson.imageDataUrl || "",
+      imageName: editingPerson.imageName || "",
+    };
+    const nextTeam =
+      editingPerson.type === "leader"
+        ? saveTeam({ ...team, leader: { ...team.leader, ...cleanedPerson, id: "leader" } })
+        : saveTeam({
+            ...team,
+            members: team.members.map((member) =>
+              member.id === cleanedPerson.id ? { ...member, ...cleanedPerson } : member
+            ),
+          });
+
+    setTeam(nextTeam);
+    setEditingPerson(null);
+    setTeamMessage("Team node updated successfully.");
+  };
+
+  const handleCancelPersonEdit = () => {
+    setEditingPerson(null);
+    setTeamMessage("");
+  };
+
   return (
     <HRPortalLayout activePage={activePage} eyebrow="Organization" title="Organization Structure" onNavigate={onNavigate}>
       {successMessage && (
@@ -104,6 +218,70 @@ function HROrganizationStructure({ activePage, onNavigate }) {
           ✓ {successMessage}
         </div>
       )}
+
+      <article className="hr-panel hr-team-structure-panel">
+        <div className="hr-panel-heading">
+          <div>
+            <span>Team</span>
+            <h2>Team Structure</h2>
+          </div>
+          <button className="hr-primary-action" type="button" onClick={handleAddMember}>
+            <FaPlus /> Add Node
+          </button>
+        </div>
+
+        <PortraitTeamTree
+          team={team}
+          canManage
+          onEditLeader={handleEditLeader}
+          onEditMember={handleEditMember}
+          onDeleteMember={handleDeleteMember}
+          onAddMember={handleAddMember}
+        />
+
+        {teamMessage && <p className="hr-success-banner" role="status">{teamMessage}</p>}
+
+        {editingPerson && (
+          <form className="hr-form hr-team-edit-form" onSubmit={handleSavePerson}>
+            <div className="hr-panel-heading">
+              <div>
+                <span>Edit</span>
+                <h2>{editingPerson.type === "leader" ? "Edit Team Leader" : "Edit Team Node"}</h2>
+              </div>
+              <FaUsers />
+            </div>
+            <label>
+              <span>Name</span>
+              <input value={editingPerson.name} onChange={(event) => handleTeamFieldChange("name", event.target.value)} />
+            </label>
+            <label>
+              <span>Designation</span>
+              <input value={editingPerson.role} onChange={(event) => handleTeamFieldChange("role", event.target.value)} />
+            </label>
+            <label className="hr-team-image-upload">
+              <span>Photo</span>
+              <input
+                type="file"
+                accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
+                onChange={handleTeamImageChange}
+              />
+              <small><FaUpload /> Upload image for this circle</small>
+            </label>
+            {editingPerson.imageDataUrl && (
+              <div className="hr-team-image-preview">
+                <img src={editingPerson.imageDataUrl} alt={editingPerson.imageName || editingPerson.name} />
+                <button type="button" onClick={() => setEditingPerson((current) => ({ ...current, imageDataUrl: "", imageName: "" }))}>
+                  Remove Image
+                </button>
+              </div>
+            )}
+            <div className="hr-action-pair">
+              <button type="submit"><FaSave /> Save</button>
+              <button className="outline" type="button" onClick={handleCancelPersonEdit}><FaTimes /> Cancel</button>
+            </div>
+          </form>
+        )}
+      </article>
 
       {showForm && (
         <article className="hr-panel" style={{ marginBottom: "20px" }}>

@@ -15,6 +15,7 @@ import AdminEmployees from "./pages/AdminPortal/AdminEmployees";
 import AdminProjects from "./pages/AdminPortal/AdminProjects";
 import AdminReports from "./pages/AdminPortal/AdminReports";
 import AdminRevenue from "./pages/AdminPortal/AdminRevenue";
+import AdminBlogPosts from "./pages/AdminPortal/AdminBlogPosts";
 import AdminSettings from "./pages/AdminPortal/AdminSettings";
 import AdminSystem from "./pages/AdminPortal/AdminSystem";
 import HRAttendanceChecking from "./pages/HRPortal/HRAttendanceChecking";
@@ -65,6 +66,7 @@ const adminPages = [
   "admin-projects",
   "admin-revenue",
   "admin-reports",
+  "admin-blog-posts",
   "admin-settings",
   "admin-system",
 ];
@@ -165,6 +167,10 @@ function App() {
 
     if (activePage === "admin-reports") {
       return <AdminReports activePage={activePage} onNavigate={handleNavigate} />;
+    }
+
+    if (activePage === "admin-blog-posts") {
+      return <AdminBlogPosts activePage={activePage} onNavigate={handleNavigate} />;
     }
 
     if (activePage === "admin-settings") {

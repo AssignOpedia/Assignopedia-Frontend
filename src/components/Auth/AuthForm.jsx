@@ -6,6 +6,10 @@ import {
   registerAccount,
   updateAccountPassword,
 } from "../../utils/authStorage";
+import {
+  requestPortalPasswordOtp,
+  resetPortalPasswordWithOtp,
+} from "../../utils/passwordResetApi";
 import { addPasswordResetRequest } from "../../utils/passwordResetRequests";
 
 const roleDetails = {
@@ -50,6 +54,7 @@ const AuthForm = ({
     newPassword: "",
   });
   const [generatedOtp, setGeneratedOtp] = useState("");
+  const [resetId, setResetId] = useState("");
   const [resetMessage, setResetMessage] = useState("");
   const isRoleForm = Boolean(role);
   const isSignup = mode === "signup";
@@ -82,8 +87,26 @@ const AuthForm = ({
     setResetData((current) => ({ ...current, [name]: value }));
   };
 
-  const handleOtpRequest = (event) => {
+  const handleOtpRequest = async (event) => {
     event.preventDefault();
+
+    if (role === "hr" || role === "admin") {
+      try {
+        const response = await requestPortalPasswordOtp({
+          email: resetData.email,
+          role,
+        });
+
+        setResetId(response.resetId);
+        setGeneratedOtp("");
+        setResetStep("otp");
+        setResetMessage(response.message || "OTP sent to your registered email.");
+      } catch (error) {
+        setAuthError(error.message);
+      }
+
+      return;
+    }
 
     const account = findAccountByEmail(resetData.email);
 
@@ -103,8 +126,49 @@ const AuthForm = ({
     setResetMessage("OTP request sent to HR and Admin.");
   };
 
-  const handlePasswordReset = (event) => {
+  const handlePasswordReset = async (event) => {
     event.preventDefault();
+
+    if (role === "hr" || role === "admin") {
+      try {
+        const response = await resetPortalPasswordWithOtp({
+          resetId,
+          email: resetData.email,
+          role,
+          otp: resetData.otp,
+          newPassword: resetData.newPassword,
+        });
+
+        const localAccount = updateAccountPassword({
+          email: resetData.email,
+          password: resetData.newPassword,
+        });
+
+        if (!localAccount && response.user) {
+          registerAccount({
+            name: response.user.name,
+            email: resetData.email,
+            password: resetData.newPassword,
+            role,
+          });
+        }
+        setFormData((current) => ({
+          ...current,
+          email: resetData.email,
+          password: resetData.newPassword,
+        }));
+        setShowResetPassword(false);
+        setResetStep("email");
+        setGeneratedOtp("");
+        setResetId("");
+        setResetData({ email: "", otp: "", newPassword: "" });
+        setResetMessage(response.message || "Password changed successfully. You can login now.");
+      } catch (error) {
+        setAuthError(error.message);
+      }
+
+      return;
+    }
 
     if (resetData.otp !== generatedOtp) {
       setAuthError("Invalid OTP. Please check and try again.");
@@ -124,6 +188,7 @@ const AuthForm = ({
     setShowResetPassword(false);
     setResetStep("email");
     setGeneratedOtp("");
+    setResetId("");
     setResetData({ email: "", otp: "", newPassword: "" });
     setResetMessage("Password changed successfully. You can login now.");
   };
@@ -203,7 +268,7 @@ const AuthForm = ({
             <p>
               {role === "employee"
                 ? "Enter your registered email. This request will be visible to HR and Admin."
-                : "Enter your registered email to request an OTP."}
+                : "Enter your registered email. OTP will be sent to your mail ID."}
             </p>
 
             <form
@@ -386,7 +451,7 @@ const AuthForm = ({
           </form>
 
           <div className="role-auth-switch">
-            {!isSignup && role === "employee" && (
+            {!isSignup && (
               <button
                 type="button"
                 onClick={() => {

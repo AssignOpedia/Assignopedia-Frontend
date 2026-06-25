@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 function useBlogUpload() {
   const [selectedImage, setSelectedImage] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
+  const [imageDataUrl, setImageDataUrl] = useState("");
   const [uploadMessage, setUploadMessage] = useState(null);
 
   useEffect(() => {
@@ -26,6 +27,7 @@ function useBlogUpload() {
     if (!allowedTypes.includes(file.type) || !allowedExtension) {
       setSelectedImage(null);
       setPreviewUrl("");
+      setImageDataUrl("");
       setUploadMessage({
         type: "error",
         text: "Invalid file type. Please upload PNG, JPG, or WEBP.",
@@ -36,17 +38,33 @@ function useBlogUpload() {
 
     setSelectedImage(file);
     setPreviewUrl(URL.createObjectURL(file));
+    const reader = new FileReader();
+
+    reader.addEventListener("load", () => {
+      setImageDataUrl(reader.result || "");
+    });
+    reader.readAsDataURL(file);
+
     setUploadMessage({
       type: "success",
       text: "Image uploaded successfully \u2713",
     });
   };
 
+  const resetBlogUpload = () => {
+    setSelectedImage(null);
+    setPreviewUrl("");
+    setImageDataUrl("");
+    setUploadMessage(null);
+  };
+
   return {
     selectedImage,
     previewUrl,
+    imageDataUrl,
     uploadMessage,
     handleCoverImageChange,
+    resetBlogUpload,
   };
 }
 
