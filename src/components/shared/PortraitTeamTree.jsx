@@ -1,7 +1,7 @@
 import { FaEdit, FaPlus, FaTrash } from "react-icons/fa";
 
-const getInitials = (name = "") =>
-  name
+const getInitials = (person) =>
+  (person.initials || person.name || "")
     .split(" ")
     .filter(Boolean)
     .slice(0, 2)
@@ -27,7 +27,7 @@ function TeamTreeNode({ person, variant = "aqua", large = false, canManage = fal
         {person.imageDataUrl ? (
           <img src={person.imageDataUrl} alt={person.imageName || person.name} />
         ) : (
-          <span>{getInitials(person.name)}</span>
+          <span>{getInitials(person)}</span>
         )}
       </div>
       <strong>{person.name}</strong>

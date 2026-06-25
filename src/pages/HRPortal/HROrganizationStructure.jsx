@@ -178,6 +178,8 @@ function HROrganizationStructure({ activePage, onNavigate }) {
       id: editingPerson.id,
       name: editingPerson.name.trim(),
       role: editingPerson.role.trim() || "Team Member",
+      department: editingPerson.department?.trim() || "",
+      initials: editingPerson.initials?.trim().toUpperCase().slice(0, 3) || "",
       imageDataUrl: editingPerson.imageDataUrl || "",
       imageName: editingPerson.imageName || "",
     };
@@ -241,47 +243,103 @@ function HROrganizationStructure({ activePage, onNavigate }) {
 
         {teamMessage && <p className="hr-success-banner" role="status">{teamMessage}</p>}
 
-        {editingPerson && (
-          <form className="hr-form hr-team-edit-form" onSubmit={handleSavePerson}>
-            <div className="hr-panel-heading">
-              <div>
-                <span>Edit</span>
-                <h2>{editingPerson.type === "leader" ? "Edit Team Leader" : "Edit Team Node"}</h2>
-              </div>
-              <FaUsers />
-            </div>
-            <label>
-              <span>Name</span>
-              <input value={editingPerson.name} onChange={(event) => handleTeamFieldChange("name", event.target.value)} />
-            </label>
-            <label>
-              <span>Designation</span>
-              <input value={editingPerson.role} onChange={(event) => handleTeamFieldChange("role", event.target.value)} />
-            </label>
-            <label className="hr-team-image-upload">
-              <span>Photo</span>
-              <input
-                type="file"
-                accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
-                onChange={handleTeamImageChange}
-              />
-              <small><FaUpload /> Upload image for this circle</small>
-            </label>
-            {editingPerson.imageDataUrl && (
-              <div className="hr-team-image-preview">
-                <img src={editingPerson.imageDataUrl} alt={editingPerson.imageName || editingPerson.name} />
-                <button type="button" onClick={() => setEditingPerson((current) => ({ ...current, imageDataUrl: "", imageName: "" }))}>
-                  Remove Image
-                </button>
-              </div>
-            )}
-            <div className="hr-action-pair">
-              <button type="submit"><FaSave /> Save</button>
-              <button className="outline" type="button" onClick={handleCancelPersonEdit}><FaTimes /> Cancel</button>
-            </div>
-          </form>
-        )}
       </article>
+
+      {editingPerson && (
+        <div className="hr-team-modal-backdrop" role="presentation" onMouseDown={handleCancelPersonEdit}>
+          <section
+            className="hr-team-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="team-edit-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <button
+              className="hr-team-modal-close"
+              type="button"
+              onClick={handleCancelPersonEdit}
+              aria-label="Close team member editor"
+            >
+              <FaTimes />
+            </button>
+
+            <form className="hr-form hr-team-edit-form" onSubmit={handleSavePerson}>
+              <div className="hr-team-modal-heading">
+                <span><FaUsers /></span>
+                <div>
+                  <small>Edit team card</small>
+                  <h2 id="team-edit-title">
+                    {editingPerson.type === "leader" ? "Edit Team Leader" : "Edit Team Member"}
+                  </h2>
+                </div>
+              </div>
+
+              <div className="hr-team-modal-grid">
+                <label>
+                  <span>Name</span>
+                  <input
+                    value={editingPerson.name}
+                    onChange={(event) => handleTeamFieldChange("name", event.target.value)}
+                    autoFocus
+                    required
+                  />
+                </label>
+                <label>
+                  <span>Role / Designation</span>
+                  <input
+                    value={editingPerson.role}
+                    onChange={(event) => handleTeamFieldChange("role", event.target.value)}
+                    required
+                  />
+                </label>
+                <label>
+                  <span>Team / Department</span>
+                  <input
+                    value={editingPerson.department || ""}
+                    onChange={(event) => handleTeamFieldChange("department", event.target.value)}
+                    placeholder="Enter team or department"
+                  />
+                </label>
+                <label>
+                  <span>Initials</span>
+                  <input
+                    value={editingPerson.initials || ""}
+                    onChange={(event) => handleTeamFieldChange("initials", event.target.value)}
+                    placeholder="e.g. RD"
+                    maxLength="3"
+                  />
+                </label>
+              </div>
+
+              <label className="hr-team-image-upload">
+                <span>Photo</span>
+                <input
+                  type="file"
+                  accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
+                  onChange={handleTeamImageChange}
+                />
+                <small><FaUpload /> Upload image for this card</small>
+              </label>
+
+              {editingPerson.imageDataUrl && (
+                <div className="hr-team-image-preview">
+                  <img src={editingPerson.imageDataUrl} alt={editingPerson.imageName || editingPerson.name} />
+                  <button type="button" onClick={() => setEditingPerson((current) => ({ ...current, imageDataUrl: "", imageName: "" }))}>
+                    Remove Image
+                  </button>
+                </div>
+              )}
+
+              <div className="hr-team-modal-actions">
+                <button className="outline" type="button" onClick={handleCancelPersonEdit}>
+                  Cancel
+                </button>
+                <button type="submit"><FaSave /> Save Changes</button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
 
       {showForm && (
         <article className="hr-panel" style={{ marginBottom: "20px" }}>

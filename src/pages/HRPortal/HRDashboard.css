@@ -1138,15 +1138,117 @@
 }
 
 .hr-team-edit-form{
-  margin-top:16px;
-  padding:16px;
-  background:#f8fbff;
-  border:1px solid rgba(37,99,235,.1);
-  border-radius:18px;
+  gap:16px;
 }
 
-.hr-team-edit-form .hr-panel-heading{
-  margin-bottom:4px;
+.hr-team-modal-backdrop{
+  position:fixed;
+  z-index:80;
+  inset:0;
+  display:grid;
+  place-items:center;
+  padding:20px;
+  background:rgba(7,27,69,.5);
+  backdrop-filter:blur(9px);
+}
+
+.hr-team-modal{
+  position:relative;
+  width:min(520px,100%);
+  max-height:calc(100vh - 40px);
+  overflow:auto;
+  padding:26px;
+  background:
+    radial-gradient(circle at 92% 4%,rgba(244,163,0,.13),transparent 27%),
+    linear-gradient(145deg,#fff,#f6f9ff);
+  border:1px solid rgba(255,255,255,.8);
+  border-radius:24px;
+  box-shadow:0 28px 80px rgba(7,27,69,.3);
+}
+
+.hr-team-modal-close{
+  position:absolute;
+  z-index:2;
+  top:14px;
+  right:14px;
+  display:grid;
+  width:34px;
+  height:34px;
+  place-items:center;
+  color:var(--hr-navy);
+  background:#f1f5f9;
+  border:0;
+  border-radius:10px;
+  cursor:pointer;
+}
+
+.hr-team-modal-heading{
+  display:flex;
+  align-items:center;
+  gap:13px;
+  padding-right:38px;
+}
+
+.hr-team-modal-heading > span{
+  display:grid;
+  flex:0 0 auto;
+  width:44px;
+  height:44px;
+  place-items:center;
+  color:#fff;
+  background:linear-gradient(135deg,var(--hr-blue),var(--hr-navy));
+  border-radius:14px;
+}
+
+.hr-team-modal-heading small{
+  color:var(--hr-blue);
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+
+.hr-team-modal-heading h2{
+  margin:3px 0 0;
+  color:var(--hr-navy);
+  font-size:21px;
+}
+
+.hr-team-modal-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+  margin-top:2px;
+}
+
+.hr-team-modal-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+  padding-top:4px;
+}
+
+.hr-team-modal-actions button{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  min-height:42px;
+  padding:0 16px;
+  color:#fff;
+  background:linear-gradient(135deg,var(--hr-blue),var(--hr-navy));
+  border:0;
+  border-radius:12px;
+  cursor:pointer;
+  font:inherit;
+  font-size:13px;
+  font-weight:900;
+}
+
+.hr-team-modal-actions button.outline{
+  color:var(--hr-navy);
+  background:#fff;
+  border:1px solid rgba(37,99,235,.2);
 }
 
 .hr-team-image-upload input{
@@ -1191,6 +1293,33 @@
   font:inherit;
   font-size:12px;
   font-weight:900;
+}
+
+@media(max-width:600px){
+  .hr-team-modal-backdrop{
+    align-items:end;
+    padding:12px;
+  }
+
+  .hr-team-modal{
+    width:100%;
+    max-height:calc(100dvh - 24px);
+    padding:22px 18px;
+    border-radius:22px;
+  }
+
+  .hr-team-modal-grid{
+    grid-template-columns:1fr;
+    gap:12px;
+  }
+
+  .hr-team-modal-actions{
+    flex-direction:column-reverse;
+  }
+
+  .hr-team-modal-actions button{
+    width:100%;
+  }
 }
 
 .hr-structure-card{
