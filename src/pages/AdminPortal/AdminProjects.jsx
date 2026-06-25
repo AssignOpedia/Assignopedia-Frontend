@@ -1,7 +1,9 @@
+import { useEffect, useState } from "react";
 import { FaCalendarAlt, FaCheckCircle, FaExclamationTriangle, FaProjectDiagram, FaTasks } from "react-icons/fa";
+import { getPortalResource } from "../../utils/portalDataApi";
 import AdminPortalLayout from "./AdminPortalLayout";
 
-const projects = [
+const fallbackProjects = [
   { name: "Client ERP Migration", owner: "Ananya Sen", status: "Active", progress: 78, deadline: "24 Jun" },
   { name: "Assignopedia LMS", owner: "Rahul Verma", status: "Delayed", progress: 54, deadline: "26 Jun" },
   { name: "Finance Automation", owner: "Sourav Das", status: "Completed", progress: 100, deadline: "18 Jun" },
@@ -9,6 +11,18 @@ const projects = [
 ];
 
 function AdminProjects({ activePage, onNavigate }) {
+  const [projects, setProjects] = useState(fallbackProjects);
+
+  useEffect(() => {
+    getPortalResource("projects", fallbackProjects).then((data) => {
+      setProjects(Array.isArray(data) && data.length ? data : fallbackProjects);
+    });
+  }, []);
+
+  const activeCount = projects.filter((project) => project.status === "Active").length;
+  const delayedCount = projects.filter((project) => project.status === "Delayed").length;
+  const completedCount = projects.filter((project) => project.status === "Completed").length;
+
   return (
     <AdminPortalLayout
       activePage={activePage}
@@ -19,10 +33,10 @@ function AdminProjects({ activePage, onNavigate }) {
       action={<button type="button"><FaProjectDiagram /> New Project</button>}
     >
       <section className="admin-card-grid compact-grid">
-        <article className="admin-stat-card"><div><FaTasks /></div><span>Active Projects</span><strong>34</strong><small>12 in final sprint</small></article>
-        <article className="admin-stat-card"><div><FaExclamationTriangle /></div><span>Delayed Projects</span><strong>06</strong><small>3 need escalation</small></article>
-        <article className="admin-stat-card"><div><FaCheckCircle /></div><span>Completed Projects</span><strong>112</strong><small>18 this quarter</small></article>
-        <article className="admin-stat-card"><div><FaCalendarAlt /></div><span>Upcoming Deadlines</span><strong>09</strong><small>Next 14 days</small></article>
+        <article className="admin-stat-card"><div><FaTasks /></div><span>Active Projects</span><strong>{activeCount}</strong><small>Synced from backend</small></article>
+        <article className="admin-stat-card"><div><FaExclamationTriangle /></div><span>Delayed Projects</span><strong>{delayedCount}</strong><small>Need escalation</small></article>
+        <article className="admin-stat-card"><div><FaCheckCircle /></div><span>Completed Projects</span><strong>{completedCount}</strong><small>Delivered</small></article>
+        <article className="admin-stat-card"><div><FaCalendarAlt /></div><span>Total Projects</span><strong>{projects.length}</strong><small>Express API</small></article>
       </section>
 
       <section className="admin-content-grid">

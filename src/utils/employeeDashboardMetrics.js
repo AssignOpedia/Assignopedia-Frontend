@@ -61,9 +61,11 @@ export const getCurrentEmployeeWfhRequests = () => {
 };
 
 export const saveEmployeeWfhRequest = (request) => {
+  const localRequest = { ...request };
   const savedRequests = readStoredItems(wfhRequestKey);
 
-  localStorage.setItem(wfhRequestKey, JSON.stringify([request, ...savedRequests]));
+  delete localRequest.fileData;
+  localStorage.setItem(wfhRequestKey, JSON.stringify([localRequest, ...savedRequests]));
   window.dispatchEvent(new CustomEvent("employee-wfh-request-updated"));
 };
 

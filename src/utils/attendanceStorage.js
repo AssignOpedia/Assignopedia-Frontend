@@ -36,6 +36,10 @@ const saveAttendanceRecords = (records) => {
 
 export const getAttendanceRecords = () => readAttendanceRecords();
 
+export const setAttendanceRecords = (records) => {
+  saveAttendanceRecords(Array.isArray(records) ? records : []);
+};
+
 const parseTimeToMinutes = (time) => {
   const match = String(time).match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
 
@@ -205,6 +209,7 @@ export const upsertTodayAttendance = ({ loginTime, logoutTime }) => {
   const existingRecord = recordIndex >= 0 ? records[recordIndex] : {};
   const nextRecord = {
     ...existingRecord,
+    id: existingRecord.id || `attendance-${currentUser.email}-${today}`,
     date: today,
     employeeName: currentUser.name,
     email: currentUser.email,

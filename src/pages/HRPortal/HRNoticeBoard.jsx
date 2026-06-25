@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { FaPlus, FaTrash } from "react-icons/fa";
-import { createNotice, deleteNotice, getNoticeEvent, getNotices } from "../../utils/noticeStorage";
+import { createNotice, deleteNotice, getNoticeEvent, getNotices, setNotices as setStoredNotices } from "../../utils/noticeStorage";
+import { createNoticeRemote, deleteNoticeRemote, getNoticesRemote } from "../../utils/hrPortalApi";
 import { itemMatchesSearch, setHrSearchQuery, useHrSearchQuery } from "../../utils/hrSearch";
 import HRPortalLayout from "./HRPortalLayout";
 
 function HRNoticeBoard({ activePage, onNavigate }) {
-  const [notices, setNotices] = useState(() => getNotices());
+  const [notices, setNoticesState] = useState(() => getNotices());
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -15,8 +16,15 @@ function HRNoticeBoard({ activePage, onNavigate }) {
 
   useEffect(() => {
     const refreshNotices = () => {
-      setNotices(getNotices());
+      setNoticesState(getNotices());
     };
+
+    getNoticesRemote()
+      .then((remoteNotices) => {
+        setStoredNotices(remoteNotices);
+        setNoticesState(remoteNotices);
+      })
+      .catch(() => {});
 
     const event = getNoticeEvent();
     window.addEventListener(event, refreshNotices);
@@ -28,7 +36,7 @@ function HRNoticeBoard({ activePage, onNavigate }) {
     };
   }, []);
 
-  const handleCreateNotice = (event) => {
+  const handleCreateNotice = async (event) => {
     event.preventDefault();
 
     if (!title.trim() || !body.trim()) {
@@ -36,21 +44,33 @@ function HRNoticeBoard({ activePage, onNavigate }) {
       return;
     }
 
-    createNotice(title.trim(), body.trim());
+    const notice = createNotice(title.trim(), body.trim());
+    const response = await createNoticeRemote(notice).catch(() => null);
+
+    if (response?.items) {
+      setStoredNotices(response.items);
+    }
+
     setHrSearchQuery("");
     setTitle("");
     setBody("");
     setShowForm(false);
     setSuccessMessage("Notice created successfully.");
-    setNotices(getNotices());
+    setNoticesState(getNotices());
 
     setTimeout(() => setSuccessMessage(""), 2000);
   };
 
-  const handleDeleteNotice = (id) => {
+  const handleDeleteNotice = async (id) => {
     if (window.confirm("Delete this notice?")) {
       deleteNotice(id);
-      setNotices(getNotices());
+      const response = await deleteNoticeRemote(id).catch(() => null);
+
+      if (response?.items) {
+        setStoredNotices(response.items);
+      }
+
+      setNoticesState(getNotices());
     }
   };
 

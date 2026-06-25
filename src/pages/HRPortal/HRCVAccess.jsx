@@ -1,13 +1,63 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FaDownload, FaEye, FaFileAlt, FaSearch, FaTrash } from "react-icons/fa";
 import {
   deleteCVApplication,
   getCVEvent,
   getStoredCVs,
+  setStoredCVs,
   updateCVApplicationStatus,
 } from "../../utils/cvStorage";
+import {
+  deleteCVApplicationRemote,
+  getCVApplicationsRemote,
+  updateCVApplicationRemote,
+} from "../../utils/cvApi";
 import { itemMatchesSearch, useHrSearchQuery } from "../../utils/hrSearch";
 import HRPortalLayout from "./HRPortalLayout";
+
+const createCVObjectUrl = (cv) => {
+  if (!cv?.cvData) {
+    return "";
+  }
+
+  if (!cv.cvData.startsWith("data:")) {
+    return cv.cvData;
+  }
+
+  const [metadata, base64Data] = cv.cvData.split(",");
+  if (!base64Data) {
+    return cv.cvData;
+  }
+
+  const mimeType = metadata.match(/^data:(.*);base64$/)?.[1] || "application/pdf";
+  const byteCharacters = window.atob(base64Data);
+  const byteNumbers = new Array(byteCharacters.length);
+
+  for (let index = 0; index < byteCharacters.length; index += 1) {
+    byteNumbers[index] = byteCharacters.charCodeAt(index);
+  }
+
+  const blob = new Blob([new Uint8Array(byteNumbers)], { type: mimeType });
+  return URL.createObjectURL(blob);
+};
+
+function CVPreviewFrame({ cv }) {
+  const previewUrl = useMemo(() => createCVObjectUrl(cv), [cv]);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
+  if (!previewUrl) {
+    return <p>No CV file data available.</p>;
+  }
+
+  return <iframe src={previewUrl} title={cv.cvFileName || "Candidate CV"} />;
+}
 
 function HRCVAccess({ activePage, onNavigate }) {
   const [cvs, setCvs] = useState(() => getStoredCVs());
@@ -19,6 +69,13 @@ function HRCVAccess({ activePage, onNavigate }) {
     const refreshCVs = () => {
       setCvs(getStoredCVs());
     };
+
+    getCVApplicationsRemote()
+      .then((remoteCVs) => {
+        setStoredCVs(remoteCVs);
+        setCvs(remoteCVs);
+      })
+      .catch(() => {});
 
     const event = getCVEvent();
     window.addEventListener(event, refreshCVs);
@@ -35,12 +92,17 @@ function HRCVAccess({ activePage, onNavigate }) {
       return;
     }
 
+    const cvUrl = createCVObjectUrl(cv);
     const link = document.createElement("a");
-    link.href = cv.cvData;
+    link.href = cvUrl;
     link.download = cv.cvFileName || `${cv.fullName}-CV.pdf`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+
+    if (cvUrl.startsWith("blob:")) {
+      window.setTimeout(() => URL.revokeObjectURL(cvUrl), 1000);
+    }
   };
 
   const handleOpenCV = (cv) => {
@@ -48,25 +110,34 @@ function HRCVAccess({ activePage, onNavigate }) {
       return;
     }
 
-    const previewWindow = window.open();
+    const cvUrl = createCVObjectUrl(cv);
+    const title = cv.cvFileName || "Candidate CV";
+    const previewWindow = window.open(cvUrl, "_blank", "noopener,noreferrer");
     if (previewWindow) {
-      previewWindow.document.write(
-        `<iframe src="${cv.cvData}" title="${cv.cvFileName || "Candidate CV"}" style="border:0;width:100%;height:100vh;"></iframe>`
-      );
-      previewWindow.document.close();
+      previewWindow.document.title = title;
+    }
+
+    if (cvUrl.startsWith("blob:")) {
+      window.setTimeout(() => URL.revokeObjectURL(cvUrl), 60000);
     }
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this CV application?")) {
       deleteCVApplication(id);
+      await deleteCVApplicationRemote(id).catch(() => {});
       setCvs(getStoredCVs());
       setSelectedCV(null);
     }
   };
 
-  const handleStatusChange = (cv, status) => {
+  const handleStatusChange = async (cv, status) => {
     const updatedCV = updateCVApplicationStatus(cv.id, status);
+
+    if (updatedCV) {
+      await updateCVApplicationRemote(updatedCV).catch(() => {});
+    }
+
     setCvs(getStoredCVs());
     setSelectedCV(updatedCV);
   };
@@ -102,7 +173,7 @@ function HRCVAccess({ activePage, onNavigate }) {
 
             <div className="hr-cv-preview">
               {selectedCV.cvData ? (
-                <iframe src={selectedCV.cvData} title={selectedCV.cvFileName || "Candidate CV"} />
+                <CVPreviewFrame cv={selectedCV} />
               ) : (
                 <p>No CV file data available.</p>
               )}

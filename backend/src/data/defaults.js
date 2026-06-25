@@ -32,6 +32,44 @@ const departments = [
   { id: "dept-4", name: "Quality Review", lead: "Nisha Roy", members: "9 Members" },
 ];
 
+const projects = [
+  { id: "project-1", name: "Client ERP Migration", owner: "Ananya Sen", status: "Active", progress: 78, deadline: "24 Jun" },
+  { id: "project-2", name: "Assignopedia LMS", owner: "Rahul Verma", status: "Delayed", progress: 54, deadline: "26 Jun" },
+  { id: "project-3", name: "Finance Automation", owner: "Sourav Das", status: "Completed", progress: 100, deadline: "18 Jun" },
+  { id: "project-4", name: "CRM Analytics", owner: "Neha Iyer", status: "Active", progress: 68, deadline: "03 Jul" },
+];
+
+const tasks = [
+  { id: "task-1", title: "Submit weekly research summary", due: "Today, 4:00 PM", priority: "High", status: "Pending" },
+  { id: "task-2", title: "Review assignment brief updates", due: "Tomorrow, 11:30 AM", priority: "Medium", status: "Pending" },
+  { id: "task-3", title: "Update project tracker notes", due: "Friday, 2:00 PM", priority: "Medium", status: "Pending" },
+  { id: "task-4", title: "Prepare frontend glossary draft", due: "Monday, 10:00 AM", priority: "Low", status: "Pending" },
+];
+
+const revenue = [
+  { id: "revenue-jan", month: "Jan", value: "$210K", height: 48 },
+  { id: "revenue-feb", month: "Feb", value: "$246K", height: 58 },
+  { id: "revenue-mar", month: "Mar", value: "$288K", height: 70 },
+  { id: "revenue-apr", month: "Apr", value: "$301K", height: 74 },
+  { id: "revenue-may", month: "May", value: "$336K", height: 86 },
+  { id: "revenue-jun", month: "Jun", value: "$352K", height: 92 },
+];
+
+const reports = [
+  { id: "report-attendance", title: "Attendance Reports", detail: "Daily presence, leave, and remote work summaries", type: "attendance", updated: "Today" },
+  { id: "report-performance", title: "Employee Performance Reports", detail: "Score trends, rankings, quality, and productivity", type: "performance", updated: "2 hours ago" },
+  { id: "report-projects", title: "Project Reports", detail: "Milestones, delays, ownership, and deadline movement", type: "projects", updated: "Yesterday" },
+  { id: "report-revenue", title: "Revenue Reports", detail: "Monthly revenue, team contribution, and billing codes", type: "revenue", updated: "Today" },
+];
+
+const systemEvents = [
+  { id: "role-super-admin", category: "role", role: "Super Admin", users: 2, access: "Full platform" },
+  { id: "role-hr-admin", category: "role", role: "HR Admin", users: 5, access: "People operations" },
+  { id: "role-finance-admin", category: "role", role: "Finance Admin", users: 3, access: "Revenue and reports" },
+  { id: "login-raj", category: "login", user: "Raj Da", time: "09:12 AM", result: "Success" },
+  { id: "login-finance", category: "login", user: "Finance Bot", time: "02:14 AM", result: "Blocked" },
+];
+
 const notices = [
   { id: "default-1", title: "Updated holiday calendar is available for review.", date: "Jun 16", body: "The revised annual holiday list is now available." },
   { id: "default-2", title: "June payroll inputs close on Friday at 5 PM.", date: "Jun 18", body: "Submit payroll inputs before Friday 5 PM." },
@@ -97,11 +135,12 @@ module.exports = {
   notices,
   passwordResetRequests: [],
   profiles,
-  revenue: [],
-  reports: [],
+  projects,
   settings: {},
-  systemEvents: [],
-  tasks: [],
+  revenue,
+  reports,
+  systemEvents,
+  tasks,
   team,
   wfhRequests: [],
 };

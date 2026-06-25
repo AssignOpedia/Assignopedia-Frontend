@@ -5,6 +5,32 @@ const uri = process.env.MONGODB_URI;
 const dbName = process.env.MONGODB_DB_NAME || "assignopedia";
 const collectionName = process.env.MONGODB_COLLECTION || "appStores";
 const usersCollectionName = process.env.MONGODB_USERS_COLLECTION || "users";
+const arrayCollectionStores = {
+  attendance: {
+    collectionName: process.env.MONGODB_ATTENDANCE_COLLECTION || "attendance",
+    idPrefix: "attendance",
+  },
+  blogPosts: {
+    collectionName: process.env.MONGODB_BLOG_POSTS_COLLECTION || "blogPosts",
+    idPrefix: "blog",
+  },
+  cvApplications: {
+    collectionName: process.env.MONGODB_CV_APPLICATIONS_COLLECTION || "cvApplications",
+    idPrefix: "cv",
+  },
+  leaveRequests: {
+    collectionName: process.env.MONGODB_LEAVE_REQUESTS_COLLECTION || "leaveRequests",
+    idPrefix: "leave",
+  },
+  notices: {
+    collectionName: process.env.MONGODB_NOTICES_COLLECTION || "notices",
+    idPrefix: "notice",
+  },
+  wfhRequests: {
+    collectionName: process.env.MONGODB_WFH_REQUESTS_COLLECTION || "wfhRequests",
+    idPrefix: "wfh",
+  },
+};
 
 let clientPromise;
 let warnedFallback = false;
@@ -17,6 +43,11 @@ const getAccountId = (account) =>
 const normalizeAccount = (account) => {
   const id = getAccountId(account);
   return { ...account, id, _id: id };
+};
+
+const normalizeDocument = (item, prefix) => {
+  const id = item.id || `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+  return { ...item, id, _id: id };
 };
 
 const timeout = (ms, message) =>
@@ -136,9 +167,69 @@ const writeUsers = async (data) => {
   return saved === null ? jsonStore.write("accounts", data) : saved;
 };
 
+const readLegacyArrayStore = async (name) => {
+  const appStoresCollection = await getCollection(collectionName);
+  const document = await appStoresCollection?.findOne({ _id: name });
+  return Array.isArray(document?.data) ? document.data : null;
+};
+
+const readArrayCollection = async ({ name, fallback, targetCollectionName, idPrefix }) => {
+  const data = await withStore(async (collection) => {
+    const items = await collection
+      .find({})
+      .project({ _id: 0 })
+      .sort({ createdAt: -1, updatedAt: -1 })
+      .toArray();
+
+    if (items.length > 0) {
+      return items;
+    }
+
+    const legacyItems = await readLegacyArrayStore(name);
+    const seededItems = clone(legacyItems?.length ? legacyItems : fallback);
+
+    if (Array.isArray(seededItems) && seededItems.length > 0) {
+      await collection.insertMany(
+        seededItems.map((item) => normalizeDocument(item, idPrefix)),
+        { ordered: false }
+      );
+    }
+
+    return seededItems;
+  }, targetCollectionName);
+
+  return data === null ? jsonStore.read(name, fallback) : data;
+};
+
+const writeArrayCollection = async ({ name, data, targetCollectionName, idPrefix }) => {
+  const saved = await withStore(async (collection) => {
+    await collection.deleteMany({});
+
+    if (Array.isArray(data) && data.length > 0) {
+      await collection.insertMany(
+        data.map((item) => normalizeDocument(item, idPrefix)),
+        { ordered: false }
+      );
+    }
+
+    return data;
+  }, targetCollectionName);
+
+  return saved === null ? jsonStore.write(name, data) : saved;
+};
+
 const read = async (name, fallback) => {
   if (name === "accounts") {
     return readUsers(fallback);
+  }
+
+  if (arrayCollectionStores[name]) {
+    return readArrayCollection({
+      name,
+      fallback,
+      targetCollectionName: arrayCollectionStores[name].collectionName,
+      idPrefix: arrayCollectionStores[name].idPrefix,
+    });
   }
 
   const data = await withStore(async (collection) => {
@@ -164,6 +255,15 @@ const read = async (name, fallback) => {
 const write = async (name, data) => {
   if (name === "accounts") {
     return writeUsers(data);
+  }
+
+  if (arrayCollectionStores[name]) {
+    return writeArrayCollection({
+      name,
+      data,
+      targetCollectionName: arrayCollectionStores[name].collectionName,
+      idPrefix: arrayCollectionStores[name].idPrefix,
+    });
   }
 
   const saved = await withStore(async (collection) => {
@@ -208,6 +308,12 @@ const getStatus = async () => {
       dbName,
       collectionName,
       usersCollectionName,
+      arrayCollections: Object.fromEntries(
+        Object.entries(arrayCollectionStores).map(([name, config]) => [
+          name,
+          config.collectionName,
+        ])
+      ),
     };
   } catch (error) {
     clientPromise = null;

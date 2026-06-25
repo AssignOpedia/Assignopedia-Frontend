@@ -13,8 +13,7 @@ const syncItems = [
   { key: "assignopediaOrganization", resource: "departments", event: "assignopedia-organization-updated" },
   { key: "assignopediaPasswordResetRequests", resource: "passwordResetRequests", event: "assignopedia-password-reset-request-updated" },
   { key: "assignopediaPortalProfiles", resource: "profiles", event: "assignopedia-profile-updated" },
-  { key: "employeeWfhRequests", resource: "wfhRequests", event: "employee-wfh-request-updated" },
-  { key: "hrLeaveRequests", resource: "leaveRequests", event: "hr-leave-request-updated" },
+  { key: "assignopediaProjects", resource: "projects", event: "assignopedia-projects-updated" },
 ];
 
 const readLocalJson = (key) => {

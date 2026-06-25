@@ -2,11 +2,13 @@ import { useState } from "react";
 import { FaCalendarAlt, FaClock, FaSignInAlt, FaSignOutAlt } from "react-icons/fa";
 import {
   formatCurrentTime,
+  getAttendanceRecords,
   getEmployeeAttendanceForToday,
   getEmployeeMonthlyAttendanceSummary,
   getEmployeeMonthlyAttendanceTrend,
   upsertTodayAttendance,
 } from "../../utils/attendanceStorage";
+import { syncAttendanceRemote } from "../../utils/hrPortalApi";
 import EmployeePortalLayout from "./EmployeePortalLayout";
 
 function EmployeeAttendance({ activePage, onNavigate }) {
@@ -61,6 +63,7 @@ function EmployeeAttendance({ activePage, onNavigate }) {
     setAttendanceRecord(record);
     setAttendanceSummary(getEmployeeMonthlyAttendanceSummary());
     setAttendanceTrend(getEmployeeMonthlyAttendanceTrend());
+    syncAttendanceRemote(getAttendanceRecords()).catch(() => {});
     showMessage("Login recorded successfully. HR and Admin can now see it.");
   };
 
@@ -70,6 +73,7 @@ function EmployeeAttendance({ activePage, onNavigate }) {
     setAttendanceRecord(record);
     setAttendanceSummary(getEmployeeMonthlyAttendanceSummary());
     setAttendanceTrend(getEmployeeMonthlyAttendanceTrend());
+    syncAttendanceRemote(getAttendanceRecords()).catch(() => {});
     showMessage("Logout recorded successfully. Attendance report updated.");
   };
 

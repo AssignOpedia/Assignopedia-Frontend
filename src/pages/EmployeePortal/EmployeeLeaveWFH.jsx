@@ -2,6 +2,7 @@ import { useState } from "react";
 import { FaCalendarCheck, FaHome, FaPlaneDeparture } from "react-icons/fa";
 import { getCurrentUser } from "../../utils/authStorage";
 import { saveEmployeeWfhRequest } from "../../utils/employeeDashboardMetrics";
+import { createLeaveRequestRemote, createWfhRequestRemote } from "../../utils/hrPortalApi";
 import { addHrRequestNotification, formatNotificationDate } from "../../utils/requestNotifications";
 import EmployeePortalLayout from "./EmployeePortalLayout";
 
@@ -18,6 +19,32 @@ const initialRequests = [
 ];
 
 const hrLeaveRequestStorageKey = "hrLeaveRequests";
+const maxUploadBytes = 5 * 1024 * 1024;
+
+const toLocalRequest = (request) => {
+  const localRequest = { ...request };
+
+  delete localRequest.fileData;
+  delete localRequest.pdfData;
+  return localRequest;
+};
+
+const readStoredRequests = (key) => {
+  try {
+    return JSON.parse(localStorage.getItem(key) || "[]");
+  } catch {
+    return [];
+  }
+};
+
+const writeStoredRequests = (key, requests) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(requests.map(toLocalRequest)));
+  } catch {
+    localStorage.removeItem(key);
+    localStorage.setItem(key, JSON.stringify(requests.slice(0, 10).map(toLocalRequest)));
+  }
+};
 
 const getLeaveDays = (fromDate, toDate) => {
   if (!fromDate || !toDate) {
@@ -38,7 +65,9 @@ const getLeaveDays = (fromDate, toDate) => {
 function EmployeeLeaveWFH({ activePage, onNavigate }) {
   const [activeModal, setActiveModal] = useState(null);
   const [successMessage, setSuccessMessage] = useState("");
-  const [pdfError, setPdfError] = useState("");
+  const [fileError, setFileError] = useState("");
+  const [submitError, setSubmitError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [requests, setRequests] = useState(initialRequests);
   const [leaveForm, setLeaveForm] = useState({
     type: "Casual Leave",
@@ -47,16 +76,26 @@ function EmployeeLeaveWFH({ activePage, onNavigate }) {
     reason: "",
     pdfFileName: "",
     pdfData: "",
+    fileName: "",
+    fileData: "",
+    fileType: "",
+    fileSize: 0,
   });
   const [wfhForm, setWfhForm] = useState({
     date: "",
     reason: "",
     project: "",
+    fileName: "",
+    fileData: "",
+    fileType: "",
+    fileSize: 0,
   });
 
   const closeModal = () => {
     setActiveModal(null);
-    setPdfError("");
+    setFileError("");
+    setSubmitError("");
+    setIsSubmitting(false);
   };
 
   const handleLeaveChange = (event) => {
@@ -69,16 +108,35 @@ function EmployeeLeaveWFH({ activePage, onNavigate }) {
     setWfhForm((current) => ({ ...current, [name]: value }));
   };
 
-  const handlePdfChange = (event) => {
+  const handleFileChange = (event, target) => {
     const file = event.target.files?.[0];
 
     if (!file) {
       return;
     }
 
-    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
-      setPdfError("Only PDF files are allowed.");
-      setLeaveForm((current) => ({ ...current, pdfFileName: "", pdfData: "" }));
+    if (file.size > maxUploadBytes) {
+      setFileError("File is too large. Please upload a file under 5 MB.");
+      setSubmitError("");
+      if (target === "leave") {
+        setLeaveForm((current) => ({
+          ...current,
+          pdfFileName: "",
+          pdfData: "",
+          fileName: "",
+          fileData: "",
+          fileType: "",
+          fileSize: 0,
+        }));
+      } else {
+        setWfhForm((current) => ({
+          ...current,
+          fileName: "",
+          fileData: "",
+          fileType: "",
+          fileSize: 0,
+        }));
+      }
       event.target.value = "";
       return;
     }
@@ -86,19 +144,43 @@ function EmployeeLeaveWFH({ activePage, onNavigate }) {
     const reader = new FileReader();
 
     reader.onload = () => {
-      setPdfError("");
-      setLeaveForm((current) => ({
-        ...current,
-        pdfFileName: file.name,
-        pdfData: typeof reader.result === "string" ? reader.result : "",
-      }));
+      const fileData = typeof reader.result === "string" ? reader.result : "";
+      const details = {
+        fileName: file.name,
+        fileData,
+        fileType: file.type || "application/octet-stream",
+        fileSize: file.size,
+      };
+
+      setFileError("");
+      setSubmitError("");
+
+      if (target === "leave") {
+        setLeaveForm((current) => ({
+          ...current,
+          ...details,
+          pdfFileName: file.name,
+          pdfData: fileData,
+        }));
+        return;
+      }
+
+      setWfhForm((current) => ({ ...current, ...details }));
     };
 
     reader.readAsDataURL(file);
   };
 
-  const handleLeaveSubmit = (event) => {
+  const handleLeaveSubmit = async (event) => {
     event.preventDefault();
+    setSubmitError("");
+
+    if (fileError) {
+      setSubmitError("Please fix the file upload error before submitting.");
+      return;
+    }
+
+    setIsSubmitting(true);
     const currentUser = getCurrentUser();
     const requestDate = formatNotificationDate();
     const leaveRequest = {
@@ -112,63 +194,106 @@ function EmployeeLeaveWFH({ activePage, onNavigate }) {
       reason: leaveForm.reason,
       pdfFileName: leaveForm.pdfFileName,
       pdfData: leaveForm.pdfData,
+      fileName: leaveForm.fileName,
+      fileData: leaveForm.fileData,
+      fileType: leaveForm.fileType,
+      fileSize: leaveForm.fileSize,
       requestDate,
     };
-    const savedRequests = JSON.parse(localStorage.getItem(hrLeaveRequestStorageKey) || "[]");
+    try {
+      await createLeaveRequestRemote(leaveRequest);
+      const savedRequests = readStoredRequests(hrLeaveRequestStorageKey);
 
-    localStorage.setItem(
-      hrLeaveRequestStorageKey,
-      JSON.stringify([leaveRequest, ...savedRequests])
-    );
-    window.dispatchEvent(new CustomEvent("hr-leave-request-updated"));
-    addHrRequestNotification({
-      type: "Leave",
-      employeeName: currentUser.name,
-      requestDate,
-      detail: `${leaveForm.type} for ${leaveRequest.dates}`,
-    });
-    setRequests((current) => [
-      {
-        title: leaveForm.type,
-        meta: `Pending - ${leaveForm.fromDate || "Selected date"}`,
-      },
-      ...current,
-    ]);
-    setLeaveForm({ type: "Casual Leave", fromDate: "", toDate: "", reason: "", pdfFileName: "", pdfData: "" });
-    setSuccessMessage("Leave request submitted successfully.");
-    closeModal();
+      writeStoredRequests(
+        hrLeaveRequestStorageKey,
+        [leaveRequest, ...savedRequests.filter((request) => request.id !== leaveRequest.id)]
+      );
+      window.dispatchEvent(new CustomEvent("hr-leave-request-updated"));
+      addHrRequestNotification({
+        type: "Leave",
+        employeeName: currentUser.name,
+        requestDate,
+        detail: `${leaveForm.type} for ${leaveRequest.dates}`,
+      });
+      setRequests((current) => [
+        {
+          title: leaveForm.type,
+          meta: `Pending - ${leaveForm.fromDate || "Selected date"}`,
+        },
+        ...current,
+      ]);
+      setLeaveForm({
+        type: "Casual Leave",
+        fromDate: "",
+        toDate: "",
+        reason: "",
+        pdfFileName: "",
+        pdfData: "",
+        fileName: "",
+        fileData: "",
+        fileType: "",
+        fileSize: 0,
+      });
+      setSuccessMessage("Leave request submitted successfully and saved in MongoDB.");
+      closeModal();
+    } catch (error) {
+      setSubmitError(`Leave request was not saved in MongoDB: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleWfhSubmit = (event) => {
+  const handleWfhSubmit = async (event) => {
     event.preventDefault();
+    setSubmitError("");
+
+    if (fileError) {
+      setSubmitError("Please fix the file upload error before submitting.");
+      return;
+    }
+
+    setIsSubmitting(true);
     const currentUser = getCurrentUser();
     const requestDate = formatNotificationDate();
-    saveEmployeeWfhRequest({
+    const wfhRequest = {
       id: `wfh-${Date.now()}`,
       name: currentUser.name,
       email: currentUser.email,
       date: wfhForm.date,
       task: wfhForm.project,
       reason: wfhForm.reason,
+      fileName: wfhForm.fileName,
+      fileData: wfhForm.fileData,
+      fileType: wfhForm.fileType,
+      fileSize: wfhForm.fileSize,
       status: "Pending",
       requestDate,
-    });
-    addHrRequestNotification({
-      type: "WFH",
-      employeeName: currentUser.name,
-      requestDate,
-      detail: `${wfhForm.project} on ${wfhForm.date}`,
-    });
-    setRequests((current) => [
-      {
-        title: "WFH Request",
-        meta: `Pending - ${wfhForm.date || "Selected date"}`,
-      },
-      ...current,
-    ]);
-    setWfhForm({ date: "", reason: "", project: "" });
-    setSuccessMessage("WFH request submitted successfully.");
-    closeModal();
+    };
+
+    try {
+      await createWfhRequestRemote(wfhRequest);
+      saveEmployeeWfhRequest(toLocalRequest(wfhRequest));
+      addHrRequestNotification({
+        type: "WFH",
+        employeeName: currentUser.name,
+        requestDate,
+        detail: `${wfhForm.project} on ${wfhForm.date}`,
+      });
+      setRequests((current) => [
+        {
+          title: "WFH Request",
+          meta: `Pending - ${wfhForm.date || "Selected date"}`,
+        },
+        ...current,
+      ]);
+      setWfhForm({ date: "", reason: "", project: "", fileName: "", fileData: "", fileType: "", fileSize: 0 });
+      setSuccessMessage("WFH request submitted successfully and saved in MongoDB.");
+      closeModal();
+    } catch (error) {
+      setSubmitError(`WFH request was not saved in MongoDB: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -267,13 +392,16 @@ function EmployeeLeaveWFH({ activePage, onNavigate }) {
                     <textarea name="reason" value={leaveForm.reason} onChange={handleLeaveChange} rows="4" required />
                   </label>
                   <label>
-                    <span>Supporting Document (PDF)</span>
-                    <input type="file" accept=".pdf,application/pdf" onChange={handlePdfChange} />
-                    <small className="request-helper-text">Upload supporting document if required.</small>
-                    {leaveForm.pdfFileName && <strong className="request-file-name">{leaveForm.pdfFileName}</strong>}
-                    {pdfError && <small className="request-error-text">{pdfError}</small>}
+                    <span>Supporting File</span>
+                    <input type="file" onChange={(event) => handleFileChange(event, "leave")} />
+                    <small className="request-helper-text">Upload a supporting file if required. Max 5 MB.</small>
+                    {leaveForm.fileName && <strong className="request-file-name">{leaveForm.fileName}</strong>}
+                    {fileError && <small className="request-error-text">{fileError}</small>}
                   </label>
-                  <button className="request-submit-btn" type="submit">Submit</button>
+                  {submitError && <small className="request-error-text">{submitError}</small>}
+                  <button className="request-submit-btn" type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? "Submitting..." : "Submit"}
+                  </button>
                 </form>
               </>
             ) : (
@@ -295,7 +423,17 @@ function EmployeeLeaveWFH({ activePage, onNavigate }) {
                     <span>Project / Task name</span>
                     <input type="text" name="project" value={wfhForm.project} onChange={handleWfhChange} required />
                   </label>
-                  <button className="request-submit-btn" type="submit">Submit</button>
+                  <label>
+                    <span>Supporting File</span>
+                    <input type="file" onChange={(event) => handleFileChange(event, "wfh")} />
+                    <small className="request-helper-text">Upload a supporting file if required. Max 5 MB.</small>
+                    {wfhForm.fileName && <strong className="request-file-name">{wfhForm.fileName}</strong>}
+                    {fileError && <small className="request-error-text">{fileError}</small>}
+                  </label>
+                  {submitError && <small className="request-error-text">{submitError}</small>}
+                  <button className="request-submit-btn" type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? "Submitting..." : "Submit"}
+                  </button>
                 </form>
               </>
             )}

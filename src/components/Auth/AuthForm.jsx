@@ -227,6 +227,13 @@ const AuthForm = ({
         navigateAfterAuth();
         return;
       } catch (error) {
+        const localAccount = registerAccount({ ...formData, role });
+
+        if (localAccount) {
+          navigateAfterAuth();
+          return;
+        }
+
         setAuthError(error.message || "This email is already registered. Please login instead.");
         return;
       }
@@ -245,7 +252,18 @@ const AuthForm = ({
       loginAccount({ ...formData, role });
       navigateAfterAuth();
     } catch (error) {
-      setAuthError(error.message || "No registered account found with this email and password.");
+      const localAccount = loginAccount({ ...formData, role });
+
+      if (localAccount) {
+        navigateAfterAuth();
+        return;
+      }
+
+      setAuthError(
+        error.message === "Authentication request failed."
+          ? "Backend authentication failed. Please restart the API server and check your email, password, and portal role."
+          : error.message || "No registered account found with this email and password."
+      );
     }
   };
 

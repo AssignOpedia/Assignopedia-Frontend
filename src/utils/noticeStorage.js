@@ -14,6 +14,10 @@ const saveNotices = (notices) => {
   window.dispatchEvent(new CustomEvent(noticeEvent));
 };
 
+export const setNotices = (notices) => {
+  saveNotices(Array.isArray(notices) ? notices : []);
+};
+
 export const createNotice = (title, body) => {
   const notices = readNotices();
   const newNotice = {

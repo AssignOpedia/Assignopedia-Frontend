@@ -14,6 +14,20 @@ const saveCVs = (cvs) => {
   window.dispatchEvent(new CustomEvent(cvEvent));
 };
 
+export const setStoredCVs = (cvs) => {
+  saveCVs(Array.isArray(cvs) ? cvs : []);
+};
+
+export const upsertCVApplication = (applicationData) => {
+  const cvs = readCVs();
+  const nextCVs = cvs.some((cv) => cv.id === applicationData.id)
+    ? cvs.map((cv) => (cv.id === applicationData.id ? applicationData : cv))
+    : [...cvs, applicationData];
+
+  saveCVs(nextCVs);
+  return applicationData;
+};
+
 export const submitCareerApplication = (applicationData) => {
   const cvs = readCVs();
   const newApplication = {

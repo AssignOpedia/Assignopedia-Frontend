@@ -1,7 +1,9 @@
+import { useEffect, useState } from "react";
 import { FaChartLine, FaEye, FaUserCheck, FaUserClock, FaUserMinus, FaUsers } from "react-icons/fa";
+import { getPortalResource } from "../../utils/portalDataApi";
 import AdminPortalLayout from "./AdminPortalLayout";
 
-const employees = [
+const fallbackEmployees = [
   { name: "Ananya Sen", role: "Project Lead", team: "Delivery", status: "Present", score: 94 },
   { name: "Rahul Verma", role: "Frontend Engineer", team: "Engineering", status: "Present", score: 89 },
   { name: "Meera Joshi", role: "QA Analyst", team: "Quality", status: "Absent", score: 82 },
@@ -10,6 +12,20 @@ const employees = [
 ];
 
 function AdminEmployees({ activePage, onNavigate }) {
+  const [employees, setEmployees] = useState(fallbackEmployees);
+
+  useEffect(() => {
+    getPortalResource("adminEmployees", fallbackEmployees).then((data) => {
+      setEmployees(Array.isArray(data) && data.length ? data : fallbackEmployees);
+    });
+  }, []);
+
+  const presentCount = employees.filter((employee) => employee.status === "Present").length;
+  const absentCount = employees.filter((employee) => employee.status === "Absent").length;
+  const averageScore = Math.round(
+    employees.reduce((total, employee) => total + Number(employee.score || 0), 0) / Math.max(employees.length, 1)
+  );
+
   return (
     <AdminPortalLayout
       activePage={activePage}
@@ -20,10 +36,10 @@ function AdminEmployees({ activePage, onNavigate }) {
       action={<button type="button"><FaUsers /> Add Employee</button>}
     >
       <section className="admin-card-grid compact-grid">
-        <article className="admin-stat-card"><div><FaUsers /></div><span>Total Employees</span><strong>248</strong><small>Across 9 teams</small></article>
-        <article className="admin-stat-card"><div><FaUserCheck /></div><span>Present Today</span><strong>224</strong><small>90.3% attendance</small></article>
-        <article className="admin-stat-card"><div><FaUserMinus /></div><span>Absent Today</span><strong>24</strong><small>8 approved leaves</small></article>
-        <article className="admin-stat-card"><div><FaChartLine /></div><span>Avg Performance</span><strong>87%</strong><small>+4% this quarter</small></article>
+        <article className="admin-stat-card"><div><FaUsers /></div><span>Total Employees</span><strong>{employees.length}</strong><small>Backend directory</small></article>
+        <article className="admin-stat-card"><div><FaUserCheck /></div><span>Present Today</span><strong>{presentCount}</strong><small>Synced status</small></article>
+        <article className="admin-stat-card"><div><FaUserMinus /></div><span>Absent Today</span><strong>{absentCount}</strong><small>Synced status</small></article>
+        <article className="admin-stat-card"><div><FaChartLine /></div><span>Avg Performance</span><strong>{averageScore}%</strong><small>Backend scores</small></article>
       </section>
 
       <section className="admin-content-grid">

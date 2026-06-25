@@ -955,16 +955,33 @@
 }
 
 .hr-document-actions button{
-  min-height:32px;
-  padding:0 10px;
-  color:var(--hr-blue);
-  background:rgba(255,255,255,.82);
-  border:1px solid rgba(37,99,235,.24);
-  border-radius:10px;
+  min-height:36px;
+  padding:0 12px;
+  color:#fff;
+  background:linear-gradient(135deg,var(--hr-blue),var(--hr-navy));
+  border:0;
+  border-radius:12px;
   cursor:pointer;
   font:inherit;
   font-size:12px;
   font-weight:900;
+  box-shadow:0 10px 18px rgba(37,99,235,.16);
+}
+
+.hr-document-actions button:nth-child(2){
+  color:var(--hr-blue);
+  background:#fff;
+  border:1px solid rgba(37,99,235,.24);
+  box-shadow:none;
+}
+
+.hr-document-status{
+  display:block;
+  margin-top:8px;
+  color:#9a5f00;
+  font-size:12px;
+  font-weight:800;
+  text-align:right;
 }
 
 .hr-request-card p{

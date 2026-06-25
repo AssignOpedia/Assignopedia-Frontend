@@ -21,6 +21,7 @@ const syncStores = {
   notices: { storeName: "notices", fallback: defaults.notices },
   passwordResetRequests: { storeName: "passwordResetRequests", fallback: defaults.passwordResetRequests },
   profiles: { storeName: "profiles", fallback: defaults.profiles },
+  projects: { storeName: "projects", fallback: defaults.projects },
   revenue: { storeName: "revenue", fallback: defaults.revenue },
   reports: { storeName: "reports", fallback: defaults.reports },
   settings: { storeName: "settings", fallback: defaults.settings },
@@ -67,6 +68,17 @@ const collectionRoute = ({ path, storeName, fallback, idPrefix, requiredFields =
     res.json(await store.read(storeName, fallback));
   }));
 
+  router.get(`${path}/:id`, asyncRoute(async (req, res) => {
+    const items = await store.read(storeName, fallback);
+    const item = items.find((currentItem) => currentItem.id === req.params.id);
+
+    if (!item) {
+      throw createError(404, "Item not found");
+    }
+
+    res.json(item);
+  }));
+
   router.post(path, asyncRoute(async (req, res) => {
     required(req.body, requiredFields);
     const item = {
@@ -75,8 +87,23 @@ const collectionRoute = ({ path, storeName, fallback, idPrefix, requiredFields =
       createdAt: req.body.createdAt || nowIso(),
       updatedAt: nowIso(),
     };
-    const items = await store.update(storeName, fallback, (current) => [item, ...current]);
-    res.status(201).json({ item, items });
+    let created = true;
+    const items = await store.update(storeName, fallback, (current) => {
+      const existingIndex = current.findIndex((currentItem) => currentItem.id === item.id);
+
+      if (existingIndex < 0) {
+        return [item, ...current];
+      }
+
+      created = false;
+      return current.map((currentItem, index) =>
+        index === existingIndex
+          ? { ...currentItem, ...item, createdAt: currentItem.createdAt || item.createdAt }
+          : currentItem
+      );
+    });
+
+    res.status(created ? 201 : 200).json({ item, items });
   }));
 
   router.put(`${path}/:id`, asyncRoute(async (req, res) => {
@@ -111,6 +138,26 @@ const collectionRoute = ({ path, storeName, fallback, idPrefix, requiredFields =
     res.json({ id: req.params.id, items });
   }));
 };
+
+const getStoredFile = (item) => {
+  const dataUrl = item.fileData || item.pdfData || "";
+  const fileName = item.fileName || item.pdfFileName || "document";
+  const fileType = item.fileType || "";
+  const match = String(dataUrl).match(/^data:([^;]+);base64,(.+)$/s);
+
+  if (!match) {
+    return null;
+  }
+
+  return {
+    buffer: Buffer.from(match[2], "base64"),
+    fileName,
+    fileType: fileType || match[1] || "application/octet-stream",
+  };
+};
+
+const safeFileName = (fileName) =>
+  String(fileName || "document").replace(/[\r\n"]/g, "").replace(/[\\/]/g, "-");
 
 router.post("/auth/register", asyncRoute(async (req, res) => {
   required(req.body, ["name", "email", "password", "role"]);
@@ -389,6 +436,30 @@ collectionRoute({ path: "/blog-posts", storeName: "blogPosts", fallback: default
 collectionRoute({ path: "/departments", storeName: "departments", fallback: defaults.departments, idPrefix: "dept", requiredFields: ["name"] });
 collectionRoute({ path: "/employees", storeName: "employees", fallback: defaults.employees, idPrefix: "employee", requiredFields: ["name"] });
 collectionRoute({ path: "/admin-employees", storeName: "adminEmployees", fallback: defaults.adminEmployees, idPrefix: "admin-employee", requiredFields: ["name"] });
+collectionRoute({ path: "/projects", storeName: "projects", fallback: defaults.projects, idPrefix: "project", requiredFields: ["name"] });
+router.get("/leave-requests/:id/document", asyncRoute(async (req, res) => {
+  const requests = await store.read("leaveRequests", defaults.leaveRequests);
+  const request = requests.find((item) => item.id === req.params.id);
+
+  if (!request) {
+    throw createError(404, "Leave request not found");
+  }
+
+  const storedFile = getStoredFile(request);
+
+  if (!storedFile) {
+    throw createError(404, "No stored file data found for this leave request");
+  }
+
+  const disposition = req.query.download === "true" ? "attachment" : "inline";
+  const fileName = safeFileName(storedFile.fileName);
+
+  res.setHeader("Content-Type", storedFile.fileType);
+  res.setHeader("Content-Length", storedFile.buffer.length);
+  res.setHeader("Content-Disposition", `${disposition}; filename="${fileName}"`);
+  res.send(storedFile.buffer);
+}));
+
 collectionRoute({ path: "/notices", storeName: "notices", fallback: defaults.notices, idPrefix: "notice", requiredFields: ["title"] });
 collectionRoute({ path: "/attendance", storeName: "attendance", fallback: defaults.attendance, idPrefix: "attendance", requiredFields: ["email", "date"] });
 collectionRoute({ path: "/leave-requests", storeName: "leaveRequests", fallback: defaults.leaveRequests, idPrefix: "leave", requiredFields: ["name", "type"] });

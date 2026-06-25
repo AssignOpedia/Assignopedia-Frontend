@@ -1,7 +1,9 @@
+import { useEffect, useState } from "react";
 import { FaBriefcase } from "react-icons/fa";
+import { getPortalResource } from "../../utils/portalDataApi";
 import EmployeePortalLayout from "./EmployeePortalLayout";
 
-const projects = [
+const fallbackProjects = [
   { name: "Client Research Portal", progress: 82, status: "In Review" },
   { name: "Academic CRM Upgrade", progress: 64, status: "In Progress" },
   { name: "Content Quality Audit", progress: 91, status: "Final Checks" },
@@ -9,6 +11,14 @@ const projects = [
 ];
 
 function EmployeeProjects({ activePage, onNavigate }) {
+  const [projects, setProjects] = useState(fallbackProjects);
+
+  useEffect(() => {
+    getPortalResource("projects", fallbackProjects).then((data) => {
+      setProjects(Array.isArray(data) && data.length ? data : fallbackProjects);
+    });
+  }, []);
+
   return (
     <EmployeePortalLayout activePage={activePage} eyebrow="Projects" title="Assigned Projects" onNavigate={onNavigate}>
       <section className="portal-card">

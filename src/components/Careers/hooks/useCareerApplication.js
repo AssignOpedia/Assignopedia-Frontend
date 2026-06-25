@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { submitCareerApplication } from "../../../utils/cvStorage";
+import { submitCareerApplicationRemote } from "../../../utils/cvApi";
+import { submitCareerApplication, upsertCVApplication } from "../../../utils/cvStorage";
 
 function useCareerApplication() {
   const [selectedPosition, setSelectedPosition] = useState("");
@@ -62,9 +63,9 @@ function useCareerApplication() {
     try {
       // Convert file to base64 for storage
       const reader = new FileReader();
-      reader.onload = () => {
+      reader.onload = async () => {
         const cvData = reader.result;
-        submitCareerApplication({
+        const application = submitCareerApplication({
           fullName,
           email,
           phone,
@@ -75,6 +76,20 @@ function useCareerApplication() {
           role: position,
           status: "New",
         });
+
+        try {
+          const response = await submitCareerApplicationRemote(application);
+
+          if (response.application) {
+            upsertCVApplication(response.application);
+          }
+        } catch (error) {
+          setCvError(
+            `Application saved locally, but MongoDB sync failed: ${error.message}`
+          );
+          setIsSubmitting(false);
+          return;
+        }
 
         setSuccessMessage("Application submitted successfully! HR will review your CV soon.");
         event.target.reset();

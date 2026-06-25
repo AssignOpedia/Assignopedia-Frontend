@@ -1,20 +1,44 @@
+import { useEffect, useState } from "react";
 import { FaBell, FaKey, FaShieldAlt, FaSignInAlt, FaUserShield, FaUsersCog } from "react-icons/fa";
+import { getPortalResource } from "../../utils/portalDataApi";
 import AdminPortalLayout from "./AdminPortalLayout";
 
-const roles = [
+const fallbackRoles = [
   { role: "Super Admin", users: 2, access: "Full platform" },
   { role: "HR Admin", users: 5, access: "People operations" },
   { role: "Finance Admin", users: 3, access: "Revenue and reports" },
   { role: "Project Admin", users: 8, access: "Projects and delivery" },
 ];
 
-const logins = [
+const fallbackLogins = [
   { user: "Raj Da", time: "09:12 AM", result: "Success" },
   { user: "Priya Kapoor", time: "08:58 AM", result: "Success" },
   { user: "Finance Bot", time: "02:14 AM", result: "Blocked" },
 ];
 
 function AdminSystem({ activePage, onNavigate }) {
+  const [roles, setRoles] = useState(fallbackRoles);
+  const [logins, setLogins] = useState(fallbackLogins);
+
+  useEffect(() => {
+    getPortalResource("systemEvents", []).then((events) => {
+      if (!Array.isArray(events) || events.length === 0) {
+        return;
+      }
+
+      const roleEvents = events.filter((event) => event.category === "role");
+      const loginEvents = events.filter((event) => event.category === "login");
+
+      if (roleEvents.length) {
+        setRoles(roleEvents);
+      }
+
+      if (loginEvents.length) {
+        setLogins(loginEvents);
+      }
+    });
+  }, []);
+
   return (
     <AdminPortalLayout
       activePage={activePage}

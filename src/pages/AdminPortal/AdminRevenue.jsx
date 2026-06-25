@@ -1,7 +1,9 @@
+import { useEffect, useState } from "react";
 import { FaChartBar, FaChartPie, FaCode, FaLayerGroup, FaWallet } from "react-icons/fa";
+import { getPortalResource } from "../../utils/portalDataApi";
 import AdminPortalLayout from "./AdminPortalLayout";
 
-const revenue = [
+const fallbackRevenue = [
   { month: "Jan", value: "$210K", height: 48 },
   { month: "Feb", value: "$246K", height: 58 },
   { month: "Mar", value: "$288K", height: 70 },
@@ -18,6 +20,16 @@ const codes = [
 ];
 
 function AdminRevenue({ activePage, onNavigate }) {
+  const [revenue, setRevenue] = useState(fallbackRevenue);
+
+  useEffect(() => {
+    getPortalResource("revenue", fallbackRevenue).then((data) => {
+      setRevenue(Array.isArray(data) && data.length ? data : fallbackRevenue);
+    });
+  }, []);
+
+  const latestRevenue = revenue[revenue.length - 1]?.value || "$0";
+
   return (
     <AdminPortalLayout
       activePage={activePage}
@@ -28,7 +40,7 @@ function AdminRevenue({ activePage, onNavigate }) {
       action={<button type="button"><FaWallet /> Export Revenue</button>}
     >
       <section className="admin-card-grid compact-grid">
-        <article className="admin-stat-card"><div><FaWallet /></div><span>Monthly Revenue</span><strong>$352K</strong><small>June projection</small></article>
+        <article className="admin-stat-card"><div><FaWallet /></div><span>Monthly Revenue</span><strong>{latestRevenue}</strong><small>Latest backend month</small></article>
         <article className="admin-stat-card"><div><FaLayerGroup /></div><span>Top Team</span><strong>Sales</strong><small>$128K closed</small></article>
         <article className="admin-stat-card"><div><FaChartPie /></div><span>Client Retention</span><strong>94%</strong><small>+3% QoQ</small></article>
         <article className="admin-stat-card"><div><FaCode /></div><span>Active Codes</span><strong>28</strong><small>12 billing-ready</small></article>

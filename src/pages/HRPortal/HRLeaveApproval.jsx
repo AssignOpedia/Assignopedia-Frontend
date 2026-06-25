@@ -1,5 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FaCalendarCheck } from "react-icons/fa";
+import {
+  decideLeaveRequestRemote,
+  getLeaveRequestDocumentUrl,
+  getLeaveRequestRemote,
+  getLeaveRequestsRemote,
+} from "../../utils/hrPortalApi";
 import { addEmployeeDecisionNotification, formatNotificationDate } from "../../utils/requestNotifications";
 import { itemMatchesSearch, useHrSearchQuery } from "../../utils/hrSearch";
 import HRPortalLayout from "./HRPortalLayout";
@@ -47,15 +53,61 @@ const getStoredLeaveRequests = () => {
 const getRequestKey = (request) =>
   request.id || `${request.email || request.name}-${request.type}-${request.dates}-${request.reason}`;
 
+const toLocalRequest = (request) => {
+  const localRequest = { ...request };
+
+  delete localRequest.fileData;
+  delete localRequest.pdfData;
+  return localRequest;
+};
+
+const writeStoredLeaveRequests = (requests) => {
+  try {
+    localStorage.setItem(hrLeaveRequestStorageKey, JSON.stringify(requests.map(toLocalRequest)));
+  } catch {
+    localStorage.removeItem(hrLeaveRequestStorageKey);
+    localStorage.setItem(hrLeaveRequestStorageKey, JSON.stringify(requests.slice(0, 10).map(toLocalRequest)));
+  }
+};
+
+const getRequestDocument = (request) => ({
+  data: request.fileData || request.pdfData || "",
+  name: request.fileName || request.pdfFileName || "",
+});
+
 function HRLeaveApproval({ activePage, onNavigate }) {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [allLeaveRequests, setAllLeaveRequests] = useState(() => [...getStoredLeaveRequests(), ...leaveRequests]);
+  const [fileActionStatus, setFileActionStatus] = useState("");
   const searchQuery = useHrSearchQuery();
   const filteredLeaveRequests = allLeaveRequests.filter((request) =>
     itemMatchesSearch(request, searchQuery)
   );
 
-  const updateStoredLeaveStatus = (request, status) => {
+  useEffect(() => {
+    const refreshLeaveRequests = () => {
+      setAllLeaveRequests([...getStoredLeaveRequests(), ...leaveRequests]);
+    };
+
+    getLeaveRequestsRemote()
+      .then((remoteRequests) => {
+        const customRequests = remoteRequests.filter((request) => !String(request.id || "").startsWith("default-"));
+
+        writeStoredLeaveRequests(customRequests);
+        setAllLeaveRequests([...customRequests, ...leaveRequests]);
+      })
+      .catch(() => {});
+
+    window.addEventListener("hr-leave-request-updated", refreshLeaveRequests);
+    window.addEventListener("storage", refreshLeaveRequests);
+
+    return () => {
+      window.removeEventListener("hr-leave-request-updated", refreshLeaveRequests);
+      window.removeEventListener("storage", refreshLeaveRequests);
+    };
+  }, []);
+
+  const updateStoredLeaveStatus = async (request, status) => {
     const requestKey = getRequestKey(request);
     const decisionDate = formatNotificationDate();
     const storedRequests = getStoredLeaveRequests();
@@ -65,7 +117,7 @@ function HRLeaveApproval({ activePage, onNavigate }) {
         : storedRequest
     );
 
-    localStorage.setItem(hrLeaveRequestStorageKey, JSON.stringify(updatedStoredRequests));
+    writeStoredLeaveRequests(updatedStoredRequests);
     window.dispatchEvent(new CustomEvent("hr-leave-request-updated"));
     setAllLeaveRequests((current) =>
       current.map((currentRequest) =>
@@ -87,35 +139,110 @@ function HRLeaveApproval({ activePage, onNavigate }) {
         detail: `${request.type} for ${request.dates}`,
       });
     }
+
+    if (request.id) {
+      const response = await decideLeaveRequestRemote(request.id, status).catch(() => null);
+
+      if (response?.requests) {
+        const customRequests = response.requests.filter((item) => !String(item.id || "").startsWith("default-"));
+        writeStoredLeaveRequests(customRequests);
+        setAllLeaveRequests([...customRequests, ...leaveRequests]);
+      }
+    }
   };
 
-  const handleViewDocument = (request) => {
-    if (!request.pdfData) {
-      alert("Only the file name is available for this older request. New uploads can be viewed here.");
-      return;
+  const getFullLeaveRequest = async (request) => {
+    if (!request.id) {
+      return request;
     }
 
-    const previewWindow = window.open();
+    const remoteRequest = await getLeaveRequestRemote(request.id).catch(() => null);
+    const fullRequest = remoteRequest || request;
+
+    setAllLeaveRequests((current) =>
+      current.map((currentRequest) =>
+        getRequestKey(currentRequest) === getRequestKey(fullRequest) ? fullRequest : currentRequest
+      )
+    );
+    setSelectedRequest((current) =>
+      current && getRequestKey(current) === getRequestKey(fullRequest) ? fullRequest : current
+    );
+
+    return fullRequest;
+  };
+
+  const handleSelectRequest = async (request) => {
+    setFileActionStatus("");
+    setSelectedRequest(request);
+    const fullRequest = await getFullLeaveRequest(request);
+    setSelectedRequest(fullRequest);
+  };
+
+  const fetchLeaveDocument = async (request, { download = false } = {}) => {
+    const document = getRequestDocument(request);
+
+    if (!request.id || !document.name) {
+      throw new Error("No stored file was found for this leave request.");
+    }
+
+    const response = await fetch(getLeaveRequestDocumentUrl(request.id, { download }));
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || "Could not fetch the leave document from MongoDB.");
+    }
+
+    return {
+      blob: await response.blob(),
+      name: document.name || "leave-document",
+    };
+  };
+
+  const handleViewDocument = async (request) => {
+    const previewWindow = window.open("", "_blank");
+
     if (previewWindow) {
-      previewWindow.document.write(
-        `<iframe src="${request.pdfData}" title="${request.pdfFileName || "Supporting document"}" style="border:0;width:100%;height:100vh;"></iframe>`
-      );
+      previewWindow.document.write("<p style=\"font-family:Arial,sans-serif;padding:24px;\">Loading leave document from MongoDB...</p>");
       previewWindow.document.close();
     }
+
+    try {
+      setFileActionStatus("Opening file from MongoDB...");
+      const { blob, name } = await fetchLeaveDocument(request);
+      const url = URL.createObjectURL(blob);
+
+      if (previewWindow) {
+        previewWindow.location.href = url;
+        previewWindow.document.title = name;
+      } else {
+        window.open(url, "_blank", "noopener,noreferrer");
+      }
+
+      window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+      setFileActionStatus("");
+    } catch (error) {
+      previewWindow?.close();
+      setFileActionStatus(error.message);
+    }
   };
 
-  const handleDownloadDocument = (request) => {
-    if (!request.pdfData) {
-      alert("Only the file name is available for this older request. New uploads can be downloaded here.");
-      return;
-    }
+  const handleDownloadDocument = async (request) => {
+    try {
+      setFileActionStatus("Downloading file from MongoDB...");
+      const { blob, name } = await fetchLeaveDocument(request, { download: true });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
 
-    const link = document.createElement("a");
-    link.href = request.pdfData;
-    link.download = request.pdfFileName || "leave-document.pdf";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      link.href = url;
+      link.download = name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      setFileActionStatus("");
+    } catch (error) {
+      setFileActionStatus(error.message);
+    }
   };
 
   return (
@@ -137,7 +264,7 @@ function HRLeaveApproval({ activePage, onNavigate }) {
                   <td><span className={`hr-status ${request.status.toLowerCase()}`}>{request.status}</span></td>
                   <td>
                     <div className="hr-action-pair">
-                      <button className="outline" type="button" onClick={() => setSelectedRequest(request)}>View</button>
+                      <button className="outline" type="button" onClick={() => handleSelectRequest(request)}>View</button>
                       <button type="button" onClick={() => updateStoredLeaveStatus(request, "Approved")}>Approve</button>
                       <button className="danger" type="button" onClick={() => updateStoredLeaveStatus(request, "Rejected")}>Reject</button>
                     </div>
@@ -176,16 +303,23 @@ function HRLeaveApproval({ activePage, onNavigate }) {
               <p><strong>Days</strong><span>{selectedRequest.days}</span></p>
               <p><strong>Status</strong><span>{selectedRequest.status}</span></p>
               <p><strong>Leave reason</strong><span>{selectedRequest.reason}</span></p>
+              <p><strong>Employee email</strong><span>{selectedRequest.email || "-"}</span></p>
+              <p><strong>Requested on</strong><span>{selectedRequest.requestDate || selectedRequest.createdAt || "-"}</span></p>
               <p>
                 <strong>Supporting Document</strong>
                 <span>
-                  {selectedRequest.pdfFileName || "No document uploaded"}
-                  {selectedRequest.pdfFileName && (
+                  {getRequestDocument(selectedRequest).name || "No document uploaded"}
+                  {selectedRequest.id && getRequestDocument(selectedRequest).name && (
                     <span className="hr-document-actions">
-                      <button type="button" onClick={() => handleViewDocument(selectedRequest)}>View</button>
-                      <button type="button" onClick={() => handleDownloadDocument(selectedRequest)}>Download</button>
+                      <button type="button" onClick={() => handleViewDocument(selectedRequest)}>
+                        View File
+                      </button>
+                      <button type="button" onClick={() => handleDownloadDocument(selectedRequest)}>
+                        Download File
+                      </button>
                     </span>
                   )}
+                  {fileActionStatus && <small className="hr-document-status">{fileActionStatus}</small>}
                 </span>
               </p>
             </div>

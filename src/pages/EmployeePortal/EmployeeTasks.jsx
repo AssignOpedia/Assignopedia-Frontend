@@ -1,7 +1,9 @@
+import { useEffect, useState } from "react";
 import { FaCheckCircle, FaTasks } from "react-icons/fa";
+import { getPortalResource } from "../../utils/portalDataApi";
 import EmployeePortalLayout from "./EmployeePortalLayout";
 
-const tasks = [
+const fallbackTasks = [
   { title: "Submit weekly research summary", due: "Today, 4:00 PM", priority: "High" },
   { title: "Review assignment brief updates", due: "Tomorrow, 11:30 AM", priority: "Medium" },
   { title: "Update project tracker notes", due: "Friday, 2:00 PM", priority: "Medium" },
@@ -9,6 +11,14 @@ const tasks = [
 ];
 
 function EmployeeTasks({ activePage, onNavigate }) {
+  const [tasks, setTasks] = useState(fallbackTasks);
+
+  useEffect(() => {
+    getPortalResource("tasks", fallbackTasks).then((data) => {
+      setTasks(Array.isArray(data) && data.length ? data : fallbackTasks);
+    });
+  }, []);
+
   return (
     <EmployeePortalLayout activePage={activePage} eyebrow="Tasks" title="Task Workspace" onNavigate={onNavigate}>
       <section className="portal-card">

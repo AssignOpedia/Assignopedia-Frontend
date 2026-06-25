@@ -5,7 +5,9 @@ import {
   getAttendanceRecords,
   getAttendanceStatusFromLogin,
   getTodayKey,
+  setAttendanceRecords,
 } from "../../utils/attendanceStorage";
+import { getAttendanceRemote } from "../../utils/hrPortalApi";
 import { itemMatchesSearch, useHrSearchQuery } from "../../utils/hrSearch";
 import HRPortalLayout from "./HRPortalLayout";
 
@@ -20,6 +22,13 @@ function HRAttendanceChecking({ activePage, onNavigate }) {
     const refreshRows = () => {
       setRows(getAttendanceRecords().filter((record) => record.date === getTodayKey()));
     };
+
+    getAttendanceRemote()
+      .then((remoteRecords) => {
+        setAttendanceRecords(remoteRecords);
+        setRows(remoteRecords.filter((record) => record.date === getTodayKey()));
+      })
+      .catch(() => {});
 
     window.addEventListener(attendanceEvent, refreshRows);
     window.addEventListener("storage", refreshRows);

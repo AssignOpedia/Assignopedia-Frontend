@@ -10,6 +10,7 @@ import {
   FaSave,
 } from "react-icons/fa";
 import useBlogUpload from "../../components/Blog/hooks/useBlogUpload";
+import { deleteBlogPostRemote, saveBlogPostRemote } from "../../utils/blogApi";
 import { blogPostEvent, deleteBlogPost, getBlogPosts, saveBlogPost } from "../../utils/blogStorage";
 import AdminPortalLayout from "./AdminPortalLayout";
 
@@ -45,7 +46,7 @@ function AdminBlogPosts({ activePage, onNavigate }) {
     };
   }, []);
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     const formData = new FormData(event.currentTarget);
@@ -64,6 +65,7 @@ function AdminBlogPosts({ activePage, onNavigate }) {
       return;
     }
 
+    const wasEditing = Boolean(editingPost);
     const savedPost = saveBlogPost({
       id: editingPost?.id,
       createdAt: editingPost?.createdAt,
@@ -77,6 +79,15 @@ function AdminBlogPosts({ activePage, onNavigate }) {
       imageName: selectedImage?.name || editingPost?.imageName || "",
       readTime: `${Math.max(1, Math.ceil(content.split(/\s+/).length / 180))} min read`,
     });
+
+    try {
+      await saveBlogPostRemote(savedPost, wasEditing);
+    } catch (error) {
+      setStatusMessage(
+        `"${savedPost.title}" was saved locally, but MongoDB sync failed: ${error.message}`
+      );
+      return;
+    }
 
     event.currentTarget.reset();
     resetBlogUpload();
@@ -106,8 +117,15 @@ function AdminBlogPosts({ activePage, onNavigate }) {
     }
   };
 
-  const handleDelete = (postId) => {
+  const handleDelete = async (postId) => {
     deleteBlogPost(postId);
+
+    try {
+      await deleteBlogPostRemote(postId);
+    } catch (error) {
+      setStatusMessage(`Blog post removed locally, but MongoDB delete failed: ${error.message}`);
+      return;
+    }
 
     if (editingPost?.id === postId) {
       handleCancelEdit();
