@@ -2,6 +2,7 @@ export const teamStorageKey = "assignopediaEmployeeTeam";
 export const teamEvent = "assignopedia-team-updated";
 
 export const defaultTeam = {
+  schemaVersion: 2,
   leader: {
     id: "leader",
     name: "Raj Da",
@@ -12,19 +13,16 @@ export const defaultTeam = {
     imageName: "",
   },
   members: [
-    { id: "hr-management", name: "HR Management", role: "Team Member", imageDataUrl: "", imageName: "" },
-    { id: "hr-name-1", name: "HR Name", role: "Team Member", imageDataUrl: "", imageName: "" },
-    { id: "hr-name-2", name: "HR Name", role: "Team Member", imageDataUrl: "", imageName: "" },
-    { id: "operation-management", name: "Operation Management", role: "Team Member", imageDataUrl: "", imageName: "" },
-    { id: "bdm-name", name: "BDM Name", role: "Team Member", imageDataUrl: "", imageName: "" },
-    { id: "digital-marketing", name: "Digital Marketing Executive Name", role: "Team Member", imageDataUrl: "", imageName: "" },
-    { id: "bdm-name-2", name: "BDM Name", role: "Team Member", imageDataUrl: "", imageName: "" },
-    { id: "team-lead", name: "Team Lead", role: "Team Member", imageDataUrl: "", imageName: "" },
-    { id: "team-lead-name", name: "Team Lead name", role: "Team Member", imageDataUrl: "", imageName: "" },
-    { id: "writer-1", name: "Technical Content Writer Name", role: "Team Member", imageDataUrl: "", imageName: "" },
-    { id: "writer-2", name: "Technical Content Writer Name", role: "Team Member", imageDataUrl: "", imageName: "" },
-    { id: "writer-3", name: "Technical Content Writer Name", role: "Team Member", imageDataUrl: "", imageName: "" },
-    { id: "writer-4", name: "Technical Content Writer Name", role: "Team Member", imageDataUrl: "", imageName: "" },
+    { id: "hr-management", name: "H.R Management", role: "Human Resources", department: "H.R", initials: "HR", imageDataUrl: "", imageName: "" },
+    { id: "operation-management", name: "Operation Management", role: "Operations", department: "Operations", initials: "OM", imageDataUrl: "", imageName: "" },
+    { id: "team-lead", name: "TL", role: "Team Lead", department: "Delivery", initials: "TL", imageDataUrl: "", imageName: "" },
+    { id: "hr-recruiter", name: "H.R Recruiter", role: "Recruitment", department: "H.R", initials: "HR", imageDataUrl: "", imageName: "" },
+    { id: "hr-executive", name: "H.R Executive", role: "HR Operations", department: "H.R", initials: "HE", imageDataUrl: "", imageName: "" },
+    { id: "bdm-1", name: "B.D.M 1", role: "Business Development", department: "Operations", initials: "B1", imageDataUrl: "", imageName: "" },
+    { id: "bdm-2", name: "B.D.M 2", role: "Business Development", department: "Operations", initials: "B2", imageDataUrl: "", imageName: "" },
+    { id: "dm", name: "D.M", role: "Digital Marketing", department: "Operations", initials: "DM", imageDataUrl: "", imageName: "" },
+    { id: "technical-team", name: "Technical Team", role: "Technical Delivery", department: "Delivery", initials: "TT", imageDataUrl: "", imageName: "" },
+    { id: "non-technical-team", name: "Non-Technical Team", role: "Non-Technical Delivery", department: "Delivery", initials: "NT", imageDataUrl: "", imageName: "" },
   ],
 };
 
@@ -48,27 +46,59 @@ const normalizeMember = (member, index) => ({
   imageName: member.imageName || "",
 });
 
-export const normalizeTeam = (team) => ({
-  leader: {
-    ...defaultTeam.leader,
-    ...(team?.leader || {}),
-    id: "leader",
-    department: team?.leader?.department || defaultTeam.leader.department,
-    initials: team?.leader?.initials || defaultTeam.leader.initials,
-    imageDataUrl: team?.leader?.imageDataUrl || "",
-    imageName: team?.leader?.imageName || "",
-  },
-  members: Array.isArray(team?.members)
-    ? team.members.map(normalizeMember)
-    : defaultTeam.members,
-});
+export const normalizeTeam = (team) => {
+  const requiresHierarchyMigration = Number(team?.schemaVersion || 0) < defaultTeam.schemaVersion;
+  const legacyIds = {
+    "hr-recruiter": "hr-name-1",
+    "hr-executive": "hr-name-2",
+    "bdm-1": "bdm-name",
+    "bdm-2": "bdm-name-2",
+    dm: "digital-marketing",
+    "technical-team": "team-lead-name",
+    "non-technical-team": "writer-1",
+  };
+
+  return {
+    schemaVersion: defaultTeam.schemaVersion,
+    leader: {
+      ...defaultTeam.leader,
+      ...(team?.leader || {}),
+      id: "leader",
+      department: team?.leader?.department || defaultTeam.leader.department,
+      initials: team?.leader?.initials || defaultTeam.leader.initials,
+      imageDataUrl: team?.leader?.imageDataUrl || "",
+      imageName: team?.leader?.imageName || "",
+    },
+    members: requiresHierarchyMigration
+      ? defaultTeam.members.map((member) => {
+          const legacyMember = team?.members?.find(
+            (item) => item.id === member.id || item.id === legacyIds[member.id]
+          );
+
+          return normalizeMember({
+            ...member,
+            imageDataUrl: legacyMember?.imageDataUrl || "",
+            imageName: legacyMember?.imageName || "",
+          });
+        })
+      : Array.isArray(team?.members)
+        ? team.members.map(normalizeMember)
+        : defaultTeam.members,
+  };
+};
 
 export const getTeam = () => {
   try {
     const savedTeam = JSON.parse(localStorage.getItem(teamStorageKey));
 
     if (savedTeam?.leader && Array.isArray(savedTeam.members)) {
-      return normalizeTeam(savedTeam);
+      const normalizedTeam = normalizeTeam(savedTeam);
+
+      if (Number(savedTeam.schemaVersion || 0) < defaultTeam.schemaVersion) {
+        localStorage.setItem(teamStorageKey, JSON.stringify(normalizedTeam));
+      }
+
+      return normalizedTeam;
     }
   } catch {
     localStorage.removeItem(teamStorageKey);

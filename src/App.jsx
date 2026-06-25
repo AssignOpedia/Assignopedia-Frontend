@@ -71,6 +71,8 @@ const adminPages = [
   "admin-system",
 ];
 
+const publicPages = ["home", "services", "blog", "careers", "about", "contact"];
+
 const getPageFromPath = () => {
   const page = window.location.pathname.replace(/^\/+|\/+$/g, "");
   return page || "home";
@@ -284,6 +286,7 @@ function App() {
   };
 
   const isPortalPage = [...employeePages, ...hrPages, ...adminPages].includes(activePage);
+  const isPublicPage = publicPages.includes(activePage);
 
   return (
     <>
@@ -297,7 +300,7 @@ function App() {
 
       {renderPage()}
 
-      {!isPortalPage && <Footer onNavigate={handleNavigate} />}
+      {isPublicPage && <Footer onNavigate={handleNavigate} />}
 
       {showAuth && (
         <AuthForm
@@ -310,7 +313,7 @@ function App() {
 
       <a
         className="whatsapp-float"
-        href="https://wa.me/919288288828"
+        href="https://wa.me/916291075245"
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Chat with Assignopedia on WhatsApp"

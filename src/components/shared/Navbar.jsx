@@ -25,7 +25,7 @@ function Navbar({ activePage, onNavigate, onSignUpClick }) {
         <img src={logo} alt="logo" />
         <div>
           <h2>AssignOpedia</h2>
-          <p>AssignOpedia Services</p>
+          <p className="brand-services-label">Services</p>
         </div>
       </button>
 
