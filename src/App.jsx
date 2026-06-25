@@ -9,7 +9,6 @@ import Blog from "./components/Blog";
 import Careers from "./components/Careers";
 import Contact from "./components/Contact";
 import Footer from "./components/shared/Footer";
-import TestimonialCarousel from "./components/shared/TestimonialCarousel";
 import AuthForm from "./components/Auth";
 import AdminDashboard from "./pages/AdminPortal/AdminDashboard";
 import AdminEmployees from "./pages/AdminPortal/AdminEmployees";
@@ -71,6 +70,8 @@ const adminPages = [
   "admin-settings",
   "admin-system",
 ];
+
+const publicPages = ["home", "services", "blog", "careers", "about", "contact"];
 
 const getPageFromPath = () => {
   const page = window.location.pathname.replace(/^\/+|\/+$/g, "");
@@ -285,6 +286,7 @@ function App() {
   };
 
   const isPortalPage = [...employeePages, ...hrPages, ...adminPages].includes(activePage);
+  const isPublicPage = publicPages.includes(activePage);
 
   return (
     <>
@@ -298,8 +300,7 @@ function App() {
 
       {renderPage()}
 
-      {!isPortalPage && <TestimonialCarousel />}
-      {!isPortalPage && <Footer onNavigate={handleNavigate} />}
+      {isPublicPage && <Footer onNavigate={handleNavigate} />}
 
       {showAuth && (
         <AuthForm

@@ -11,6 +11,7 @@ import {
 import academicWritingHero from "../../assets/academic-writing-hero.png";
 import contentWritingTeam from "../../assets/content-writing-team.png";
 import ConstellationBackground from "../shared/ConstellationBackground";
+import TestimonialCarousel from "../shared/TestimonialCarousel";
 
 const servicesPreview = [
   {
@@ -250,6 +251,8 @@ function Home({ onNavigate }) {
           </button>
         </div>
       </section>
+
+      <TestimonialCarousel />
     </div>
   );
 }
