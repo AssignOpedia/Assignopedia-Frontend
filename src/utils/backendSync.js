@@ -1,4 +1,4 @@
-const apiBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const apiBaseUrl = import.meta.env.VITE_API_URL || "/api";
 
 const syncItems = [
   { key: "assignopediaAccounts", resource: "accounts", event: "assignopedia-current-user-updated" },
@@ -43,13 +43,6 @@ const readRemote = async (resource) => {
   return response.json();
 };
 
-const syncFromBackend = async (item) => {
-  const data = await readRemote(item.resource);
-
-  localStorage.setItem(item.key, JSON.stringify(data));
-  window.dispatchEvent(new CustomEvent(item.event, { detail: data }));
-};
-
 const syncToBackend = async (item) => {
   const data = readLocalJson(item.key);
 
@@ -58,14 +51,25 @@ const syncToBackend = async (item) => {
   }
 };
 
-const hasLocalData = (key) => {
-  const data = readLocalJson(key);
-
+const hasData = (data) => {
   if (Array.isArray(data)) {
     return data.length > 0;
   }
 
   return data !== null && typeof data === "object" && Object.keys(data).length > 0;
+};
+
+const initialSync = async (item) => {
+  const localData = readLocalJson(item.key);
+  const remoteData = await readRemote(item.resource);
+
+  if (!hasData(remoteData) && hasData(localData)) {
+    await writeRemote(item.resource, localData);
+    return;
+  }
+
+  localStorage.setItem(item.key, JSON.stringify(remoteData));
+  window.dispatchEvent(new CustomEvent(item.event, { detail: remoteData }));
 };
 
 export const startBackendSync = () => {
@@ -77,8 +81,6 @@ export const startBackendSync = () => {
   const debounceTimers = new Map();
 
   syncItems.forEach((item) => {
-    const initialSync = hasLocalData(item.key) ? syncToBackend : syncFromBackend;
-
     initialSync(item).catch(() => {});
 
     window.addEventListener(item.event, () => {

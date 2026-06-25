@@ -4,11 +4,49 @@ import { currentUserEvent, getCurrentUser } from "../../utils/authStorage";
 const legacyProfileImageKey = "employeeProfileImage";
 const profileImageKeyPrefix = "employeeProfileImage:";
 const profileImageEvent = "employee-profile-image-updated";
+const profilesKey = "assignopediaPortalProfiles";
+const profileSyncEvent = "assignopedia-profile-updated";
 
 const getProfileImageKey = (user = getCurrentUser()) => {
   const accountId = user.email?.trim().toLowerCase() || "employee";
 
   return `${profileImageKeyPrefix}${user.role || "employee"}:${accountId}`;
+};
+
+const getProfileStorageKey = (user = getCurrentUser()) => {
+  const role = user.role || "employee";
+  const email = user.email?.trim().toLowerCase();
+
+  return email ? `${role}:${email}` : role;
+};
+
+const readProfiles = () => {
+  try {
+    return JSON.parse(localStorage.getItem(profilesKey)) || {};
+  } catch {
+    return {};
+  }
+};
+
+const saveProfileImageToSyncedProfile = (imageData, user = getCurrentUser()) => {
+  const profiles = readProfiles();
+  const profileKey = getProfileStorageKey(user);
+  const nextProfiles = {
+    ...profiles,
+    [profileKey]: {
+      ...(profiles[profileKey] || {}),
+      imageDataUrl: imageData,
+      updatedAt: new Date().toISOString(),
+    },
+  };
+
+  localStorage.setItem(profilesKey, JSON.stringify(nextProfiles));
+  window.dispatchEvent(new CustomEvent(profileSyncEvent, { detail: nextProfiles }));
+};
+
+const getSyncedProfileImage = (user = getCurrentUser()) => {
+  const profiles = readProfiles();
+  return profiles[getProfileStorageKey(user)]?.imageDataUrl || "";
 };
 
 const migrateLegacyProfileImage = (profileImageKey) => {
@@ -18,10 +56,11 @@ const migrateLegacyProfileImage = (profileImageKey) => {
   if (!savedImage && legacyImage) {
     localStorage.setItem(profileImageKey, legacyImage);
     localStorage.removeItem(legacyProfileImageKey);
+    saveProfileImageToSyncedProfile(legacyImage);
     return legacyImage;
   }
 
-  return savedImage || "";
+  return savedImage || getSyncedProfileImage();
 };
 
 export const getEmployeeProfileImage = () => {
@@ -34,6 +73,7 @@ export const saveEmployeeProfileImage = (imageData) => {
   const profileImageKey = getProfileImageKey();
 
   localStorage.setItem(profileImageKey, imageData);
+  saveProfileImageToSyncedProfile(imageData);
   window.dispatchEvent(
     new CustomEvent(profileImageEvent, {
       detail: { imageData, profileImageKey },
@@ -49,6 +89,7 @@ export const moveEmployeeProfileImage = (previousUser, nextUser) => {
   if (previousKey !== nextKey && savedImage && !localStorage.getItem(nextKey)) {
     localStorage.setItem(nextKey, savedImage);
     localStorage.removeItem(previousKey);
+    saveProfileImageToSyncedProfile(savedImage, nextUser);
   }
 
   window.dispatchEvent(

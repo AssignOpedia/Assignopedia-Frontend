@@ -1,6 +1,6 @@
 # Assignopedia Express Backend
 
-This backend gives the portal real API endpoints without requiring MongoDB yet. Data is saved as JSON files in `backend/data`.
+This backend gives the portal real API endpoints backed by MongoDB Atlas. If MongoDB is unavailable during local development, the API falls back to JSON files in `backend/data` so the app can still run.
 
 ## Run
 
@@ -15,6 +15,18 @@ API health check:
 ```bash
 http://localhost:5000/api/health
 ```
+
+## MongoDB
+
+Copy `.env.example` to `.env` and set:
+
+```bash
+MONGODB_URI=your-mongodb-srv-uri
+MONGODB_DB_NAME=assignopedia
+MONGODB_COLLECTION=appStores
+```
+
+The health endpoint reports the active database provider and connection status.
 
 ## Email
 

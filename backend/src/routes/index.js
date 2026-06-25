@@ -1,5 +1,5 @@
 const express = require("express");
-const store = require("../lib/jsonStore");
+const store = require("../lib/mongoStore");
 const { asyncRoute, createError, makeId, nowIso, required } = require("../lib/http");
 const { sendMail } = require("../lib/mailer");
 const defaults = require("../data/defaults");
@@ -35,7 +35,7 @@ const publicAccount = (account) => {
     return null;
   }
 
-  const { password, ...safeAccount } = account;
+  const { password: _password, ...safeAccount } = account;
   return safeAccount;
 };
 

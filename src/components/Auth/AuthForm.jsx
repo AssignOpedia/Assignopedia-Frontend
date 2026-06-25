@@ -10,6 +10,7 @@ import {
   requestPortalPasswordOtp,
   resetPortalPasswordWithOtp,
 } from "../../utils/passwordResetApi";
+import { loginAccountRemote, registerAccountRemote } from "../../utils/authApi";
 import { addPasswordResetRequest } from "../../utils/passwordResetRequests";
 
 const roleDetails = {
@@ -193,65 +194,58 @@ const AuthForm = ({
     setResetMessage("Password changed successfully. You can login now.");
   };
 
-  const handleSubmit = (event) => {
+  const navigateAfterAuth = () => {
+    if (role === "employee" && onNavigate) {
+      onNavigate("employee-dashboard");
+    }
+
+    if (role === "hr" && onNavigate) {
+      onNavigate("hr-dashboard");
+    }
+
+    if (role === "admin" && onNavigate) {
+      onNavigate("admin-dashboard");
+    }
+  };
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
+    setAuthError("");
 
     if (isSignup) {
-      const account = registerAccount({ ...formData, role });
+      try {
+        const response = await registerAccountRemote({ ...formData, role });
+        registerAccount({ ...formData, role });
 
-      if (!account) {
-        const existingAccount = loginAccount({ ...formData, role });
-
-        if (existingAccount) {
-          if (role === "employee" && onNavigate) {
-            onNavigate("employee-dashboard");
-          }
-
-          if (role === "hr" && onNavigate) {
-            onNavigate("hr-dashboard");
-          }
-
-          if (role === "admin" && onNavigate) {
-            onNavigate("admin-dashboard");
-          }
-
-          return;
+        if (response.user) {
+          localStorage.setItem("assignopediaCurrentUser", JSON.stringify(response.user));
+          window.dispatchEvent(
+            new CustomEvent("assignopedia-current-user-updated", { detail: response.user })
+          );
         }
 
-        setAuthError("This email is already registered. Please login instead.");
+        navigateAfterAuth();
         return;
-      }
-    } else {
-      const account = loginAccount({ ...formData, role });
-
-      if (!account) {
-        setAuthError("No registered account found with this email and password.");
+      } catch (error) {
+        setAuthError(error.message || "This email is already registered. Please login instead.");
         return;
       }
     }
 
-    if (role === "employee" && !isSignup && onNavigate) {
-      onNavigate("employee-dashboard");
-    }
+    try {
+      const response = await loginAccountRemote({ ...formData, role });
 
-    if (role === "hr" && !isSignup && onNavigate) {
-      onNavigate("hr-dashboard");
-    }
+      if (response.user) {
+        localStorage.setItem("assignopediaCurrentUser", JSON.stringify(response.user));
+        window.dispatchEvent(
+          new CustomEvent("assignopedia-current-user-updated", { detail: response.user })
+        );
+      }
 
-    if (role === "admin" && !isSignup && onNavigate) {
-      onNavigate("admin-dashboard");
-    }
-
-    if (role === "employee" && isSignup && onNavigate) {
-      onNavigate("employee-dashboard");
-    }
-
-    if (role === "hr" && isSignup && onNavigate) {
-      onNavigate("hr-dashboard");
-    }
-
-    if (role === "admin" && isSignup && onNavigate) {
-      onNavigate("admin-dashboard");
+      loginAccount({ ...formData, role });
+      navigateAfterAuth();
+    } catch (error) {
+      setAuthError(error.message || "No registered account found with this email and password.");
     }
   };
 
