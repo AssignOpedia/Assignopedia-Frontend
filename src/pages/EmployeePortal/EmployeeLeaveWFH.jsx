@@ -4,6 +4,7 @@ import { getCurrentUser } from "../../utils/authStorage";
 import { saveEmployeeWfhRequest } from "../../utils/employeeDashboardMetrics";
 import { createLeaveRequestRemote, createWfhRequestRemote } from "../../utils/hrPortalApi";
 import { addHrRequestNotification, formatNotificationDate } from "../../utils/requestNotifications";
+import { uploadFileToCloudinary } from "../../utils/uploadApi";
 import EmployeePortalLayout from "./EmployeePortalLayout";
 
 const leaveItems = [
@@ -18,8 +19,8 @@ const initialRequests = [
   { title: "Sick Leave", meta: "Reviewed - May 30" },
 ];
 
-const hrLeaveRequestStorageKey = "hrLeaveRequests";
 const maxUploadBytes = 5 * 1024 * 1024;
+let cachedLeaveRequests = [];
 
 const toLocalRequest = (request) => {
   const localRequest = { ...request };
@@ -30,19 +31,12 @@ const toLocalRequest = (request) => {
 };
 
 const readStoredRequests = (key) => {
-  try {
-    return JSON.parse(localStorage.getItem(key) || "[]");
-  } catch {
-    return [];
-  }
+  return key === "leave" ? cachedLeaveRequests : [];
 };
 
 const writeStoredRequests = (key, requests) => {
-  try {
-    localStorage.setItem(key, JSON.stringify(requests.map(toLocalRequest)));
-  } catch {
-    localStorage.removeItem(key);
-    localStorage.setItem(key, JSON.stringify(requests.slice(0, 10).map(toLocalRequest)));
+  if (key === "leave") {
+    cachedLeaveRequests = requests.map(toLocalRequest);
   }
 };
 
@@ -87,6 +81,9 @@ function EmployeeLeaveWFH({ activePage, onNavigate }) {
     project: "",
     fileName: "",
     fileData: "",
+    fileUrl: "",
+    filePublicId: "",
+    fileResourceType: "",
     fileType: "",
     fileSize: 0,
   });
@@ -108,7 +105,7 @@ function EmployeeLeaveWFH({ activePage, onNavigate }) {
     setWfhForm((current) => ({ ...current, [name]: value }));
   };
 
-  const handleFileChange = (event, target) => {
+  const handleFileChange = async (event, target) => {
     const file = event.target.files?.[0];
 
     if (!file) {
@@ -133,6 +130,9 @@ function EmployeeLeaveWFH({ activePage, onNavigate }) {
           ...current,
           fileName: "",
           fileData: "",
+          fileUrl: "",
+          filePublicId: "",
+          fileResourceType: "",
           fileType: "",
           fileSize: 0,
         }));
@@ -141,34 +141,43 @@ function EmployeeLeaveWFH({ activePage, onNavigate }) {
       return;
     }
 
-    const reader = new FileReader();
+    setFileError("Uploading file to Cloudinary...");
+    setSubmitError("");
 
-    reader.onload = () => {
-      const fileData = typeof reader.result === "string" ? reader.result : "";
+    try {
+      const upload = await uploadFileToCloudinary(file, {
+        folder: `assignopedia/${target === "leave" ? "leave-requests" : "wfh-requests"}`,
+        resourceType: "auto",
+      });
       const details = {
         fileName: file.name,
-        fileData,
+        fileData: upload.url,
+        fileUrl: upload.url,
+        filePublicId: upload.publicId,
+        fileResourceType: upload.resourceType,
         fileType: file.type || "application/octet-stream",
-        fileSize: file.size,
+        fileSize: upload.bytes || file.size,
       };
 
       setFileError("");
-      setSubmitError("");
 
       if (target === "leave") {
         setLeaveForm((current) => ({
           ...current,
           ...details,
           pdfFileName: file.name,
-          pdfData: fileData,
+          pdfData: upload.url,
+          pdfUrl: upload.url,
+          pdfPublicId: upload.publicId,
         }));
         return;
       }
 
       setWfhForm((current) => ({ ...current, ...details }));
-    };
-
-    reader.readAsDataURL(file);
+    } catch (error) {
+      setFileError(error.message || "Cloudinary upload failed.");
+      event.target.value = "";
+    }
   };
 
   const handleLeaveSubmit = async (event) => {
@@ -202,10 +211,10 @@ function EmployeeLeaveWFH({ activePage, onNavigate }) {
     };
     try {
       await createLeaveRequestRemote(leaveRequest);
-      const savedRequests = readStoredRequests(hrLeaveRequestStorageKey);
+      const savedRequests = readStoredRequests("leave");
 
       writeStoredRequests(
-        hrLeaveRequestStorageKey,
+        "leave",
         [leaveRequest, ...savedRequests.filter((request) => request.id !== leaveRequest.id)]
       );
       window.dispatchEvent(new CustomEvent("hr-leave-request-updated"));
@@ -264,6 +273,9 @@ function EmployeeLeaveWFH({ activePage, onNavigate }) {
       reason: wfhForm.reason,
       fileName: wfhForm.fileName,
       fileData: wfhForm.fileData,
+      fileUrl: wfhForm.fileUrl,
+      filePublicId: wfhForm.filePublicId,
+      fileResourceType: wfhForm.fileResourceType,
       fileType: wfhForm.fileType,
       fileSize: wfhForm.fileSize,
       status: "Pending",
@@ -286,8 +298,19 @@ function EmployeeLeaveWFH({ activePage, onNavigate }) {
         },
         ...current,
       ]);
-      setWfhForm({ date: "", reason: "", project: "", fileName: "", fileData: "", fileType: "", fileSize: 0 });
-      setSuccessMessage("WFH request submitted successfully and saved in MongoDB.");
+      setWfhForm({
+        date: "",
+        reason: "",
+        project: "",
+        fileName: "",
+        fileData: "",
+        fileUrl: "",
+        filePublicId: "",
+        fileResourceType: "",
+        fileType: "",
+        fileSize: 0,
+      });
+      setSuccessMessage("WFH request submitted successfully to HR and Admin.");
       closeModal();
     } catch (error) {
       setSubmitError(`WFH request was not saved in MongoDB: ${error.message}`);

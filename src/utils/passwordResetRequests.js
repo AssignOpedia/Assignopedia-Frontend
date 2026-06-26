@@ -1,13 +1,13 @@
-const passwordResetRequestsKey = "assignopediaPasswordResetRequests";
-const passwordResetRequestEvent = "assignopedia-password-reset-request-updated";
+import { createApiResourceStore } from "./apiResourceStore";
 
-export const getPasswordResetRequests = () => {
-  try {
-    return JSON.parse(localStorage.getItem(passwordResetRequestsKey)) || [];
-  } catch {
-    return [];
-  }
-};
+const passwordResetRequestEvent = "assignopedia-password-reset-request-updated";
+const passwordResetStore = createApiResourceStore({
+  resource: "passwordResetRequests",
+  event: passwordResetRequestEvent,
+  fallback: [],
+});
+
+export const getPasswordResetRequests = () => passwordResetStore.get();
 
 export const addPasswordResetRequest = ({ name, email, role, otp }) => {
   const request = {
@@ -19,10 +19,8 @@ export const addPasswordResetRequest = ({ name, email, role, otp }) => {
     status: "Pending",
     requestedAt: new Date().toLocaleString(),
   };
-  const requests = [request, ...getPasswordResetRequests()];
 
-  localStorage.setItem(passwordResetRequestsKey, JSON.stringify(requests));
-  window.dispatchEvent(new CustomEvent(passwordResetRequestEvent));
+  passwordResetStore.save([request, ...getPasswordResetRequests()]).catch(() => {});
   return request;
 };
 

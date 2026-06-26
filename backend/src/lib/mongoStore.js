@@ -1,10 +1,9 @@
-const { MongoClient } = require("mongodb");
 const jsonStore = require("./jsonStore");
+const { dbName, getDb, resetClient, uri, withTimeout } = require("../config/db");
 
-const uri = process.env.MONGODB_URI;
-const dbName = process.env.MONGODB_DB_NAME || "assignopedia";
 const collectionName = process.env.MONGODB_COLLECTION || "appStores";
 const usersCollectionName = process.env.MONGODB_USERS_COLLECTION || "users";
+const requireMongoConnection = process.env.MONGODB_REQUIRE_CONNECTION === "true";
 const arrayCollectionStores = {
   attendance: {
     collectionName: process.env.MONGODB_ATTENDANCE_COLLECTION || "attendance",
@@ -32,7 +31,6 @@ const arrayCollectionStores = {
   },
 };
 
-let clientPromise;
 let warnedFallback = false;
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
@@ -42,36 +40,37 @@ const getAccountId = (account) =>
 
 const normalizeAccount = (account) => {
   const id = getAccountId(account);
-  return { ...account, id, _id: id };
+  return {
+    ...account,
+    id,
+    _id: id,
+    email: String(account.email || "").trim().toLowerCase(),
+    role: String(account.role || "").trim().toLowerCase(),
+  };
+};
+
+const getAccountUniqueKey = (account) => `${account.role}:${account.email}`;
+
+const uniqueAccountsByEmailAndRole = (accounts = []) => {
+  const seenAccounts = new Set();
+
+  return accounts
+    .map(normalizeAccount)
+    .filter((account) => {
+      const key = getAccountUniqueKey(account);
+
+      if (!account.email || !account.role || seenAccounts.has(key)) {
+        return false;
+      }
+
+      seenAccounts.add(key);
+      return true;
+    });
 };
 
 const normalizeDocument = (item, prefix) => {
   const id = item.id || `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
   return { ...item, id, _id: id };
-};
-
-const timeout = (ms, message) =>
-  new Promise((_, reject) => {
-    setTimeout(() => reject(new Error(message)), ms);
-  });
-
-const withTimeout = (promise, message) => Promise.race([promise, timeout(5000, message)]);
-
-const getDb = async () => {
-  if (!uri) {
-    return null;
-  }
-
-  if (!clientPromise) {
-    const client = new MongoClient(uri, {
-      connectTimeoutMS: 5000,
-      serverSelectionTimeoutMS: 5000,
-    });
-    clientPromise = client.connect();
-  }
-
-  const client = await withTimeout(clientPromise, "MongoDB connection timed out");
-  return client.db(dbName);
 };
 
 const getCollection = async (targetCollectionName = collectionName) => {
@@ -84,18 +83,28 @@ const withStore = async (operation, targetCollectionName = collectionName) => {
     const collection = await getCollection(targetCollectionName);
 
     if (!collection) {
+      if (requireMongoConnection) {
+        throw new Error("MongoDB connection is required but MONGODB_URI is not configured");
+      }
+
       return null;
     }
 
     return await operation(collection);
   } catch (error) {
-    clientPromise = null;
+    resetClient();
 
     if (!warnedFallback) {
       warnedFallback = true;
       console.warn(
-        `MongoDB storage unavailable. Falling back to JSON files. ${error.message}`
+        requireMongoConnection
+          ? `MongoDB storage unavailable. ${error.message}`
+          : `MongoDB storage unavailable. Falling back to JSON files. ${error.message}`
       );
+    }
+
+    if (requireMongoConnection) {
+      throw error;
     }
 
     return null;
@@ -103,7 +112,7 @@ const withStore = async (operation, targetCollectionName = collectionName) => {
 };
 
 const seedUsers = async (collection, fallback) => {
-  const seededUsers = clone(fallback);
+  const seededUsers = uniqueAccountsByEmailAndRole(clone(fallback));
 
   if (Array.isArray(seededUsers) && seededUsers.length > 0) {
     await collection.insertMany(
@@ -125,9 +134,44 @@ const readLegacyAccounts = async () => {
   return Array.isArray(document?.data) ? document.data : null;
 };
 
+let legacyUserMigrationComplete = false;
+
+const migrateLegacyUsers = async (collection, fallback) => {
+  if (legacyUserMigrationComplete) {
+    return;
+  }
+
+  const legacyStoreAccounts = await readLegacyAccounts();
+  const legacyJsonAccounts = (await jsonStore.read("accounts", [])) || [];
+  const legacyAccounts = uniqueAccountsByEmailAndRole([
+    ...(legacyStoreAccounts || []),
+    ...(legacyJsonAccounts || []),
+    ...(fallback || []),
+  ]);
+
+  for (const account of legacyAccounts) {
+    await collection.updateOne(
+      { email: account.email, role: account.role },
+      {
+        $setOnInsert: {
+          ...normalizeAccount(account),
+          createdAt: account.createdAt ? new Date(account.createdAt) : new Date(),
+          updatedAt: account.updatedAt ? new Date(account.updatedAt) : new Date(),
+        },
+      },
+      { upsert: true }
+    );
+  }
+
+  legacyUserMigrationComplete = true;
+};
+
 const readUsers = async (fallback) => {
   const data = await withStore(async (collection) => {
+    await collection.dropIndex("email_1").catch(() => {});
     await collection.createIndex({ email: 1, role: 1 }, { unique: true });
+
+    await migrateLegacyUsers(collection, fallback);
 
     const users = await collection
       .find({})
@@ -135,36 +179,34 @@ const readUsers = async (fallback) => {
       .sort({ createdAt: -1 })
       .toArray();
 
-    if (users.length > 0) {
-      return users;
-    }
-
-    const legacyAccounts = await readLegacyAccounts();
-    return seedUsers(collection, legacyAccounts?.length ? legacyAccounts : fallback);
+    return users.length > 0 ? users : seedUsers(collection, fallback);
   }, usersCollectionName);
 
-  return data === null ? jsonStore.read("accounts", fallback) : data;
+  const accounts = data === null ? await jsonStore.read("accounts", fallback) : data;
+  return uniqueAccountsByEmailAndRole(accounts);
 };
 
 const writeUsers = async (data) => {
   const saved = await withStore(async (collection) => {
+    await collection.dropIndex("email_1").catch(() => {});
     await collection.createIndex({ email: 1, role: 1 }, { unique: true });
     await collection.deleteMany({});
+    const uniqueUsers = uniqueAccountsByEmailAndRole(data);
 
-    if (Array.isArray(data) && data.length > 0) {
+    if (uniqueUsers.length > 0) {
       await collection.insertMany(
-        data.map((account) => ({
-          ...normalizeAccount(account),
+        uniqueUsers.map((account) => ({
+          ...account,
           updatedAt: account.updatedAt ? new Date(account.updatedAt) : new Date(),
         })),
         { ordered: false }
       );
     }
 
-    return data;
+    return uniqueUsers;
   }, usersCollectionName);
 
-  return saved === null ? jsonStore.write("accounts", data) : saved;
+  return saved === null ? jsonStore.write("accounts", uniqueAccountsByEmailAndRole(data)) : saved;
 };
 
 const readLegacyArrayStore = async (name) => {
@@ -316,12 +358,13 @@ const getStatus = async () => {
       ),
     };
   } catch (error) {
-    clientPromise = null;
+    resetClient();
 
     return {
       provider: "mongodb",
       connected: false,
-      fallback: "json",
+      fallback: requireMongoConnection ? null : "json",
+      required: requireMongoConnection,
       message: error.message,
     };
   }

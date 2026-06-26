@@ -1,26 +1,44 @@
 [
   {
-    "id": "account-admin",
-    "name": "Raj Da",
-    "email": "raj.admin@assignopedia.com",
-    "password": "admin123",
-    "role": "admin",
-    "createdAt": "2026-06-24T10:22:39.051Z"
-  },
-  {
-    "id": "account-hr",
-    "name": "HR Admin",
-    "email": "hr@assignopedia.com",
-    "password": "hr123",
-    "role": "hr",
-    "createdAt": "2026-06-24T10:22:39.051Z"
-  },
-  {
-    "id": "account-employee",
-    "name": "Employee",
-    "email": "employee@assignopedia.com",
-    "password": "employee123",
+    "name": "Tapajit",
+    "email": "sayanfgh.aop0119@gmail.com",
+    "password": "Sayan21#",
     "role": "employee",
-    "createdAt": "2026-06-24T10:22:39.051Z"
+    "id": "account_employee_sayanfgh.aop0119@gmail.com",
+    "_id": "account_employee_sayanfgh.aop0119@gmail.com"
+  },
+  {
+    "name": "Sayan Datta",
+    "email": "sayan.aop0119@gmail.com",
+    "password": "Sayan21#",
+    "role": "employee",
+    "id": "account_employee_sayan.aop0119@gmail.com",
+    "_id": "account_employee_sayan.aop0119@gmail.com"
+  },
+  {
+    "name": "Supriyo",
+    "email": "supriyo.aop0096@gmail.com",
+    "password": "Supriyo12#",
+    "role": "employee",
+    "id": "account_employee_supriyo.aop0096@gmail.com",
+    "_id": "account_employee_supriyo.aop0096@gmail.com"
+  },
+  {
+    "name": "Tapajit",
+    "email": "tapajit.aop0092@gmail.com",
+    "password": "Tapajit12#",
+    "role": "employee",
+    "id": "account_employee_tapajit.aop0092@gmail.com",
+    "_id": "account_employee_tapajit.aop0092@gmail.com"
+  },
+  {
+    "id": "account-1782459158231-f723a4840920a",
+    "name": "Sayan Ghosh",
+    "email": "sayandatta2001@gmail.com",
+    "password": "Sayan221#",
+    "role": "employee",
+    "createdAt": "2026-06-26T07:32:38.231Z",
+    "updatedAt": "2026-06-26T07:32:38.231Z",
+    "_id": "account-1782459158231-f723a4840920a"
   }
 ]

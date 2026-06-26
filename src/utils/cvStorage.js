@@ -1,21 +1,20 @@
-const cvStorageKey = "assignopediaCVApplications";
-const cvEvent = "assignopedia-cv-updated";
+import { createApiResourceStore } from "./apiResourceStore";
 
-const readCVs = () => {
-  try {
-    return JSON.parse(localStorage.getItem(cvStorageKey)) || [];
-  } catch {
-    return [];
-  }
-};
+const cvEvent = "assignopedia-cv-updated";
+const cvStore = createApiResourceStore({
+  resource: "cvApplications",
+  event: cvEvent,
+  fallback: [],
+});
+
+const readCVs = () => cvStore.get();
 
 const saveCVs = (cvs) => {
-  localStorage.setItem(cvStorageKey, JSON.stringify(cvs));
-  window.dispatchEvent(new CustomEvent(cvEvent));
+  cvStore.save(Array.isArray(cvs) ? cvs : []).catch(() => {});
 };
 
 export const setStoredCVs = (cvs) => {
-  saveCVs(Array.isArray(cvs) ? cvs : []);
+  cvStore.setLocal(Array.isArray(cvs) ? cvs : []);
 };
 
 export const upsertCVApplication = (applicationData) => {
@@ -37,29 +36,20 @@ export const submitCareerApplication = (applicationData) => {
     date: new Date().toLocaleDateString(),
   };
 
-  cvs.push(newApplication);
-  saveCVs(cvs);
+  saveCVs([...cvs, newApplication]);
   return newApplication;
 };
 
-export const getStoredCVs = () => {
-  return readCVs();
-};
+export const getStoredCVs = () => readCVs();
 
-export const getCVById = (id) => {
-  const cvs = readCVs();
-  return cvs.find((cv) => cv.id === id);
-};
+export const getCVById = (id) => readCVs().find((cv) => cv.id === id);
 
 export const deleteCVApplication = (id) => {
-  const cvs = readCVs();
-  const filtered = cvs.filter((cv) => cv.id !== id);
-  saveCVs(filtered);
+  saveCVs(readCVs().filter((cv) => cv.id !== id));
 };
 
 export const updateCVApplicationStatus = (id, status) => {
-  const cvs = readCVs();
-  const updatedCVs = cvs.map((cv) =>
+  const updatedCVs = readCVs().map((cv) =>
     cv.id === id ? { ...cv, status, reviewedAt: new Date().toISOString() } : cv
   );
 

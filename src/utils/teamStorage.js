@@ -1,4 +1,5 @@
-export const teamStorageKey = "assignopediaEmployeeTeam";
+import { createApiResourceStore } from "./apiResourceStore";
+
 export const teamEvent = "assignopedia-team-updated";
 
 export const defaultTeam = {
@@ -42,76 +43,39 @@ const normalizeMember = (member, index) => ({
   role: member.role || "Team Member",
   department: member.department || "",
   initials: member.initials || "",
-  imageDataUrl: member.imageDataUrl || "",
+  imageDataUrl: member.imageDataUrl || member.imageUrl || "",
+  imageUrl: member.imageUrl || member.imageDataUrl || "",
   imageName: member.imageName || "",
+  imagePublicId: member.imagePublicId || "",
 });
 
-export const normalizeTeam = (team) => {
-  const requiresHierarchyMigration = Number(team?.schemaVersion || 0) < defaultTeam.schemaVersion;
-  const legacyIds = {
-    "hr-recruiter": "hr-name-1",
-    "hr-executive": "hr-name-2",
-    "bdm-1": "bdm-name",
-    "bdm-2": "bdm-name-2",
-    dm: "digital-marketing",
-    "technical-team": "team-lead-name",
-    "non-technical-team": "writer-1",
-  };
+export const normalizeTeam = (team) => ({
+  schemaVersion: defaultTeam.schemaVersion,
+  leader: {
+    ...defaultTeam.leader,
+    ...(team?.leader || {}),
+    id: "leader",
+    imageDataUrl: team?.leader?.imageDataUrl || team?.leader?.imageUrl || "",
+    imageUrl: team?.leader?.imageUrl || team?.leader?.imageDataUrl || "",
+    imageName: team?.leader?.imageName || "",
+    imagePublicId: team?.leader?.imagePublicId || "",
+  },
+  members: Array.isArray(team?.members) ? team.members.map(normalizeMember) : defaultTeam.members,
+});
 
-  return {
-    schemaVersion: defaultTeam.schemaVersion,
-    leader: {
-      ...defaultTeam.leader,
-      ...(team?.leader || {}),
-      id: "leader",
-      department: team?.leader?.department || defaultTeam.leader.department,
-      initials: team?.leader?.initials || defaultTeam.leader.initials,
-      imageDataUrl: team?.leader?.imageDataUrl || "",
-      imageName: team?.leader?.imageName || "",
-    },
-    members: requiresHierarchyMigration
-      ? defaultTeam.members.map((member) => {
-          const legacyMember = team?.members?.find(
-            (item) => item.id === member.id || item.id === legacyIds[member.id]
-          );
+const teamStore = createApiResourceStore({
+  resource: "team",
+  event: teamEvent,
+  fallback: defaultTeam,
+});
 
-          return normalizeMember({
-            ...member,
-            imageDataUrl: legacyMember?.imageDataUrl || "",
-            imageName: legacyMember?.imageName || "",
-          });
-        })
-      : Array.isArray(team?.members)
-        ? team.members.map(normalizeMember)
-        : defaultTeam.members,
-  };
-};
-
-export const getTeam = () => {
-  try {
-    const savedTeam = JSON.parse(localStorage.getItem(teamStorageKey));
-
-    if (savedTeam?.leader && Array.isArray(savedTeam.members)) {
-      const normalizedTeam = normalizeTeam(savedTeam);
-
-      if (Number(savedTeam.schemaVersion || 0) < defaultTeam.schemaVersion) {
-        localStorage.setItem(teamStorageKey, JSON.stringify(normalizedTeam));
-      }
-
-      return normalizedTeam;
-    }
-  } catch {
-    localStorage.removeItem(teamStorageKey);
-  }
-
-  return defaultTeam;
-};
+export const getTeam = () => normalizeTeam(teamStore.get());
 
 export const saveTeam = (team) => {
   const nextTeam = normalizeTeam(team);
 
-  localStorage.setItem(teamStorageKey, JSON.stringify(nextTeam));
-  window.dispatchEvent(new CustomEvent(teamEvent, { detail: nextTeam }));
-
+  teamStore.save(nextTeam).catch(() => {});
   return nextTeam;
 };
+
+export const teamStorageKey = "assignopediaEmployeeTeam";

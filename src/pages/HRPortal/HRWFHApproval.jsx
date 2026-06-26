@@ -1,8 +1,16 @@
 import { useEffect, useState } from "react";
 import { FaLaptopHouse } from "react-icons/fa";
-import { decideWfhRequestRemote, getWfhRequestsRemote } from "../../utils/hrPortalApi";
+import {
+  decideWfhRequestRemote,
+  getWfhRequestDocumentUrl,
+  getWfhRequestRemote,
+  getWfhRequestsRemote,
+  updateWfhRequestRemote,
+} from "../../utils/hrPortalApi";
 import { addEmployeeDecisionNotification, formatNotificationDate } from "../../utils/requestNotifications";
+import { openDocumentPreview } from "../../utils/documentPreview";
 import { itemMatchesSearch, useHrSearchQuery } from "../../utils/hrSearch";
+import { uploadFileToCloudinary } from "../../utils/uploadApi";
 import HRPortalLayout from "./HRPortalLayout";
 
 const requests = [
@@ -11,14 +19,10 @@ const requests = [
   { name: "Sandipan Mondal", date: "Jun 20", task: "Technical content sprint", reason: "Focused documentation work" },
 ];
 
-const wfhRequestStorageKey = "employeeWfhRequests";
+let cachedWfhRequests = [];
 
 const getStoredWfhRequests = () => {
-  try {
-    return JSON.parse(localStorage.getItem(wfhRequestStorageKey) || "[]");
-  } catch {
-    return [];
-  }
+  return cachedWfhRequests;
 };
 
 const getRequestKey = (request) =>
@@ -32,13 +36,15 @@ const toLocalRequest = (request) => {
 };
 
 const writeStoredWfhRequests = (requests) => {
-  try {
-    localStorage.setItem(wfhRequestStorageKey, JSON.stringify(requests.map(toLocalRequest)));
-  } catch {
-    localStorage.removeItem(wfhRequestStorageKey);
-    localStorage.setItem(wfhRequestStorageKey, JSON.stringify(requests.slice(0, 10).map(toLocalRequest)));
-  }
+  cachedWfhRequests = requests.map(toLocalRequest);
 };
+
+const getRequestDocument = (request) => ({
+  data: request.fileData || "",
+  url: request.fileUrl || (/^https?:\/\//i.test(request.fileData || "") ? request.fileData : ""),
+  name: request.fileName || "",
+  fileType: request.fileType || "",
+});
 
 const createDocumentUrl = (data) => {
   if (!data || !data.startsWith("data:")) {
@@ -64,6 +70,8 @@ const createDocumentUrl = (data) => {
 function HRWFHApproval({ activePage, onNavigate }) {
   const [allRequests, setAllRequests] = useState(() => [...getStoredWfhRequests(), ...requests]);
   const [selectedRequest, setSelectedRequest] = useState(null);
+  const [fileActionStatus, setFileActionStatus] = useState("");
+  const [isRepairingFile, setIsRepairingFile] = useState(false);
   const searchQuery = useHrSearchQuery();
   const filteredRequests = allRequests.filter((request) => itemMatchesSearch(request, searchQuery));
 
@@ -131,37 +139,190 @@ function HRWFHApproval({ activePage, onNavigate }) {
     }
   };
 
-  const handleViewDocument = (request) => {
-    if (!request.fileData) {
-      alert("No supporting file was uploaded for this WFH request.");
+  const getFullWfhRequest = async (request) => {
+    if (!request.id) {
+      return request;
+    }
+
+    const remoteRequest = await getWfhRequestRemote(request.id).catch(() => null);
+    const fullRequest = remoteRequest || request;
+
+    setAllRequests((current) =>
+      current.map((currentRequest) =>
+        getRequestKey(currentRequest) === getRequestKey(fullRequest) ? fullRequest : currentRequest
+      )
+    );
+    setSelectedRequest((current) =>
+      current && getRequestKey(current) === getRequestKey(fullRequest) ? fullRequest : current
+    );
+
+    return fullRequest;
+  };
+
+  const handleSelectRequest = async (request) => {
+    setFileActionStatus("");
+    setSelectedRequest(request);
+    const fullRequest = await getFullWfhRequest(request);
+    setSelectedRequest(fullRequest);
+  };
+
+  const handleViewDocument = async (request) => {
+    const previewWindow = window.open("", "_blank");
+
+    if (previewWindow) {
+      previewWindow.document.write("<p style=\"font-family:Arial,sans-serif;padding:24px;\">Loading WFH supporting file from MongoDB...</p>");
+      previewWindow.document.close();
+    }
+
+    const fullRequest = await getFullWfhRequest(request);
+    const fileDocument = getRequestDocument(fullRequest);
+    let previewDocument = fileDocument;
+
+    if (!previewDocument.data && !previewDocument.url && fullRequest.id && fullRequest.fileName) {
+      setFileActionStatus("Finding WFH supporting file in Cloudinary...");
+      const response = await fetch(getWfhRequestDocumentUrl(fullRequest.id, { meta: true }));
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+
+        previewWindow?.close();
+        setFileActionStatus(error.message || "Could not find this WFH supporting file in Cloudinary.");
+        return;
+      }
+
+      previewDocument = await response.json();
+    }
+
+    if (!previewDocument.data && !previewDocument.url) {
+      previewWindow?.close();
+      setFileActionStatus("No supporting file was found for this WFH request.");
       return;
     }
 
-    const documentUrl = createDocumentUrl(request.fileData);
-    window.open(documentUrl, "_blank", "noopener,noreferrer");
+    if (previewDocument.url) {
+      openDocumentPreview({
+        url: previewDocument.url,
+        name: previewDocument.name || previewDocument.fileName,
+        fileType: previewDocument.fileType,
+        previewWindow,
+      });
+      setFileActionStatus("");
+      return;
+    }
+
+    const documentUrl = createDocumentUrl(previewDocument.data);
+
+    if (previewWindow) {
+      previewWindow.location.href = documentUrl;
+      previewWindow.document.title = previewDocument.name || previewDocument.fileName || "WFH supporting file";
+    } else {
+      window.open(documentUrl, "_blank", "noopener,noreferrer");
+    }
 
     if (documentUrl.startsWith("blob:")) {
       window.setTimeout(() => URL.revokeObjectURL(documentUrl), 60000);
     }
+
+    setFileActionStatus("");
   };
 
-  const handleDownloadDocument = (request) => {
-    if (!request.fileData) {
-      alert("No supporting file was uploaded for this WFH request.");
+  const handleDownloadDocument = async (request) => {
+    const fullRequest = await getFullWfhRequest(request);
+    const fileDocument = getRequestDocument(fullRequest);
+    let downloadDocument = fileDocument;
+
+    if (!downloadDocument.data && !downloadDocument.url && fullRequest.id && fullRequest.fileName) {
+      setFileActionStatus("Finding WFH supporting file in Cloudinary...");
+      const response = await fetch(getWfhRequestDocumentUrl(fullRequest.id, { meta: true }));
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+
+        setFileActionStatus(error.message || "Could not find this WFH supporting file in Cloudinary.");
+        return;
+      }
+
+      downloadDocument = await response.json();
+    }
+
+    if (!downloadDocument.data && !downloadDocument.url) {
+      setFileActionStatus("No supporting file was found for this WFH request.");
       return;
     }
 
-    const documentUrl = createDocumentUrl(request.fileData);
+    if (downloadDocument.url) {
+      const link = document.createElement("a");
+
+      link.href = downloadDocument.url;
+      link.download = downloadDocument.name || downloadDocument.fileName || "wfh-supporting-file";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setFileActionStatus("");
+      return;
+    }
+
+    const documentUrl = createDocumentUrl(downloadDocument.data);
     const link = document.createElement("a");
 
     link.href = documentUrl;
-    link.download = request.fileName || "wfh-supporting-file";
+    link.download = downloadDocument.name || downloadDocument.fileName || "wfh-supporting-file";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 
     if (documentUrl.startsWith("blob:")) {
       window.setTimeout(() => URL.revokeObjectURL(documentUrl), 1000);
+    }
+
+    setFileActionStatus("");
+  };
+
+  const handleRepairFile = async (event, request) => {
+    const file = event.target.files?.[0];
+
+    if (!file || !request.id) {
+      return;
+    }
+
+    setIsRepairingFile(true);
+    setFileActionStatus("Uploading WFH supporting file to Cloudinary...");
+
+    try {
+      const upload = await uploadFileToCloudinary(file, {
+        folder: "assignopedia/wfh-requests",
+        resourceType: "auto",
+      });
+      const repairedRequest = {
+        ...request,
+        fileName: file.name,
+        fileData: upload.url,
+        fileUrl: upload.url,
+        filePublicId: upload.publicId,
+        fileResourceType: upload.resourceType,
+        fileType: file.type || upload.fileType || "application/octet-stream",
+        fileSize: upload.bytes || file.size,
+      };
+      const response = await updateWfhRequestRemote(request.id, repairedRequest);
+      const savedRequest = response.item || repairedRequest;
+
+      setAllRequests((current) =>
+        current.map((currentRequest) =>
+          getRequestKey(currentRequest) === getRequestKey(savedRequest) ? savedRequest : currentRequest
+        )
+      );
+      writeStoredWfhRequests(
+        getStoredWfhRequests().map((storedRequest) =>
+          getRequestKey(storedRequest) === getRequestKey(savedRequest) ? savedRequest : storedRequest
+        )
+      );
+      setSelectedRequest(savedRequest);
+      setFileActionStatus("Supporting file saved. You can view or download it now.");
+    } catch (error) {
+      setFileActionStatus(error.message || "Could not save the WFH supporting file.");
+    } finally {
+      setIsRepairingFile(false);
+      event.target.value = "";
     }
   };
 
@@ -178,7 +339,7 @@ function HRWFHApproval({ activePage, onNavigate }) {
             {request.decisionDate && <p><strong>Decision date:</strong> {request.decisionDate}</p>}
             {request.fileName && <p><strong>File:</strong> {request.fileName}</p>}
             <div className="hr-action-pair">
-              <button className="outline" type="button" onClick={() => setSelectedRequest(request)}>View Details</button>
+              <button className="outline" type="button" onClick={() => handleSelectRequest(request)}>View Details</button>
               <button type="button" onClick={() => updateWfhStatus(request, "Approved")}>Approve</button>
               <button className="danger" type="button" onClick={() => updateWfhStatus(request, "Rejected")}>Reject</button>
             </div>
@@ -222,6 +383,17 @@ function HRWFHApproval({ activePage, onNavigate }) {
                       <button type="button" onClick={() => handleDownloadDocument(selectedRequest)}>Download</button>
                     </span>
                   )}
+                  {selectedRequest.id && (
+                    <label className="hr-document-repair">
+                      <span>{selectedRequest.fileName ? "Replace missing file" : "Upload file"}</span>
+                      <input
+                        type="file"
+                        onChange={(event) => handleRepairFile(event, selectedRequest)}
+                        disabled={isRepairingFile}
+                      />
+                    </label>
+                  )}
+                  {fileActionStatus && <small className="hr-document-status">{fileActionStatus}</small>}
                 </span>
               </p>
             </div>

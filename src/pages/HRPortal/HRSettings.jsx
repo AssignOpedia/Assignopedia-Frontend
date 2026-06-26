@@ -1,30 +1,27 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FaBell, FaLock, FaUserTie } from "react-icons/fa";
 import { getPortalProfile, savePortalProfile } from "../../utils/profileStorage";
+import { getPortalResource, savePortalResource } from "../../utils/portalDataApi";
 import HRPortalLayout from "./HRPortalLayout";
+
+const defaultHrSettings = {
+  passwordApproval: true,
+  adminResetNotify: true,
+  leaveAlerts: true,
+  wfhAlerts: true,
+  attendanceDigest: "Daily",
+};
 
 function HRSettings({ activePage, onNavigate }) {
   const [profile, setProfile] = useState(() => getPortalProfile("hr"));
   const [statusMessage, setStatusMessage] = useState("");
-  const [settings, setSettings] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem("assignopediaHrSettings")) || {
-        passwordApproval: true,
-        adminResetNotify: true,
-        leaveAlerts: true,
-        wfhAlerts: true,
-        attendanceDigest: "Daily",
-      };
-    } catch {
-      return {
-        passwordApproval: true,
-        adminResetNotify: true,
-        leaveAlerts: true,
-        wfhAlerts: true,
-        attendanceDigest: "Daily",
-      };
-    }
-  });
+  const [settings, setSettings] = useState(defaultHrSettings);
+
+  useEffect(() => {
+    getPortalResource("settings", defaultHrSettings)
+      .then((remoteSettings) => setSettings({ ...defaultHrSettings, ...(remoteSettings || {}) }))
+      .catch(() => {});
+  }, []);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -42,7 +39,7 @@ function HRSettings({ activePage, onNavigate }) {
 
   const saveSettings = (nextSettings) => {
     setSettings(nextSettings);
-    localStorage.setItem("assignopediaHrSettings", JSON.stringify(nextSettings));
+    savePortalResource("settings", nextSettings).catch(() => {});
   };
 
   const toggleSetting = (key) => {

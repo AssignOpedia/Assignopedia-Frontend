@@ -1,25 +1,32 @@
-const employeeStorageKey = "assignopediaEmployees";
-const organizationStorageKey = "assignopediaOrganization";
+import { createApiResourceStore } from "./apiResourceStore";
+
 const employeeEvent = "assignopedia-employee-updated";
+const organizationEvent = "assignopedia-organization-updated";
+const employeeCountEvent = "assignopedia-employee-count-updated";
 
-// Employee Management
-const readEmployees = () => {
-  try {
-    return JSON.parse(localStorage.getItem(employeeStorageKey)) || [];
-  } catch {
-    return [];
-  }
-};
+const defaultDepartments = [
+  { id: "dept-1", name: "Technical Team", lead: "Tapajit Da", members: "12 Members" },
+  { id: "dept-2", name: "Content Team", lead: "Ritika Sharma", members: "18 Members" },
+  { id: "dept-3", name: "HR Operations", lead: "HR Admin", members: "5 Members" },
+  { id: "dept-4", name: "Quality Review", lead: "Nisha Roy", members: "9 Members" },
+];
 
-const saveEmployees = (employees) => {
-  localStorage.setItem(employeeStorageKey, JSON.stringify(employees));
-  window.dispatchEvent(new CustomEvent(employeeEvent));
-};
+const employeeStore = createApiResourceStore({
+  resource: "employees",
+  event: employeeEvent,
+  fallback: [],
+});
+
+const departmentStore = createApiResourceStore({
+  resource: "departments",
+  event: organizationEvent,
+  fallback: defaultDepartments,
+});
 
 const normalizeEmployeeId = (id) => String(id || "").trim().toLowerCase();
 
 export const createEmployeeID = (id, name, department, jobCode, email) => {
-  const employees = readEmployees();
+  const employees = employeeStore.get();
   const newEmployee = {
     id,
     name,
@@ -29,70 +36,39 @@ export const createEmployeeID = (id, name, department, jobCode, email) => {
     createdAt: new Date().toLocaleDateString(),
   };
 
-  employees.push(newEmployee);
-  saveEmployees(employees);
+  employeeStore.save([...employees, newEmployee]).catch(() => {});
   return newEmployee;
 };
 
-export const getEmployees = () => {
-  return readEmployees();
-};
+export const getEmployees = () => employeeStore.get();
 
 export const updateEmployeeID = (id, updates) => {
-  const employees = readEmployees();
+  const employees = employeeStore.get();
   const normalizedId = normalizeEmployeeId(id);
-  const index = employees.findIndex((emp) => normalizeEmployeeId(emp.id) === normalizedId);
+  const nextEmployees = employees.map((emp) =>
+    normalizeEmployeeId(emp.id) === normalizedId ? { ...emp, ...updates } : emp
+  );
+  const updated = nextEmployees.find((emp) => normalizeEmployeeId(emp.id) === normalizedId) || null;
 
-  if (index !== -1) {
-    employees[index] = { ...employees[index], ...updates };
-    saveEmployees(employees);
-    return employees[index];
+  if (updated) {
+    employeeStore.save(nextEmployees).catch(() => {});
   }
 
-  return null;
+  return updated;
 };
 
 export const deleteEmployee = (id) => {
-  const employees = readEmployees();
-  const filtered = employees.filter((emp) => emp.id !== id);
-  saveEmployees(filtered);
+  employeeStore.save(employeeStore.get().filter((emp) => emp.id !== id)).catch(() => {});
 };
 
-export const getTotalEmployeeCount = () => {
-  return readEmployees().length + 126; // 126 is base count
-};
+export const getTotalEmployeeCount = () => getEmployees().length + 126;
 
 export const getEmployeeEvent = () => employeeEvent;
 
-// Organization Management
-const readOrganization = () => {
-  try {
-    return JSON.parse(localStorage.getItem(organizationStorageKey)) || [];
-  } catch {
-    return [];
-  }
-};
-
-const saveOrganization = (departments) => {
-  localStorage.setItem(organizationStorageKey, JSON.stringify(departments));
-  window.dispatchEvent(new CustomEvent("assignopedia-organization-updated"));
-};
-
-export const getDepartments = () => {
-  const stored = readOrganization();
-  if (stored.length === 0) {
-    return [
-      { id: "dept-1", name: "Technical Team", lead: "Tapajit Da", members: "12 Members" },
-      { id: "dept-2", name: "Content Team", lead: "Ritika Sharma", members: "18 Members" },
-      { id: "dept-3", name: "HR Operations", lead: "HR Admin", members: "5 Members" },
-      { id: "dept-4", name: "Quality Review", lead: "Nisha Roy", members: "9 Members" },
-    ];
-  }
-  return stored;
-};
+export const getDepartments = () => departmentStore.get();
 
 export const createDepartment = (name, lead, members) => {
-  const departments = readOrganization();
+  const departments = departmentStore.get();
   const newDept = {
     id: `dept-${Date.now()}`,
     name,
@@ -100,40 +76,35 @@ export const createDepartment = (name, lead, members) => {
     members,
   };
 
-  departments.push(newDept);
-  saveOrganization(departments);
+  departmentStore.save([...departments, newDept]).catch(() => {});
   return newDept;
 };
 
 export const updateDepartment = (id, updates) => {
-  const departments = readOrganization();
-  const index = departments.findIndex((dept) => dept.id === id);
+  const departments = departmentStore.get();
+  const nextDepartments = departments.map((dept) =>
+    dept.id === id ? { ...dept, ...updates } : dept
+  );
+  const updated = nextDepartments.find((dept) => dept.id === id) || null;
 
-  if (index !== -1) {
-    departments[index] = { ...departments[index], ...updates };
-    saveOrganization(departments);
-    return departments[index];
+  if (updated) {
+    departmentStore.save(nextDepartments).catch(() => {});
   }
 
-  return null;
+  return updated;
 };
 
 export const deleteDepartment = (id) => {
-  const departments = readOrganization();
-  const filtered = departments.filter((dept) => dept.id !== id);
-  saveOrganization(filtered);
+  departmentStore.save(getDepartments().filter((dept) => dept.id !== id)).catch(() => {});
 };
 
-export const getTotalEmployees = () => {
-  return 126; // Base count
-};
+export const getTotalEmployees = () => 126;
+
+let savedTotalEmployees = 126;
 
 export const setTotalEmployees = (count) => {
-  localStorage.setItem("assignopediaTotalEmployees", count.toString());
-  window.dispatchEvent(new CustomEvent("assignopedia-employee-count-updated"));
+  savedTotalEmployees = Number(count) || 126;
+  window.dispatchEvent(new CustomEvent(employeeCountEvent, { detail: savedTotalEmployees }));
 };
 
-export const getSavedTotalEmployees = () => {
-  const saved = localStorage.getItem("assignopediaTotalEmployees");
-  return saved ? parseInt(saved, 10) : 126;
-};
+export const getSavedTotalEmployees = () => savedTotalEmployees;

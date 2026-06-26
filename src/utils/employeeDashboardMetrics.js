@@ -1,10 +1,19 @@
 import { getCurrentUser } from "./authStorage";
 import { getAttendanceRecords, getEmployeeAttendanceForToday, isLateLogin } from "./attendanceStorage";
+import { createApiResourceStore } from "./apiResourceStore";
 
-const leaveRequestKey = "hrLeaveRequests";
-const wfhRequestKey = "employeeWfhRequests";
 const annualLeaveAllowance = 12;
 const monthlyTargetMinutes = 160 * 60;
+const leaveStore = createApiResourceStore({
+  resource: "leaveRequests",
+  event: "hr-leave-request-updated",
+  fallback: [],
+});
+const wfhStore = createApiResourceStore({
+  resource: "wfhRequests",
+  event: "employee-wfh-request-updated",
+  fallback: [],
+});
 
 const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -30,14 +39,6 @@ const parseTimeToMinutes = (time) => {
   return hour * 60 + Number(minuteText);
 };
 
-const readStoredItems = (key) => {
-  try {
-    return JSON.parse(localStorage.getItem(key) || "[]");
-  } catch {
-    return [];
-  }
-};
-
 const getCurrentEmployeeRecords = () => {
   const currentUser = getCurrentUser();
 
@@ -47,7 +48,7 @@ const getCurrentEmployeeRecords = () => {
 const getCurrentEmployeeLeaveRequests = () => {
   const currentUser = getCurrentUser();
 
-  return readStoredItems(leaveRequestKey).filter(
+  return leaveStore.get().filter(
     (request) => request.email === currentUser.email || request.name === currentUser.name
   );
 };
@@ -55,18 +56,20 @@ const getCurrentEmployeeLeaveRequests = () => {
 export const getCurrentEmployeeWfhRequests = () => {
   const currentUser = getCurrentUser();
 
-  return readStoredItems(wfhRequestKey).filter(
+  return wfhStore.get().filter(
     (request) => request.email === currentUser.email || request.name === currentUser.name
   );
 };
 
 export const saveEmployeeWfhRequest = (request) => {
-  const localRequest = { ...request };
-  const savedRequests = readStoredItems(wfhRequestKey);
+  const localRequest = {
+    ...request,
+    fileUrl: request.fileUrl || (/^https?:\/\//i.test(request.fileData || "") ? request.fileData : ""),
+  };
+  const savedRequests = wfhStore.get();
 
   delete localRequest.fileData;
-  localStorage.setItem(wfhRequestKey, JSON.stringify([localRequest, ...savedRequests]));
-  window.dispatchEvent(new CustomEvent("employee-wfh-request-updated"));
+  wfhStore.setLocal([localRequest, ...savedRequests]);
 };
 
 const getLeaveDaysUsed = (requests) =>

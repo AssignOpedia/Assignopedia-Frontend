@@ -1,13 +1,16 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FaCalendarAlt, FaClock, FaSignInAlt, FaSignOutAlt } from "react-icons/fa";
 import {
+  attendanceEvent,
   formatCurrentTime,
   getAttendanceRecords,
   getEmployeeAttendanceForToday,
   getEmployeeMonthlyAttendanceSummary,
   getEmployeeMonthlyAttendanceTrend,
+  loadAttendanceRecords,
   upsertTodayAttendance,
 } from "../../utils/attendanceStorage";
+import { currentUserEvent } from "../../utils/authStorage";
 import { syncAttendanceRemote } from "../../utils/hrPortalApi";
 import EmployeePortalLayout from "./EmployeePortalLayout";
 
@@ -53,6 +56,27 @@ function EmployeeAttendance({ activePage, onNavigate }) {
     { label: "Work Hours", value: attendanceSummary.workHours, note: "Monthly total", icon: <FaClock /> },
   ];
 
+  const refreshAttendanceState = () => {
+    setAttendanceRecord(getEmployeeAttendanceForToday());
+    setAttendanceSummary(getEmployeeMonthlyAttendanceSummary());
+    setAttendanceTrend(getEmployeeMonthlyAttendanceTrend());
+  };
+
+  useEffect(() => {
+    const handleAttendanceUpdate = () => {
+      refreshAttendanceState();
+    };
+
+    window.addEventListener(attendanceEvent, handleAttendanceUpdate);
+    window.addEventListener(currentUserEvent, handleAttendanceUpdate);
+    loadAttendanceRecords().then(handleAttendanceUpdate).catch(() => {});
+
+    return () => {
+      window.removeEventListener(attendanceEvent, handleAttendanceUpdate);
+      window.removeEventListener(currentUserEvent, handleAttendanceUpdate);
+    };
+  }, []);
+
   const showMessage = (message) => {
     setStatusMessage(message);
   };
@@ -60,9 +84,8 @@ function EmployeeAttendance({ activePage, onNavigate }) {
   const handleLoginClick = () => {
     const record = upsertTodayAttendance({ loginTime: formatCurrentTime() });
 
+    refreshAttendanceState();
     setAttendanceRecord(record);
-    setAttendanceSummary(getEmployeeMonthlyAttendanceSummary());
-    setAttendanceTrend(getEmployeeMonthlyAttendanceTrend());
     syncAttendanceRemote(getAttendanceRecords()).catch(() => {});
     showMessage("Login recorded successfully. HR and Admin can now see it.");
   };
@@ -70,9 +93,8 @@ function EmployeeAttendance({ activePage, onNavigate }) {
   const handleLogoutClick = () => {
     const record = upsertTodayAttendance({ logoutTime: formatCurrentTime() });
 
+    refreshAttendanceState();
     setAttendanceRecord(record);
-    setAttendanceSummary(getEmployeeMonthlyAttendanceSummary());
-    setAttendanceTrend(getEmployeeMonthlyAttendanceTrend());
     syncAttendanceRemote(getAttendanceRecords()).catch(() => {});
     showMessage("Logout recorded successfully. Attendance report updated.");
   };

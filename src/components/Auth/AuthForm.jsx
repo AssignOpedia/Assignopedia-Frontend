@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import {
   findAccountByEmail,
-  loginAccount,
-  registerAccount,
+  rememberRegisteredAccount,
+  setCurrentUser,
   updateAccountPassword,
 } from "../../utils/authStorage";
 import {
@@ -75,6 +75,18 @@ const AuthForm = ({
     return () => document.removeEventListener("keydown", handleEscape);
   }, [isRoleForm, onClose]);
 
+  useEffect(() => {
+    setFormData({ name: "", email: "", password: "" });
+    setAuthError("");
+    setShowPassword(false);
+    setShowResetPassword(false);
+    setResetStep("email");
+    setResetData({ email: "", otp: "", newPassword: "" });
+    setGeneratedOtp("");
+    setResetId("");
+    setResetMessage("");
+  }, [role, mode]);
+
   const handleChange = (event) => {
     const { name, value } = event.target;
     setAuthError("");
@@ -140,19 +152,10 @@ const AuthForm = ({
           newPassword: resetData.newPassword,
         });
 
-        const localAccount = updateAccountPassword({
+        updateAccountPassword({
           email: resetData.email,
           password: resetData.newPassword,
         });
-
-        if (!localAccount && response.user) {
-          registerAccount({
-            name: response.user.name,
-            email: resetData.email,
-            password: resetData.newPassword,
-            role,
-          });
-        }
         setFormData((current) => ({
           ...current,
           email: resetData.email,
@@ -215,25 +218,15 @@ const AuthForm = ({
     if (isSignup) {
       try {
         const response = await registerAccountRemote({ ...formData, role });
-        registerAccount({ ...formData, role });
 
         if (response.user) {
-          localStorage.setItem("assignopediaCurrentUser", JSON.stringify(response.user));
-          window.dispatchEvent(
-            new CustomEvent("assignopedia-current-user-updated", { detail: response.user })
-          );
+          rememberRegisteredAccount(response.user);
+          setCurrentUser(response.user);
         }
 
         navigateAfterAuth();
         return;
       } catch (error) {
-        const localAccount = registerAccount({ ...formData, role });
-
-        if (localAccount) {
-          navigateAfterAuth();
-          return;
-        }
-
         setAuthError(error.message || "This email is already registered. Please login instead.");
         return;
       }
@@ -243,22 +236,11 @@ const AuthForm = ({
       const response = await loginAccountRemote({ ...formData, role });
 
       if (response.user) {
-        localStorage.setItem("assignopediaCurrentUser", JSON.stringify(response.user));
-        window.dispatchEvent(
-          new CustomEvent("assignopedia-current-user-updated", { detail: response.user })
-        );
+        setCurrentUser(response.user);
       }
 
-      loginAccount({ ...formData, role });
       navigateAfterAuth();
     } catch (error) {
-      const localAccount = loginAccount({ ...formData, role });
-
-      if (localAccount) {
-        navigateAfterAuth();
-        return;
-      }
-
       setAuthError(
         error.message === "Authentication request failed."
           ? "Backend authentication failed. Please restart the API server and check your email, password, and portal role."

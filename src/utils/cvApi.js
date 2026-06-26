@@ -1,5 +1,8 @@
 const apiBaseUrl = import.meta.env.VITE_API_URL || "/api";
 
+export const getCVApplicationDocumentUrl = (id, { download = false } = {}) =>
+  `${apiBaseUrl}/cv-applications/${encodeURIComponent(id)}/document${download ? "?download=true" : ""}`;
+
 const parseResponse = async (response) => {
   const data = await response.json().catch(() => ({}));
 

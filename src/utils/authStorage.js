@@ -1,6 +1,7 @@
-const accountsKey = "assignopediaAccounts";
-const currentUserKey = "assignopediaCurrentUser";
+import { createApiResourceStore } from "./apiResourceStore";
+
 const currentUserEvent = "assignopedia-current-user-updated";
+const currentUserSessionKey = "assignopediaCurrentUser";
 
 const fallbackEmployee = {
   name: "Employee",
@@ -8,16 +9,32 @@ const fallbackEmployee = {
   role: "employee",
 };
 
-const readAccounts = () => {
+const defaultAccounts = [
+  { id: "account-admin", name: "Raj Da", email: "raj.admin@assignopedia.com", password: "admin123", role: "admin" },
+  { id: "account-hr", name: "HR Admin", email: "hr@assignopedia.com", password: "hr123", role: "hr" },
+  { id: "account-employee", name: "Employee", email: "employee@assignopedia.com", password: "employee123", role: "employee" },
+];
+
+const accountStore = createApiResourceStore({
+  resource: "accounts",
+  event: currentUserEvent,
+  fallback: defaultAccounts,
+});
+
+const readSessionUser = () => {
   try {
-    return JSON.parse(localStorage.getItem(accountsKey)) || [];
+    return JSON.parse(sessionStorage.getItem(currentUserSessionKey)) || fallbackEmployee;
   } catch {
-    return [];
+    return fallbackEmployee;
   }
 };
 
+let currentUser = typeof window === "undefined" ? fallbackEmployee : readSessionUser();
+
+const readAccounts = () => accountStore.get();
+
 const saveAccounts = (accounts) => {
-  localStorage.setItem(accountsKey, JSON.stringify(accounts));
+  accountStore.save(accounts).catch(() => {});
 };
 
 export const registerAccount = ({ name, email, password, role }) => {
@@ -32,22 +49,21 @@ export const registerAccount = ({ name, email, password, role }) => {
   }
 
   const account = {
+    id: `account-${role}-${Date.now()}`,
     name: name.trim(),
     email: normalizedEmail,
     password,
     role,
   };
 
-  accounts.push(account);
-  saveAccounts(accounts);
+  saveAccounts([...accounts, account]);
   setCurrentUser(account);
   return account;
 };
 
 export const loginAccount = ({ email, password, role }) => {
   const normalizedEmail = email.trim().toLowerCase();
-  const accounts = readAccounts();
-  const account = accounts.find(
+  const account = readAccounts().find(
     (savedAccount) =>
       savedAccount.email === normalizedEmail &&
       savedAccount.password === password &&
@@ -64,48 +80,35 @@ export const loginAccount = ({ email, password, role }) => {
 
 export const findAccountByEmail = (email) => {
   const normalizedEmail = email.trim().toLowerCase();
-  const accounts = readAccounts();
 
-  return accounts.find((account) => account.email === normalizedEmail) || null;
+  return readAccounts().find((account) => account.email === normalizedEmail) || null;
 };
 
 export const updateAccountPassword = ({ email, password }) => {
   const normalizedEmail = email.trim().toLowerCase();
   const accounts = readAccounts();
-  const accountIndex = accounts.findIndex(
-    (account) => account.email === normalizedEmail
+  const nextAccounts = accounts.map((account) =>
+    account.email === normalizedEmail ? { ...account, password } : account
   );
+  const updatedAccount = nextAccounts.find((account) => account.email === normalizedEmail) || null;
 
-  if (accountIndex < 0) {
-    return null;
+  if (updatedAccount) {
+    saveAccounts(nextAccounts);
   }
 
-  accounts[accountIndex] = {
-    ...accounts[accountIndex],
-    password,
-  };
-
-  saveAccounts(accounts);
-  return accounts[accountIndex];
+  return updatedAccount;
 };
 
 export const updateCurrentUserProfile = ({ name, email }) => {
-  const currentUser = getCurrentUser();
   const normalizedEmail = email.trim().toLowerCase();
   const accounts = readAccounts();
-  const accountIndex = accounts.findIndex(
-    (account) =>
-      account.email === currentUser.email && account.role === currentUser.role
+  const nextAccounts = accounts.map((account) =>
+    account.email === currentUser.email && account.role === currentUser.role
+      ? { ...account, name: name.trim(), email: normalizedEmail }
+      : account
   );
 
-  if (accountIndex >= 0) {
-    accounts[accountIndex] = {
-      ...accounts[accountIndex],
-      name: name.trim(),
-      email: normalizedEmail,
-    };
-    saveAccounts(accounts);
-  }
+  saveAccounts(nextAccounts);
 
   const updatedUser = {
     ...currentUser,
@@ -117,13 +120,7 @@ export const updateCurrentUserProfile = ({ name, email }) => {
   return updatedUser;
 };
 
-export const getCurrentUser = () => {
-  try {
-    return JSON.parse(localStorage.getItem(currentUserKey)) || fallbackEmployee;
-  } catch {
-    return fallbackEmployee;
-  }
-};
+export const getCurrentUser = () => currentUser;
 
 export const setCurrentUser = (user) => {
   const publicUser = {
@@ -132,8 +129,38 @@ export const setCurrentUser = (user) => {
     role: user.role,
   };
 
-  localStorage.setItem(currentUserKey, JSON.stringify(publicUser));
+  currentUser = publicUser;
+  sessionStorage.setItem(currentUserSessionKey, JSON.stringify(publicUser));
   window.dispatchEvent(new CustomEvent(currentUserEvent, { detail: publicUser }));
+};
+
+export const rememberRegisteredAccount = (account) => {
+  const accounts = readAccounts();
+  const normalizedEmail = account.email?.trim().toLowerCase();
+  const nextAccount = {
+    ...account,
+    email: normalizedEmail,
+    role: account.role?.trim().toLowerCase(),
+  };
+  const exists = accounts.some((savedAccount) => savedAccount.email === normalizedEmail);
+
+  if (exists) {
+    accountStore.setLocal(
+      accounts.map((savedAccount) =>
+        savedAccount.email === normalizedEmail ? { ...savedAccount, ...nextAccount } : savedAccount
+      )
+    );
+    return nextAccount;
+  }
+
+  accountStore.setLocal([...accounts, nextAccount]);
+  return nextAccount;
+};
+
+export const clearCurrentUser = () => {
+  currentUser = fallbackEmployee;
+  sessionStorage.removeItem(currentUserSessionKey);
+  window.dispatchEvent(new CustomEvent(currentUserEvent, { detail: currentUser }));
 };
 
 export const getInitials = (name) =>

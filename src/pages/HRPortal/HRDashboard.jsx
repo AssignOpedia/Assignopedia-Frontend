@@ -22,24 +22,25 @@ import { getSavedTotalEmployees, setTotalEmployees } from "../../utils/organizat
 import { getNotices, getNoticeEvent } from "../../utils/noticeStorage";
 import { attendanceEvent, getAttendanceRecords, getAttendanceStatusFromLogin, getTodayKey } from "../../utils/attendanceStorage";
 import { getCVEvent, getStoredCVs } from "../../utils/cvStorage";
+import { createApiResourceStore } from "../../utils/apiResourceStore";
 
-const leaveRequestStorageKey = "hrLeaveRequests";
-const wfhRequestStorageKey = "employeeWfhRequests";
-
-const readStoredList = (key) => {
-  try {
-    return JSON.parse(localStorage.getItem(key) || "[]");
-  } catch {
-    return [];
-  }
-};
+const leaveStore = createApiResourceStore({
+  resource: "leaveRequests",
+  event: "hr-leave-request-updated",
+  fallback: [],
+});
+const wfhStore = createApiResourceStore({
+  resource: "wfhRequests",
+  event: "employee-wfh-request-updated",
+  fallback: [],
+});
 
 const getDashboardSnapshot = () => {
   const totalEmployees = getSavedTotalEmployees();
   const notices = getNotices();
   const todayAttendance = getAttendanceRecords().filter((record) => record.date === getTodayKey());
-  const leaveRequests = readStoredList(leaveRequestStorageKey);
-  const wfhRequests = readStoredList(wfhRequestStorageKey);
+  const leaveRequests = leaveStore.get();
+  const wfhRequests = wfhStore.get();
   const presentCount = todayAttendance.filter((record) => record.loginTime).length;
   const lateCount = todayAttendance.filter((record) => getAttendanceStatusFromLogin(record.loginTime) === "Late").length;
   const absentCount = Math.max(totalEmployees - presentCount, 0);
@@ -111,7 +112,6 @@ function HRDashboard({ activePage, onNavigate }) {
     window.addEventListener(attendanceEvent, handleUpdate);
     window.addEventListener(getCVEvent(), handleUpdate);
     window.addEventListener(getNoticeEvent(), handleUpdate);
-    window.addEventListener("storage", handleUpdate);
 
     return () => {
       window.removeEventListener("assignopedia-employee-count-updated", handleUpdate);
@@ -120,7 +120,6 @@ function HRDashboard({ activePage, onNavigate }) {
       window.removeEventListener(attendanceEvent, handleUpdate);
       window.removeEventListener(getCVEvent(), handleUpdate);
       window.removeEventListener(getNoticeEvent(), handleUpdate);
-      window.removeEventListener("storage", handleUpdate);
     };
   }, []);
 

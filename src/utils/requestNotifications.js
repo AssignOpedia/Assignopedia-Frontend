@@ -1,8 +1,19 @@
 import { getCurrentUser } from "./authStorage";
+import { createApiResourceStore } from "./apiResourceStore";
 
-const hrNotificationKey = "assignopediaHrNotifications";
-const employeeNotificationKey = "assignopediaEmployeeNotifications";
 const notificationEvent = "assignopedia-request-notification-updated";
+
+const hrStore = createApiResourceStore({
+  resource: "hrNotifications",
+  event: notificationEvent,
+  fallback: [],
+});
+
+const employeeStore = createApiResourceStore({
+  resource: "employeeNotifications",
+  event: notificationEvent,
+  fallback: [],
+});
 
 export const formatNotificationDate = (date = new Date()) =>
   date.toLocaleDateString("en-IN", {
@@ -11,21 +22,8 @@ export const formatNotificationDate = (date = new Date()) =>
     year: "numeric",
   });
 
-const readNotifications = (key) => {
-  try {
-    return JSON.parse(localStorage.getItem(key) || "[]");
-  } catch {
-    return [];
-  }
-};
-
-const saveNotifications = (key, notifications) => {
-  localStorage.setItem(key, JSON.stringify(notifications));
-  window.dispatchEvent(new CustomEvent(notificationEvent));
-};
-
 export const addHrRequestNotification = ({ type, employeeName, requestDate, detail }) => {
-  const notifications = readNotifications(hrNotificationKey);
+  const notifications = hrStore.get();
   const notification = {
     id: `${type}-hr-${Date.now()}`,
     type,
@@ -35,12 +33,12 @@ export const addHrRequestNotification = ({ type, employeeName, requestDate, deta
     message: `${employeeName} sent ${type} request on ${requestDate || formatNotificationDate()}.`,
   };
 
-  saveNotifications(hrNotificationKey, [notification, ...notifications]);
+  hrStore.save([notification, ...notifications]).catch(() => {});
   return notification;
 };
 
 export const addEmployeeDecisionNotification = ({ type, employeeEmail, status, decisionDate, detail }) => {
-  const notifications = readNotifications(employeeNotificationKey);
+  const notifications = employeeStore.get();
   const notification = {
     id: `${type}-employee-${Date.now()}`,
     type,
@@ -51,16 +49,16 @@ export const addEmployeeDecisionNotification = ({ type, employeeEmail, status, d
     message: `Your ${type} request was ${status.toLowerCase()} by HR on ${decisionDate || formatNotificationDate()}.`,
   };
 
-  saveNotifications(employeeNotificationKey, [notification, ...notifications]);
+  employeeStore.save([notification, ...notifications]).catch(() => {});
   return notification;
 };
 
-export const getHrRequestNotifications = () => readNotifications(hrNotificationKey);
+export const getHrRequestNotifications = () => hrStore.get();
 
 export const getCurrentEmployeeNotifications = () => {
   const currentUser = getCurrentUser();
 
-  return readNotifications(employeeNotificationKey).filter(
+  return employeeStore.get().filter(
     (notification) => notification.employeeEmail === currentUser.email
   );
 };

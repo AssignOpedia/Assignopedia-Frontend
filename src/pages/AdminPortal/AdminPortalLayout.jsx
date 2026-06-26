@@ -16,6 +16,7 @@ import {
   FaWallet,
 } from "react-icons/fa";
 import "./AdminDashboard.css";
+import { clearCurrentUser } from "../../utils/authStorage";
 import { getPasswordResetRequests, passwordResetRequestEvent } from "../../utils/passwordResetRequests";
 import { getInitialsFromProfile, getPortalProfile } from "../../utils/profileStorage";
 
@@ -65,10 +66,7 @@ function AdminPortalLayout({ activePage, children, title, eyebrow, description, 
   }, [showNotifications]);
 
   const handleLogout = () => {
-    localStorage.removeItem("adminSession");
-    localStorage.removeItem("adminAuthToken");
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("userRole");
+    clearCurrentUser();
     onNavigate("admin-login");
   };
 

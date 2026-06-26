@@ -975,6 +975,23 @@
   box-shadow:none;
 }
 
+.hr-document-repair{
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  gap:8px;
+  margin-top:8px;
+  color:var(--hr-blue);
+  font-size:12px;
+  font-weight:900;
+}
+
+.hr-document-repair input{
+  max-width:185px;
+  font-size:11px;
+  color:var(--hr-muted);
+}
+
 .hr-document-status{
   display:block;
   margin-top:8px;

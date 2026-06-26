@@ -5,6 +5,7 @@ import { getDepartments, createDepartment, updateDepartment, deleteDepartment } 
 import { itemMatchesSearch, useHrSearchQuery } from "../../utils/hrSearch";
 import { createTeamMember, getTeam, saveTeam, teamEvent } from "../../utils/teamStorage";
 import { getCurrentUser } from "../../utils/authStorage";
+import { uploadFileToCloudinary } from "../../utils/uploadApi";
 import HRPortalLayout from "./HRPortalLayout";
 
 function HROrganizationStructure({ activePage, onNavigate }) {
@@ -155,7 +156,7 @@ function HROrganizationStructure({ activePage, onNavigate }) {
     setTeamMessage("Node deleted successfully.");
   };
 
-  const handleTeamImageChange = (event) => {
+  const handleTeamImageChange = async (event) => {
     const file = event.target.files?.[0];
 
     if (!file) {
@@ -171,17 +172,26 @@ function HROrganizationStructure({ activePage, onNavigate }) {
       return;
     }
 
-    const reader = new FileReader();
+    setTeamMessage("Uploading image to Cloudinary...");
 
-    reader.addEventListener("load", () => {
+    try {
+      const upload = await uploadFileToCloudinary(file, {
+        folder: "assignopedia/team",
+        resourceType: "image",
+      });
+
       setEditingPerson((current) => ({
         ...current,
-        imageDataUrl: reader.result || "",
+        imageDataUrl: upload.url,
+        imageUrl: upload.url,
+        imagePublicId: upload.publicId,
         imageName: file.name,
       }));
       setTeamMessage("Image ready. Save to update the team circle.");
-    });
-    reader.readAsDataURL(file);
+    } catch (error) {
+      setTeamMessage(error.message || "Cloudinary upload failed.");
+      event.target.value = "";
+    }
   };
 
   const handleSavePerson = (event) => {

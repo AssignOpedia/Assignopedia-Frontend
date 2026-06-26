@@ -15,6 +15,7 @@ import {
 import assignopediaLogo from "../../assets/logo.PNG";
 import "./EmployeeDashboard.css";
 import { useEmployeeProfileImage } from "./useEmployeeProfileImage";
+import { clearCurrentUser } from "../../utils/authStorage";
 import { getCurrentEmployeeNotifications, notificationEvent } from "../../utils/requestNotifications";
 import { getInitialsFromProfile, getPortalProfile } from "../../utils/profileStorage";
 
@@ -40,6 +41,10 @@ function EmployeePortalLayout({ activePage, children, eyebrow, title, onNavigate
   const employeeInitials = getInitialsFromProfile(profile);
 
   const handleMenuClick = (page) => {
+    if (page === "employee-login") {
+      clearCurrentUser();
+    }
+
     onNavigate(page);
   };
 

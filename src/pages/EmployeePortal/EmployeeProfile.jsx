@@ -19,6 +19,7 @@ import {
   savePortalProfile,
 } from "../../utils/profileStorage";
 import { getCurrentUser } from "../../utils/authStorage";
+import { uploadFileToCloudinary } from "../../utils/uploadApi";
 
 const maxProfilePhotoSize = 1024 * 1024;
 
@@ -60,7 +61,7 @@ function EmployeeProfile({ activePage, onNavigate }) {
     fileInputRef.current?.click();
   };
 
-  const handleProfileImageChange = (event) => {
+  const handleProfileImageChange = async (event) => {
     const file = event.target.files?.[0];
 
     if (!file) {
@@ -75,18 +76,21 @@ function EmployeeProfile({ activePage, onNavigate }) {
       return;
     }
 
-    const reader = new FileReader();
+    setPhotoError("Uploading profile picture to Cloudinary...");
 
-    reader.onload = () => {
-      const imageData = reader.result;
+    try {
+      const upload = await uploadFileToCloudinary(file, {
+        folder: "assignopedia/profiles",
+        resourceType: "image",
+      });
 
-      if (typeof imageData === "string") {
-        saveEmployeeProfileImage(imageData);
-      }
-    };
-
-    reader.readAsDataURL(file);
-    event.target.value = "";
+      saveEmployeeProfileImage(upload.url);
+      setPhotoError("");
+    } catch (error) {
+      setPhotoError(error.message || "Cloudinary upload failed.");
+    } finally {
+      event.target.value = "";
+    }
   };
 
   return (

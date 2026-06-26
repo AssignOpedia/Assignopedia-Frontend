@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 
-const hrSearchKey = "assignopediaHrSearchQuery";
 const hrSearchEvent = "assignopedia-hr-search-updated";
+let hrSearchQuery = "";
 
-export const getHrSearchQuery = () => localStorage.getItem(hrSearchKey) || "";
+export const getHrSearchQuery = () => hrSearchQuery;
 
 export const setHrSearchQuery = (query) => {
-  localStorage.setItem(hrSearchKey, query);
+  hrSearchQuery = query;
   window.dispatchEvent(new CustomEvent(hrSearchEvent, { detail: query }));
 };
 
@@ -30,18 +30,10 @@ export const useHrSearchQuery = () => {
       setQuery(event.detail || getHrSearchQuery());
     };
 
-    const handleStorageUpdate = (event) => {
-      if (event.key === hrSearchKey) {
-        setQuery(event.newValue || "");
-      }
-    };
-
     window.addEventListener(hrSearchEvent, handleSearchUpdate);
-    window.addEventListener("storage", handleStorageUpdate);
 
     return () => {
       window.removeEventListener(hrSearchEvent, handleSearchUpdate);
-      window.removeEventListener("storage", handleStorageUpdate);
     };
   }, []);
 

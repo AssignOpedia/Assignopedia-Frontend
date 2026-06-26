@@ -9,40 +9,81 @@ import {
 } from "../../utils/cvStorage";
 import {
   deleteCVApplicationRemote,
+  getCVApplicationDocumentUrl,
   getCVApplicationsRemote,
   updateCVApplicationRemote,
 } from "../../utils/cvApi";
 import { itemMatchesSearch, useHrSearchQuery } from "../../utils/hrSearch";
+import { readFileAsDataUrl, uploadFileToCloudinary } from "../../utils/uploadApi";
 import HRPortalLayout from "./HRPortalLayout";
 
+const getCVDocument = (cv) => ({
+  data: cv?.cvInlineData || (/^data:/i.test(cv?.cvData || "") ? cv.cvData : ""),
+  url: cv?.cvUrl || (/^https?:\/\//i.test(cv?.cvData || "") ? cv.cvData : "") || (cv?.id ? getCVApplicationDocumentUrl(cv.id) : ""),
+  name: cv?.cvFileName || `${cv?.fullName || "candidate"}-CV.pdf`,
+  fileType: cv?.cvFileType || "application/pdf",
+});
+
+const isPdfUrl = (url = "") => /\.pdf($|[?#])/i.test(url);
+
+const getCloudinaryAttachmentUrl = (url = "", fileName = "candidate-cv.pdf") => {
+  if (!url.includes("res.cloudinary.com") || !url.includes("/upload/")) {
+    return url;
+  }
+
+  const cleanFileName = fileName.replace(/[^a-z0-9._-]+/gi, "_").replace(/^_+|_+$/g, "") || "candidate-cv.pdf";
+
+  return url.replace("/upload/", `/upload/fl_attachment:${encodeURIComponent(cleanFileName)}/`);
+};
+
+const getPreviewUrl = (document) => document.url || "";
+
+const getDownloadUrl = (cv) => {
+  const document = getCVDocument(cv);
+  const url = getCloudinaryAttachmentUrl(document.url, document.name);
+
+  if (!url && cv?.id) {
+    return getCVApplicationDocumentUrl(cv.id, { download: true });
+  }
+
+  return url;
+};
+
 const createCVObjectUrl = (cv) => {
-  if (!cv?.cvData) {
-    return "";
+  const document = getCVDocument(cv);
+
+  if (document.data) {
+    if (!document.data.startsWith("data:")) {
+      return document.data;
+    }
+
+    const [metadata, base64Data] = document.data.split(",");
+    if (!base64Data) {
+      return document.data;
+    }
+
+    const mimeType = metadata.match(/^data:(.*);base64$/)?.[1] || "application/pdf";
+    const byteCharacters = window.atob(base64Data);
+    const byteNumbers = new Array(byteCharacters.length);
+
+    for (let index = 0; index < byteCharacters.length; index += 1) {
+      byteNumbers[index] = byteCharacters.charCodeAt(index);
+    }
+
+    const blob = new Blob([new Uint8Array(byteNumbers)], { type: mimeType });
+    return URL.createObjectURL(blob);
   }
 
-  if (!cv.cvData.startsWith("data:")) {
-    return cv.cvData;
+  if (document.url) {
+    return getPreviewUrl(document);
   }
 
-  const [metadata, base64Data] = cv.cvData.split(",");
-  if (!base64Data) {
-    return cv.cvData;
-  }
-
-  const mimeType = metadata.match(/^data:(.*);base64$/)?.[1] || "application/pdf";
-  const byteCharacters = window.atob(base64Data);
-  const byteNumbers = new Array(byteCharacters.length);
-
-  for (let index = 0; index < byteCharacters.length; index += 1) {
-    byteNumbers[index] = byteCharacters.charCodeAt(index);
-  }
-
-  const blob = new Blob([new Uint8Array(byteNumbers)], { type: mimeType });
-  return URL.createObjectURL(blob);
+  return "";
 };
 
 function CVPreviewFrame({ cv }) {
   const previewUrl = useMemo(() => createCVObjectUrl(cv), [cv]);
+  const fallbackUrl = cv?.id ? getCVApplicationDocumentUrl(cv.id) : "";
 
   useEffect(() => {
     return () => {
@@ -56,12 +97,22 @@ function CVPreviewFrame({ cv }) {
     return <p>No CV file data available.</p>;
   }
 
-  return <iframe src={previewUrl} title={cv.cvFileName || "Candidate CV"} />;
+  return (
+    <object data={previewUrl} type="application/pdf" title={cv.cvFileName || "Candidate CV"}>
+      {fallbackUrl ? (
+        <iframe src={fallbackUrl} title={cv.cvFileName || "Candidate CV"} />
+      ) : (
+        <p>No CV preview available.</p>
+      )}
+    </object>
+  );
 }
 
 function HRCVAccess({ activePage, onNavigate }) {
   const [cvs, setCvs] = useState(() => getStoredCVs());
   const [selectedCV, setSelectedCV] = useState(null);
+  const [fileActionStatus, setFileActionStatus] = useState("");
+  const [isRepairingCV, setIsRepairingCV] = useState(false);
   const searchQuery = useHrSearchQuery();
   const filteredCVs = cvs.filter((cv) => itemMatchesSearch(cv, searchQuery));
 
@@ -88,14 +139,16 @@ function HRCVAccess({ activePage, onNavigate }) {
   }, []);
 
   const handleDownloadCV = (cv) => {
-    if (!cv.cvData) {
+    const fileDocument = getCVDocument(cv);
+
+    if (!fileDocument.data && !fileDocument.url) {
       return;
     }
 
-    const cvUrl = createCVObjectUrl(cv);
+    const cvUrl = fileDocument.data ? createCVObjectUrl(cv) : getDownloadUrl(cv) || createCVObjectUrl(cv);
     const link = document.createElement("a");
     link.href = cvUrl;
-    link.download = cv.cvFileName || `${cv.fullName}-CV.pdf`;
+    link.download = fileDocument.name;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -106,19 +159,62 @@ function HRCVAccess({ activePage, onNavigate }) {
   };
 
   const handleOpenCV = (cv) => {
-    if (!cv.cvData) {
+    const fileDocument = getCVDocument(cv);
+
+    if (!fileDocument.data && !fileDocument.url) {
       return;
     }
 
-    const cvUrl = createCVObjectUrl(cv);
-    const title = cv.cvFileName || "Candidate CV";
-    const previewWindow = window.open(cvUrl, "_blank", "noopener,noreferrer");
-    if (previewWindow) {
-      previewWindow.document.title = title;
+    window.open(createCVObjectUrl(cv) || getPreviewUrl(fileDocument) || getCVApplicationDocumentUrl(cv.id), "_blank", "noopener,noreferrer");
+  };
+
+  const handleRepairCV = async (event, cv) => {
+    const file = event.target.files?.[0];
+
+    if (!file || !cv?.id) {
+      return;
     }
 
-    if (cvUrl.startsWith("blob:")) {
-      window.setTimeout(() => URL.revokeObjectURL(cvUrl), 60000);
+    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+
+    if (!isPdf) {
+      setFileActionStatus("Please upload a PDF file.");
+      event.target.value = "";
+      return;
+    }
+
+    setIsRepairingCV(true);
+    setFileActionStatus("Uploading CV to Cloudinary...");
+
+    try {
+      const cvInlineData = await readFileAsDataUrl(file);
+      const upload = await uploadFileToCloudinary(file, {
+        folder: "assignopedia/cv-applications",
+        resourceType: "raw",
+      });
+      const repairedCV = {
+        ...cv,
+        cvFileName: file.name,
+        cvData: upload.url,
+        cvInlineData,
+        cvUrl: upload.url,
+        cvPublicId: upload.publicId,
+        cvResourceType: upload.resourceType,
+        cvFileType: file.type || upload.fileType || "application/pdf",
+      };
+      const response = await updateCVApplicationRemote(repairedCV);
+      const savedCV = response.item || repairedCV;
+      const nextCVs = cvs.map((item) => (item.id === savedCV.id ? savedCV : item));
+
+      setStoredCVs(nextCVs);
+      setCvs(nextCVs);
+      setSelectedCV(savedCV);
+      setFileActionStatus("CV saved. You can open or download it now.");
+    } catch (error) {
+      setFileActionStatus(error.message || "Could not save the CV file.");
+    } finally {
+      setIsRepairingCV(false);
+      event.target.value = "";
     }
   };
 
@@ -162,7 +258,22 @@ function HRCVAccess({ activePage, onNavigate }) {
               <p><strong>Email</strong><span><a href={`mailto:${selectedCV.email}`}>{selectedCV.email}</a></span></p>
               <p><strong>Phone</strong><span><a href={`tel:${selectedCV.phone}`}>{selectedCV.phone}</a></span></p>
               <p><strong>Submitted</strong><span>{selectedCV.date}</span></p>
-              <p><strong>File</strong><span>{selectedCV.cvFileName || "CV attached"}</span></p>
+              <p>
+                <strong>File</strong>
+                <span>
+                  {selectedCV.cvFileName || "CV attached"}
+                  <label className="hr-document-repair">
+                    <span>Replace CV</span>
+                    <input
+                      type="file"
+                      accept=".pdf,application/pdf"
+                      onChange={(event) => handleRepairCV(event, selectedCV)}
+                      disabled={isRepairingCV}
+                    />
+                  </label>
+                  {fileActionStatus && <small className="hr-document-status">{fileActionStatus}</small>}
+                </span>
+              </p>
               <p><strong>Status</strong><span className={`hr-status ${(selectedCV.status || "new").toLowerCase()}`}>{selectedCV.status || "New"}</span></p>
             </div>
 
@@ -172,7 +283,7 @@ function HRCVAccess({ activePage, onNavigate }) {
             </div>
 
             <div className="hr-cv-preview">
-              {selectedCV.cvData ? (
+              {getCVDocument(selectedCV).data || getCVDocument(selectedCV).url ? (
                 <CVPreviewFrame cv={selectedCV} />
               ) : (
                 <p>No CV file data available.</p>

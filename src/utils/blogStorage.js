@@ -1,14 +1,14 @@
+import { createApiResourceStore } from "./apiResourceStore";
+
 export const blogPostEvent = "assignopedia-blog-posts-updated";
 
-const blogPostStorageKey = "assignopediaBlogPosts";
+const blogStore = createApiResourceStore({
+  resource: "blogPosts",
+  event: blogPostEvent,
+  fallback: [],
+});
 
-export const getBlogPosts = () => {
-  try {
-    return JSON.parse(localStorage.getItem(blogPostStorageKey)) || [];
-  } catch {
-    return [];
-  }
-};
+export const getBlogPosts = () => blogStore.get();
 
 export const saveBlogPost = (post) => {
   const posts = getBlogPosts();
@@ -24,17 +24,13 @@ export const saveBlogPost = (post) => {
     ? posts.map((savedPost) => (savedPost.id === nextPost.id ? nextPost : savedPost))
     : [nextPost, ...posts];
 
-  localStorage.setItem(blogPostStorageKey, JSON.stringify(nextPosts));
-  window.dispatchEvent(new CustomEvent(blogPostEvent, { detail: nextPosts }));
-
+  blogStore.save(nextPosts).catch(() => {});
   return nextPost;
 };
 
 export const deleteBlogPost = (postId) => {
   const nextPosts = getBlogPosts().filter((post) => post.id !== postId);
 
-  localStorage.setItem(blogPostStorageKey, JSON.stringify(nextPosts));
-  window.dispatchEvent(new CustomEvent(blogPostEvent, { detail: nextPosts }));
-
+  blogStore.save(nextPosts).catch(() => {});
   return nextPosts;
 };

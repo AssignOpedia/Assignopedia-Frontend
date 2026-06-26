@@ -1,6 +1,6 @@
 import { getCurrentUser, updateCurrentUserProfile } from "./authStorage";
+import { createApiResourceStore } from "./apiResourceStore";
 
-const profileKey = "assignopediaPortalProfiles";
 const profileEvent = "assignopedia-profile-updated";
 
 const defaults = {
@@ -34,18 +34,19 @@ const defaults = {
   },
 };
 
-const readProfiles = () => {
-  try {
-    return JSON.parse(localStorage.getItem(profileKey)) || {};
-  } catch {
-    return {};
-  }
+const defaultProfiles = {
+  "employee:employee@assignopedia.com": defaults.employee,
+  "hr:hr@assignopedia.com": defaults.hr,
+  "admin:raj.admin@assignopedia.com": defaults.admin,
 };
 
-const saveProfiles = (profiles) => {
-  localStorage.setItem(profileKey, JSON.stringify(profiles));
-  window.dispatchEvent(new CustomEvent(profileEvent, { detail: profiles }));
-};
+const profileStore = createApiResourceStore({
+  resource: "profiles",
+  event: profileEvent,
+  fallback: defaultProfiles,
+});
+
+const readProfiles = () => profileStore.get();
 
 const getProfileStorageKey = (role, email) =>
   email ? `${role}:${email.trim().toLowerCase()}` : role;
@@ -86,13 +87,14 @@ export const savePortalProfile = (role, profile) => {
     ...getPortalProfile(role),
     ...profile,
   };
+  const nextProfiles = { ...profiles };
 
   if (oldProfileKey !== nextProfileKey) {
-    delete profiles[oldProfileKey];
+    delete nextProfiles[oldProfileKey];
   }
 
-  profiles[nextProfileKey] = nextProfile;
-  saveProfiles(profiles);
+  nextProfiles[nextProfileKey] = nextProfile;
+  profileStore.save(nextProfiles).catch(() => {});
 
   if (isCurrentRole) {
     updateCurrentUserProfile({

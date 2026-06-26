@@ -42,9 +42,33 @@ export const decideLeaveRequestRemote = (id, status) =>
 
 export const getWfhRequestsRemote = () => requestJson("/wfh-requests");
 
+export const getWfhRequestRemote = (id) => requestJson(`/wfh-requests/${id}`);
+
+export const getWfhRequestDocumentUrl = (id, { download = false, meta = false } = {}) => {
+  const params = new URLSearchParams();
+
+  if (download) {
+    params.set("download", "true");
+  }
+
+  if (meta) {
+    params.set("meta", "true");
+  }
+
+  const query = params.toString();
+
+  return `${apiBaseUrl}/wfh-requests/${encodeURIComponent(id)}/document${query ? `?${query}` : ""}`;
+};
+
 export const createWfhRequestRemote = (request) =>
   requestJson("/wfh-requests", {
     method: "POST",
+    body: JSON.stringify(request),
+  });
+
+export const updateWfhRequestRemote = (id, request) =>
+  requestJson(`/wfh-requests/${id}`, {
+    method: "PUT",
     body: JSON.stringify(request),
   });
 

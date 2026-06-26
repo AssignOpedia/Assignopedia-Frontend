@@ -13,6 +13,7 @@ import {
   FaSignOutAlt,
 } from "react-icons/fa";
 import "./HRDashboard.css";
+import { clearCurrentUser } from "../../utils/authStorage";
 import { getPasswordResetRequests, passwordResetRequestEvent } from "../../utils/passwordResetRequests";
 import { getInitialsFromProfile, getPortalProfile } from "../../utils/profileStorage";
 import { getHrRequestNotifications, notificationEvent } from "../../utils/requestNotifications";
@@ -72,10 +73,7 @@ function HRPortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
   }, [showNotifications]);
 
   const handleLogout = () => {
-    localStorage.removeItem("hrSession");
-    localStorage.removeItem("hrAuthToken");
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("userRole");
+    clearCurrentUser();
     onNavigate("hr-login");
   };
 

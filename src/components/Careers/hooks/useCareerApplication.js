@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { submitCareerApplicationRemote } from "../../../utils/cvApi";
 import { submitCareerApplication, upsertCVApplication } from "../../../utils/cvStorage";
+import { readFileAsDataUrl, uploadFileToCloudinary } from "../../../utils/uploadApi";
 
 function useCareerApplication() {
   const [selectedPosition, setSelectedPosition] = useState("");
@@ -32,7 +33,7 @@ function useCareerApplication() {
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      setCvError("File size must be less than 10 MB.");
+      setCvError("File must be under 10 MB otherwise not accepted.");
       event.target.value = "";
       return;
     }
@@ -61,48 +62,51 @@ function useCareerApplication() {
     setIsSubmitting(true);
 
     try {
-      // Convert file to base64 for storage
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const cvData = reader.result;
-        const application = submitCareerApplication({
-          fullName,
-          email,
-          phone,
-          position,
-          about,
-          cvFileName: cvFile.name,
-          cvData,
-          role: position,
-          status: "New",
-        });
+      const cvInlineData = await readFileAsDataUrl(cvFile);
+      const upload = await uploadFileToCloudinary(cvFile, {
+        folder: "assignopedia/cv-applications",
+        resourceType: "raw",
+      });
+      const application = submitCareerApplication({
+        fullName,
+        email,
+        phone,
+        position,
+        about,
+        cvFileName: cvFile.name,
+        cvData: upload.url,
+        cvInlineData,
+        cvUrl: upload.url,
+        cvPublicId: upload.publicId,
+        cvResourceType: upload.resourceType,
+        role: position,
+        status: "New",
+      });
 
-        try {
-          const response = await submitCareerApplicationRemote(application);
+      try {
+        const response = await submitCareerApplicationRemote(application);
 
-          if (response.application) {
-            upsertCVApplication(response.application);
-          }
-        } catch (error) {
-          setCvError(
-            `Application saved locally, but MongoDB sync failed: ${error.message}`
-          );
-          setIsSubmitting(false);
-          return;
+        if (response.application) {
+          upsertCVApplication(response.application);
         }
-
-        setSuccessMessage("Application submitted successfully! HR will review your CV soon.");
-        event.target.reset();
-        setSelectedPosition("");
-        setCvFileName("");
-        setCvFile(null);
+      } catch (error) {
+        setCvError(
+          `Application saved locally, but MongoDB sync failed: ${error.message}`
+        );
         setIsSubmitting(false);
+        return;
+      }
 
-        setTimeout(() => setSuccessMessage(""), 3000);
-      };
-      reader.readAsDataURL(cvFile);
-    } catch {
-      setCvError("Failed to submit application. Please try again.");
+      setSuccessMessage("Application submitted successfully! HR will review your CV soon.");
+      event.target.reset();
+      setSelectedPosition("");
+      setCvFileName("");
+      setCvFile(null);
+      setIsSubmitting(false);
+
+      setTimeout(() => setSuccessMessage(""), 3000);
+    } catch (error) {
+      setCvError(error.message || "Failed to submit application. Please try again.");
       setIsSubmitting(false);
     }
   };

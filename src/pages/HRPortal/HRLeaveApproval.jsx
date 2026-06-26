@@ -7,6 +7,7 @@ import {
   getLeaveRequestsRemote,
 } from "../../utils/hrPortalApi";
 import { addEmployeeDecisionNotification, formatNotificationDate } from "../../utils/requestNotifications";
+import { openDocumentPreview } from "../../utils/documentPreview";
 import { itemMatchesSearch, useHrSearchQuery } from "../../utils/hrSearch";
 import HRPortalLayout from "./HRPortalLayout";
 
@@ -40,14 +41,10 @@ const leaveRequests = [
   },
 ];
 
-const hrLeaveRequestStorageKey = "hrLeaveRequests";
+let cachedLeaveRequests = [];
 
 const getStoredLeaveRequests = () => {
-  try {
-    return JSON.parse(localStorage.getItem(hrLeaveRequestStorageKey) || "[]");
-  } catch {
-    return [];
-  }
+  return cachedLeaveRequests;
 };
 
 const getRequestKey = (request) =>
@@ -62,17 +59,14 @@ const toLocalRequest = (request) => {
 };
 
 const writeStoredLeaveRequests = (requests) => {
-  try {
-    localStorage.setItem(hrLeaveRequestStorageKey, JSON.stringify(requests.map(toLocalRequest)));
-  } catch {
-    localStorage.removeItem(hrLeaveRequestStorageKey);
-    localStorage.setItem(hrLeaveRequestStorageKey, JSON.stringify(requests.slice(0, 10).map(toLocalRequest)));
-  }
+  cachedLeaveRequests = requests.map(toLocalRequest);
 };
 
 const getRequestDocument = (request) => ({
   data: request.fileData || request.pdfData || "",
+  url: request.fileUrl || request.pdfUrl || (/^https?:\/\//i.test(request.fileData || request.pdfData || "") ? request.fileData || request.pdfData : ""),
   name: request.fileName || request.pdfFileName || "",
+  fileType: request.fileType || "",
 });
 
 function HRLeaveApproval({ activePage, onNavigate }) {
@@ -208,6 +202,19 @@ function HRLeaveApproval({ activePage, onNavigate }) {
 
     try {
       setFileActionStatus("Opening file from MongoDB...");
+      const document = getRequestDocument(request);
+
+      if (document.url) {
+        openDocumentPreview({
+          url: document.url,
+          name: document.name,
+          fileType: document.fileType,
+          previewWindow,
+        });
+        setFileActionStatus("");
+        return;
+      }
+
       const { blob, name } = await fetchLeaveDocument(request);
       const url = URL.createObjectURL(blob);
 

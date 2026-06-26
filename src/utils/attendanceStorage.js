@@ -1,9 +1,13 @@
 import { getCurrentUser } from "./authStorage";
+import { createApiResourceStore } from "./apiResourceStore";
 
-const attendanceKey = "assignopediaAttendanceRecords";
-const legacyAttendanceKey = "employeeAttendanceRecord";
 const attendanceEvent = "assignopedia-attendance-updated";
 const lateLoginCutoffMinutes = 11 * 60 + 15;
+const attendanceStore = createApiResourceStore({
+  resource: "attendance",
+  event: attendanceEvent,
+  fallback: [],
+});
 
 export const getTodayKey = () => {
   const today = new Date();
@@ -22,19 +26,16 @@ export const formatCurrentTime = () =>
   });
 
 const readAttendanceRecords = () => {
-  try {
-    return JSON.parse(localStorage.getItem(attendanceKey)) || [];
-  } catch {
-    return [];
-  }
+  return attendanceStore.get();
 };
 
 const saveAttendanceRecords = (records) => {
-  localStorage.setItem(attendanceKey, JSON.stringify(records));
-  window.dispatchEvent(new CustomEvent(attendanceEvent, { detail: records }));
+  attendanceStore.save(records).catch(() => {});
 };
 
 export const getAttendanceRecords = () => readAttendanceRecords();
+
+export const loadAttendanceRecords = () => attendanceStore.load();
 
 export const setAttendanceRecords = (records) => {
   saveAttendanceRecords(Array.isArray(records) ? records : []);
@@ -172,23 +173,6 @@ export const getEmployeeAttendanceForToday = () => {
     return record;
   }
 
-  try {
-    const legacyRecord = JSON.parse(localStorage.getItem(legacyAttendanceKey));
-
-    if (legacyRecord?.date === today) {
-      return {
-        date: today,
-        employeeName: currentUser.name,
-        email: currentUser.email,
-        loginTime: legacyRecord.loginTime || "",
-        logoutTime: legacyRecord.logoutTime || "",
-        status: getAttendanceStatusFromLogin(legacyRecord.loginTime),
-      };
-    }
-  } catch {
-    localStorage.removeItem(legacyAttendanceKey);
-  }
-
   return {
     date: today,
     employeeName: currentUser.name,
@@ -225,14 +209,6 @@ export const upsertTodayAttendance = ({ loginTime, logoutTime }) => {
   }
 
   saveAttendanceRecords(records);
-  localStorage.setItem(
-    legacyAttendanceKey,
-    JSON.stringify({
-      date: nextRecord.date,
-      loginTime: nextRecord.loginTime,
-      logoutTime: nextRecord.logoutTime,
-    })
-  );
 
   return nextRecord;
 };

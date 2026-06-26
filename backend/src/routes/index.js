@@ -1,8 +1,21 @@
 const express = require("express");
 const store = require("../lib/mongoStore");
+const {
+  findUploadByFileName,
+  isDataUrl,
+  normalizeMediaPayload,
+  uploadDataUrl,
+} = require("../lib/cloudinaryStore");
 const { asyncRoute, createError, makeId, nowIso, required } = require("../lib/http");
 const { sendMail } = require("../lib/mailer");
 const defaults = require("../data/defaults");
+const {
+  loadAccounts,
+  rejectDuplicateEmail,
+  requireMatchingAccount,
+  validateLogin,
+  validateRegister,
+} = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
@@ -59,8 +72,22 @@ router.put("/sync/:resource", asyncRoute(async (req, res) => {
     throw createError(404, "Sync resource not found");
   }
 
-  const data = await store.write(target.storeName, req.body);
+  const data = await store.write(
+    target.storeName,
+    await normalizeMediaPayload(req.body, `assignopedia/${target.storeName}`)
+  );
   res.json(data);
+}));
+
+router.post("/uploads", asyncRoute(async (req, res) => {
+  required(req.body, ["dataUrl"]);
+  const upload = await uploadDataUrl(req.body.dataUrl, {
+    folder: req.body.folder || "assignopedia/uploads",
+    fileName: req.body.fileName || "",
+    resourceType: req.body.resourceType || "auto",
+  });
+
+  res.status(201).json({ upload });
 }));
 
 const collectionRoute = ({ path, storeName, fallback, idPrefix, requiredFields = [] }) => {
@@ -80,11 +107,12 @@ const collectionRoute = ({ path, storeName, fallback, idPrefix, requiredFields =
   }));
 
   router.post(path, asyncRoute(async (req, res) => {
-    required(req.body, requiredFields);
+    const body = await normalizeMediaPayload(req.body, `assignopedia/${storeName}`);
+    required(body, requiredFields);
     const item = {
-      id: req.body.id || makeId(idPrefix),
-      ...req.body,
-      createdAt: req.body.createdAt || nowIso(),
+      id: body.id || makeId(idPrefix),
+      ...body,
+      createdAt: body.createdAt || nowIso(),
       updatedAt: nowIso(),
     };
     let created = true;
@@ -107,6 +135,7 @@ const collectionRoute = ({ path, storeName, fallback, idPrefix, requiredFields =
   }));
 
   router.put(`${path}/:id`, asyncRoute(async (req, res) => {
+    const body = await normalizeMediaPayload(req.body, `assignopedia/${storeName}`);
     let updatedItem = null;
     const items = await store.update(storeName, fallback, (current) =>
       current.map((item) => {
@@ -114,7 +143,7 @@ const collectionRoute = ({ path, storeName, fallback, idPrefix, requiredFields =
           return item;
         }
 
-        updatedItem = { ...item, ...req.body, id: item.id, updatedAt: nowIso() };
+        updatedItem = { ...item, ...body, id: item.id, updatedAt: nowIso() };
         return updatedItem;
       })
     );
@@ -140,9 +169,19 @@ const collectionRoute = ({ path, storeName, fallback, idPrefix, requiredFields =
 };
 
 const getStoredFile = (item) => {
+  const remoteUrl = item.fileUrl || item.pdfUrl || "";
   const dataUrl = item.fileData || item.pdfData || "";
   const fileName = item.fileName || item.pdfFileName || "document";
   const fileType = item.fileType || "";
+
+  if (remoteUrl || (dataUrl && !isDataUrl(dataUrl))) {
+    return {
+      url: remoteUrl || dataUrl,
+      fileName,
+      fileType: fileType || "application/octet-stream",
+    };
+  }
+
   const match = String(dataUrl).match(/^data:([^;]+);base64,(.+)$/s);
 
   if (!match) {
@@ -156,48 +195,56 @@ const getStoredFile = (item) => {
   };
 };
 
+const getStoredCvFile = (item) => {
+  const remoteUrl = item.cvUrl || item.cvData || "";
+  const inlineData = item.cvInlineData || (isDataUrl(item.cvData) ? item.cvData : "");
+  const fileName = item.cvFileName || "candidate-cv.pdf";
+  const fileType = item.cvFileType || item.fileType || "application/pdf";
+
+  if (inlineData) {
+    const match = String(inlineData).match(/^data:([^;]+);base64,(.+)$/s);
+
+    if (match) {
+      return {
+        buffer: Buffer.from(match[2], "base64"),
+        fileName,
+        fileType: fileType || match[1] || "application/pdf",
+      };
+    }
+  }
+
+  if (remoteUrl && !isDataUrl(remoteUrl)) {
+    return {
+      url: remoteUrl,
+      fileName,
+      fileType,
+    };
+  }
+
+  return null;
+};
+
 const safeFileName = (fileName) =>
   String(fileName || "document").replace(/[\r\n"]/g, "").replace(/[\\/]/g, "-");
 
-router.post("/auth/register", asyncRoute(async (req, res) => {
-  required(req.body, ["name", "email", "password", "role"]);
-  const email = req.body.email.trim().toLowerCase();
-  const role = req.body.role.trim().toLowerCase();
-  const accounts = await store.read("accounts", defaults.accounts);
-  const exists = accounts.some((account) => account.email === email && account.role === role);
-
-  if (exists) {
-    throw createError(409, "Email is already registered for this role");
-  }
-
+router.post("/auth/register", validateRegister, loadAccounts, rejectDuplicateEmail, asyncRoute(async (req, res) => {
+  const { email, name, password, role } = req.authBody;
   const account = {
     id: makeId("account"),
-    name: req.body.name.trim(),
+    name,
     email,
-    password: req.body.password,
+    password,
     role,
     createdAt: nowIso(),
     updatedAt: nowIso(),
   };
 
-  await store.write("accounts", [...accounts, account]);
+  await store.write("accounts", [...req.accounts, account]);
   res.status(201).json({ user: publicAccount(account) });
 }));
 
-router.post("/auth/login", asyncRoute(async (req, res) => {
-  required(req.body, ["email", "password", "role"]);
-  const email = req.body.email.trim().toLowerCase();
-  const role = req.body.role.trim().toLowerCase();
-  const accounts = await store.read("accounts", defaults.accounts);
-  const account = accounts.find(
-    (item) => item.email === email && item.password === req.body.password && item.role === role
-  );
-
-  if (!account) {
-    throw createError(401, "Invalid email, password, or role");
-  }
-
-  res.json({ user: publicAccount(account) });
+router.post("/auth/login", validateLogin, loadAccounts, requireMatchingAccount, asyncRoute(async (req, res) => {
+  res.json({ user: publicAccount(req.account) });
 }));
 
 router.post("/auth/forgot-password", asyncRoute(async (req, res) => {
@@ -343,9 +390,10 @@ router.get("/profiles/:role/:email", asyncRoute(async (req, res) => {
 
 router.put("/profiles/:role/:email", asyncRoute(async (req, res) => {
   const key = `${req.params.role}:${req.params.email.toLowerCase()}`;
+  const body = await normalizeMediaPayload(req.body, "assignopedia/profiles");
   const profiles = await store.update("profiles", defaults.profiles, (current) => ({
     ...current,
-    [key]: { ...(current[key] || {}), ...req.body, updatedAt: nowIso() },
+    [key]: { ...(current[key] || {}), ...body, updatedAt: nowIso() },
   }));
 
   res.json({ profile: profiles[key], profiles });
@@ -356,9 +404,10 @@ router.get("/team", asyncRoute(async (req, res) => {
 }));
 
 router.put("/team", asyncRoute(async (req, res) => {
+  const body = await normalizeMediaPayload(req.body, "assignopedia/team");
   const nextTeam = {
-    leader: { ...defaults.team.leader, ...(req.body.leader || {}), id: "leader" },
-    members: Array.isArray(req.body.members) ? req.body.members : defaults.team.members,
+    leader: { ...defaults.team.leader, ...(body.leader || {}), id: "leader" },
+    members: Array.isArray(body.members) ? body.members : defaults.team.members,
     updatedAt: nowIso(),
   };
 
@@ -367,9 +416,10 @@ router.put("/team", asyncRoute(async (req, res) => {
 }));
 
 router.put("/team/leader", asyncRoute(async (req, res) => {
+  const body = await normalizeMediaPayload(req.body, "assignopedia/team/images");
   const team = await store.update("team", defaults.team, (current) => ({
     ...current,
-    leader: { ...current.leader, ...req.body, id: "leader" },
+    leader: { ...current.leader, ...body, id: "leader" },
     updatedAt: nowIso(),
   }));
 
@@ -377,12 +427,14 @@ router.put("/team/leader", asyncRoute(async (req, res) => {
 }));
 
 router.post("/team/members", asyncRoute(async (req, res) => {
+  const body = await normalizeMediaPayload(req.body, "assignopedia/team/images");
   const member = {
-    id: req.body.id || makeId("member"),
-    name: req.body.name || "New Team Member",
-    role: req.body.role || "Team Member",
-    imageDataUrl: req.body.imageDataUrl || "",
-    imageName: req.body.imageName || "",
+    id: body.id || makeId("member"),
+    name: body.name || "New Team Member",
+    role: body.role || "Team Member",
+    imageDataUrl: body.imageDataUrl || "",
+    imageName: body.imageName || "",
+    ...body,
   };
   const team = await store.update("team", defaults.team, (current) => ({
     ...current,
@@ -394,6 +446,7 @@ router.post("/team/members", asyncRoute(async (req, res) => {
 }));
 
 router.put("/team/members/:id", asyncRoute(async (req, res) => {
+  const body = await normalizeMediaPayload(req.body, "assignopedia/team/images");
   let updatedMember = null;
   const team = await store.update("team", defaults.team, (current) => ({
     ...current,
@@ -402,7 +455,7 @@ router.put("/team/members/:id", asyncRoute(async (req, res) => {
         return member;
       }
 
-      updatedMember = { ...member, ...req.body, id: member.id };
+      updatedMember = { ...member, ...body, id: member.id };
       return updatedMember;
     }),
     updatedAt: nowIso(),
@@ -454,6 +507,93 @@ router.get("/leave-requests/:id/document", asyncRoute(async (req, res) => {
   const disposition = req.query.download === "true" ? "attachment" : "inline";
   const fileName = safeFileName(storedFile.fileName);
 
+  if (storedFile.url) {
+    res.redirect(storedFile.url);
+    return;
+  }
+
+  res.setHeader("Content-Type", storedFile.fileType);
+  res.setHeader("Content-Length", storedFile.buffer.length);
+  res.setHeader("Content-Disposition", `${disposition}; filename="${fileName}"`);
+  res.send(storedFile.buffer);
+}));
+
+router.get("/wfh-requests/:id/document", asyncRoute(async (req, res) => {
+  const requests = await store.read("wfhRequests", defaults.wfhRequests);
+  const request = requests.find((item) => item.id === req.params.id);
+
+  if (!request) {
+    throw createError(404, "WFH request not found");
+  }
+
+  let storedFile = getStoredFile(request);
+
+  if (!storedFile && request.fileName) {
+    const upload = await findUploadByFileName(request.fileName, [
+      "assignopedia/wfh-requests",
+      "assignopedia/wfhRequests",
+      "assignopedia/wfhRequests/documents",
+      "assignopedia/uploads",
+      "assignopedia",
+    ]);
+
+    if (upload?.url) {
+      storedFile = {
+        url: upload.url,
+        fileName: request.fileName,
+        fileType: request.fileType || "application/octet-stream",
+      };
+
+      await store.update("wfhRequests", defaults.wfhRequests, (current) =>
+        current.map((item) =>
+          item.id === req.params.id
+            ? {
+                ...item,
+                fileUrl: upload.url,
+                filePublicId: item.filePublicId || upload.publicId,
+                fileResourceType: item.fileResourceType || upload.resourceType,
+                fileSize: item.fileSize || upload.bytes,
+                updatedAt: nowIso(),
+              }
+            : item
+        )
+      );
+    }
+  }
+
+  if (!storedFile) {
+    throw createError(404, "No stored file data found for this WFH request");
+  }
+
+  if (req.query.meta === "true") {
+    res.json({
+      url: storedFile.url || "",
+      fileName: storedFile.fileName,
+      fileType: storedFile.fileType,
+    });
+    return;
+  }
+
+  const disposition = req.query.download === "true" ? "attachment" : "inline";
+  const fileName = safeFileName(storedFile.fileName);
+
+  if (storedFile.url) {
+    const fileResponse = await fetch(storedFile.url).catch(() => null);
+
+    if (!fileResponse?.ok) {
+      res.redirect(storedFile.url);
+      return;
+    }
+
+    const buffer = Buffer.from(await fileResponse.arrayBuffer());
+
+    res.setHeader("Content-Type", storedFile.fileType || fileResponse.headers.get("content-type") || "application/pdf");
+    res.setHeader("Content-Length", buffer.length);
+    res.setHeader("Content-Disposition", `${disposition}; filename="${fileName}"`);
+    res.send(buffer);
+    return;
+  }
+
   res.setHeader("Content-Type", storedFile.fileType);
   res.setHeader("Content-Length", storedFile.buffer.length);
   res.setHeader("Content-Disposition", `${disposition}; filename="${fileName}"`);
@@ -464,6 +604,44 @@ collectionRoute({ path: "/notices", storeName: "notices", fallback: defaults.not
 collectionRoute({ path: "/attendance", storeName: "attendance", fallback: defaults.attendance, idPrefix: "attendance", requiredFields: ["email", "date"] });
 collectionRoute({ path: "/leave-requests", storeName: "leaveRequests", fallback: defaults.leaveRequests, idPrefix: "leave", requiredFields: ["name", "type"] });
 collectionRoute({ path: "/wfh-requests", storeName: "wfhRequests", fallback: defaults.wfhRequests, idPrefix: "wfh", requiredFields: ["name", "date"] });
+router.get("/cv-applications/:id/document", asyncRoute(async (req, res) => {
+  const applications = await store.read("cvApplications", defaults.cvApplications);
+  const application = applications.find((item) => item.id === req.params.id);
+
+  if (!application) {
+    throw createError(404, "CV application not found");
+  }
+
+  const storedFile = getStoredCvFile(application);
+
+  if (!storedFile) {
+    throw createError(404, "No CV file data found for this application");
+  }
+
+  const disposition = req.query.download === "true" ? "attachment" : "inline";
+  const fileName = safeFileName(storedFile.fileName);
+
+  if (storedFile.url) {
+    const fileResponse = await fetch(storedFile.url);
+
+    if (!fileResponse.ok) {
+      throw createError(502, "Could not load the CV file from Cloudinary");
+    }
+
+    const buffer = Buffer.from(await fileResponse.arrayBuffer());
+
+    res.setHeader("Content-Type", storedFile.fileType || fileResponse.headers.get("content-type") || "application/pdf");
+    res.setHeader("Content-Length", buffer.length);
+    res.setHeader("Content-Disposition", `${disposition}; filename="${fileName}"`);
+    res.send(buffer);
+    return;
+  }
+
+  res.setHeader("Content-Type", storedFile.fileType);
+  res.setHeader("Content-Length", storedFile.buffer.length);
+  res.setHeader("Content-Disposition", `${disposition}; filename="${fileName}"`);
+  res.send(storedFile.buffer);
+}));
 collectionRoute({ path: "/cv-applications", storeName: "cvApplications", fallback: defaults.cvApplications, idPrefix: "cv", requiredFields: ["fullName", "email"] });
 collectionRoute({ path: "/password-reset-requests", storeName: "passwordResetRequests", fallback: defaults.passwordResetRequests, idPrefix: "password-reset", requiredFields: ["email"] });
 collectionRoute({ path: "/tasks", storeName: "tasks", fallback: defaults.tasks, idPrefix: "task", requiredFields: ["title"] });
@@ -584,11 +762,12 @@ router.get("/contact-submissions", asyncRoute(async (req, res) => {
 }));
 
 router.post("/career-submissions", asyncRoute(async (req, res) => {
-  required(req.body, ["fullName", "email", "phone", "position"]);
+  const body = await normalizeMediaPayload(req.body, "assignopedia/cvApplications");
+  required(body, ["fullName", "email", "phone", "position"]);
   const application = {
     id: makeId("cv"),
-    ...req.body,
-    status: req.body.status || "New",
+    ...body,
+    status: body.status || "New",
     submittedAt: nowIso(),
     date: new Date().toLocaleDateString(),
   };
