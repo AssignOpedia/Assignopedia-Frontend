@@ -7,9 +7,38 @@ const { getHealth } = require("./controller/healthController");
 const { errorHandler, notFound } = require("./middleware/errorMiddleware");
 
 const app = express();
-const clientOrigin = process.env.CLIENT_ORIGIN || "http://localhost:5173";
+const clientOrigins = (process.env.CLIENT_ORIGIN || "http://localhost:5173")
+  .split(",")
+  .map((origin) => origin.trim().replace(/\/$/, ""))
+  .filter(Boolean);
 
-app.use(cors({ origin: clientOrigin, credentials: true }));
+const isAllowedOrigin = (origin) => {
+  if (!origin) {
+    return true;
+  }
+
+  const normalizedOrigin = origin.replace(/\/$/, "");
+
+  return (
+    clientOrigins.includes(normalizedOrigin) ||
+    /^http:\/\/localhost:\d+$/.test(normalizedOrigin) ||
+    /^https:\/\/[a-z0-9-]+\.onrender\.com$/i.test(normalizedOrigin)
+  );
+};
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (isAllowedOrigin(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error(`CORS blocked origin: ${origin}`));
+    },
+    credentials: true,
+  })
+);
 app.use(express.json({ limit: "25mb" }));
 app.use(express.urlencoded({ extended: true, limit: "25mb" }));
 
