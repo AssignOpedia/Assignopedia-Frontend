@@ -14,19 +14,46 @@ const noticeStore = createApiResourceStore({
   fallback: getDefaultNotices(),
 });
 
+export const getNoticeDateTime = (notice = {}) => {
+  const timestampFromId = Number(String(notice.id || "").split("-")[0]);
+  const sourceDate = notice.createdAt || (Number.isFinite(timestampFromId) ? timestampFromId : "");
+
+  if (sourceDate) {
+    const date = new Date(sourceDate);
+
+    if (!Number.isNaN(date.getTime())) {
+      return date.toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+  }
+
+  return [notice.date, notice.time].filter(Boolean).join(" - ");
+};
+
 export const setNotices = (notices) => {
   noticeStore.setLocal(Array.isArray(notices) ? notices : []);
 };
 
 export const createNotice = (title, body) => {
   const notices = noticeStore.get();
+  const createdAt = new Date().toISOString();
   const newNotice = {
     id: `${Date.now()}-${Math.random()}`,
     title,
     body,
+    createdAt,
     date: new Date().toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
+    }),
+    time: new Date().toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
     }),
   };
 
@@ -35,6 +62,9 @@ export const createNotice = (title, body) => {
 };
 
 export const getNotices = () => noticeStore.get();
+
+export const getEmployeeNotices = () =>
+  getNotices().filter((notice) => !String(notice.id || "").startsWith("default-"));
 
 export const deleteNotice = (id) => {
   noticeStore.save(getNotices().filter((notice) => notice.id !== id)).catch(() => {});

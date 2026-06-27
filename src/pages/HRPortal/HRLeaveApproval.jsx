@@ -11,36 +11,6 @@ import { openDocumentPreview } from "../../utils/documentPreview";
 import { itemMatchesSearch, useHrSearchQuery } from "../../utils/hrSearch";
 import HRPortalLayout from "./HRPortalLayout";
 
-const leaveRequests = [
-  {
-    name: "Sandipan Mondal",
-    type: "Medical Leave",
-    dates: "Jun 18 - Jun 19",
-    days: "2",
-    status: "Pending",
-    reason: "Fever and doctor consultation.",
-    pdfFileName: "medical-certificate.pdf",
-  },
-  {
-    name: "Priya Nair",
-    type: "Annual Leave",
-    dates: "Jun 21 - Jun 24",
-    days: "4",
-    status: "Pending",
-    reason: "Family function.",
-    pdfFileName: "",
-  },
-  {
-    name: "Arjun Mehta",
-    type: "Personal Leave",
-    dates: "Jun 25",
-    days: "1",
-    status: "Pending",
-    reason: "Personal work.",
-    pdfFileName: "",
-  },
-];
-
 let cachedLeaveRequests = [];
 
 const getStoredLeaveRequests = () => {
@@ -71,7 +41,7 @@ const getRequestDocument = (request) => ({
 
 function HRLeaveApproval({ activePage, onNavigate }) {
   const [selectedRequest, setSelectedRequest] = useState(null);
-  const [allLeaveRequests, setAllLeaveRequests] = useState(() => [...getStoredLeaveRequests(), ...leaveRequests]);
+  const [allLeaveRequests, setAllLeaveRequests] = useState(() => getStoredLeaveRequests());
   const [fileActionStatus, setFileActionStatus] = useState("");
   const searchQuery = useHrSearchQuery();
   const filteredLeaveRequests = allLeaveRequests.filter((request) =>
@@ -80,7 +50,7 @@ function HRLeaveApproval({ activePage, onNavigate }) {
 
   useEffect(() => {
     const refreshLeaveRequests = () => {
-      setAllLeaveRequests([...getStoredLeaveRequests(), ...leaveRequests]);
+      setAllLeaveRequests(getStoredLeaveRequests());
     };
 
     getLeaveRequestsRemote()
@@ -88,7 +58,7 @@ function HRLeaveApproval({ activePage, onNavigate }) {
         const customRequests = remoteRequests.filter((request) => !String(request.id || "").startsWith("default-"));
 
         writeStoredLeaveRequests(customRequests);
-        setAllLeaveRequests([...customRequests, ...leaveRequests]);
+        setAllLeaveRequests(customRequests);
       })
       .catch(() => {});
 
@@ -104,44 +74,38 @@ function HRLeaveApproval({ activePage, onNavigate }) {
   const updateStoredLeaveStatus = async (request, status) => {
     const requestKey = getRequestKey(request);
     const decisionDate = formatNotificationDate();
-    const storedRequests = getStoredLeaveRequests();
-    const updatedStoredRequests = storedRequests.map((storedRequest) =>
-      getRequestKey(storedRequest) === requestKey
-        ? { ...storedRequest, status, decisionDate }
-        : storedRequest
-    );
 
-    writeStoredLeaveRequests(updatedStoredRequests);
-    window.dispatchEvent(new CustomEvent("hr-leave-request-updated"));
-    setAllLeaveRequests((current) =>
-      current.map((currentRequest) =>
-        getRequestKey(currentRequest) === requestKey
-          ? { ...currentRequest, status, decisionDate }
-          : currentRequest
-      )
-    );
-    setSelectedRequest((current) =>
-      current && getRequestKey(current) === requestKey ? { ...current, status, decisionDate } : current
-    );
-
-    if (request.email) {
-      addEmployeeDecisionNotification({
-        type: "Leave",
-        employeeEmail: request.email,
-        status,
-        decisionDate,
-        detail: `${request.type} for ${request.dates}`,
-      });
+    if (!request.id) {
+      return;
     }
 
-    if (request.id) {
-      const response = await decideLeaveRequestRemote(request.id, status).catch(() => null);
+    const response = await decideLeaveRequestRemote(request.id, status).catch((error) => {
+      setFileActionStatus(error.message || "Could not update this leave request.");
+      return null;
+    });
 
-      if (response?.requests) {
-        const customRequests = response.requests.filter((item) => !String(item.id || "").startsWith("default-"));
-        writeStoredLeaveRequests(customRequests);
-        setAllLeaveRequests([...customRequests, ...leaveRequests]);
-      }
+    if (!response?.request) {
+      return;
+    }
+
+    const updatedRequest = response.request;
+    const nextRequests = response.requests?.filter((item) => !String(item.id || "").startsWith("default-")) || [];
+
+    writeStoredLeaveRequests(nextRequests);
+    setAllLeaveRequests(nextRequests);
+    setSelectedRequest((current) =>
+      current && getRequestKey(current) === requestKey ? updatedRequest : current
+    );
+    window.dispatchEvent(new CustomEvent("hr-leave-request-updated"));
+
+    if (updatedRequest.email) {
+      addEmployeeDecisionNotification({
+        type: "Leave",
+        employeeEmail: updatedRequest.email,
+        status,
+        decisionDate: updatedRequest.decisionDate || decisionDate,
+        detail: `${updatedRequest.type} for ${updatedRequest.dates}`,
+      });
     }
   };
 
@@ -265,10 +229,10 @@ function HRLeaveApproval({ activePage, onNavigate }) {
               <tr><th>Employee</th><th>Leave Type</th><th>Dates</th><th>Days</th><th>Status</th><th>Action</th></tr>
             </thead>
             <tbody>
-              {filteredLeaveRequests.length > 0 ? filteredLeaveRequests.map((request, index) => (
-                <tr key={`${request.name}-${request.dates}-${index}`}>
+              {filteredLeaveRequests.length > 0 ? filteredLeaveRequests.map((request) => (
+                <tr key={request.id || `${request.name}-${request.dates}-${request.reason}`}>
                   <td>{request.name}</td><td>{request.type}</td><td>{request.dates}</td><td>{request.days}</td>
-                  <td><span className={`hr-status ${request.status.toLowerCase()}`}>{request.status}</span></td>
+                  <td><span className={`hr-status ${(request.status || "Pending").toLowerCase()}`}>{request.status || "Pending"}</span></td>
                   <td>
                     <div className="hr-action-pair">
                       <button className="outline" type="button" onClick={() => handleSelectRequest(request)}>View</button>

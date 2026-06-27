@@ -3,6 +3,7 @@ import { FaPlus, FaTrash } from "react-icons/fa";
 import { createNotice, deleteNotice, getNoticeEvent, getNotices, setNotices as setStoredNotices } from "../../utils/noticeStorage";
 import { createNoticeRemote, deleteNoticeRemote, getNoticesRemote } from "../../utils/hrPortalApi";
 import { itemMatchesSearch, setHrSearchQuery, useHrSearchQuery } from "../../utils/hrSearch";
+import HRConfirmDialog from "./HRConfirmDialog";
 import HRPortalLayout from "./HRPortalLayout";
 
 function HRNoticeBoard({ activePage, onNavigate }) {
@@ -11,6 +12,7 @@ function HRNoticeBoard({ activePage, onNavigate }) {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [pendingDeleteId, setPendingDeleteId] = useState("");
   const searchQuery = useHrSearchQuery();
   const filteredNotices = notices.filter((notice) => itemMatchesSearch(notice, searchQuery));
 
@@ -61,17 +63,24 @@ function HRNoticeBoard({ activePage, onNavigate }) {
     setTimeout(() => setSuccessMessage(""), 2000);
   };
 
-  const handleDeleteNotice = async (id) => {
-    if (window.confirm("Delete this notice?")) {
-      deleteNotice(id);
-      const response = await deleteNoticeRemote(id).catch(() => null);
+  const handleDeleteNotice = (id) => {
+    setPendingDeleteId(id);
+  };
 
-      if (response?.items) {
-        setStoredNotices(response.items);
-      }
-
-      setNoticesState(getNotices());
+  const confirmDeleteNotice = async () => {
+    if (!pendingDeleteId) {
+      return;
     }
+
+    deleteNotice(pendingDeleteId);
+    const response = await deleteNoticeRemote(pendingDeleteId).catch(() => null);
+
+    if (response?.items) {
+      setStoredNotices(response.items);
+    }
+
+    setNoticesState(getNotices());
+    setPendingDeleteId("");
   };
 
   return (
@@ -142,6 +151,15 @@ function HRNoticeBoard({ activePage, onNavigate }) {
           )}
         </div>
       </article>
+
+      {pendingDeleteId && (
+        <HRConfirmDialog
+          title="Delete notice?"
+          message="This notice will be removed from the HR notice board."
+          onCancel={() => setPendingDeleteId("")}
+          onConfirm={confirmDeleteNotice}
+        />
+      )}
     </HRPortalLayout>
   );
 }

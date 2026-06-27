@@ -1,5 +1,6 @@
 import { getCurrentUser, updateCurrentUserProfile } from "./authStorage";
 import { createApiResourceStore } from "./apiResourceStore";
+import { getEmployeeByEmail } from "./organizationStorage";
 
 const profileEvent = "assignopedia-profile-updated";
 
@@ -9,6 +10,7 @@ const defaults = {
     email: "employee@assignopedia.com",
     title: "Technical Content Writer",
     employeeId: "EMP-240128",
+    department: "Department",
     jobCode: "FE-12",
     phone: "+91 98765 43210",
     location: "Kolkata, India",
@@ -55,6 +57,9 @@ export const getPortalProfile = (role) => {
   const currentUser = getCurrentUser();
   const profiles = readProfiles();
   const isCurrentRole = currentUser.role === role;
+  const officialEmployee = role === "employee" && isCurrentRole
+    ? getEmployeeByEmail(currentUser.email)
+    : null;
   const savedProfile = isCurrentRole
     ? profiles[getProfileStorageKey(role, currentUser.email)] || {}
     : profiles[role] || {};
@@ -70,7 +75,17 @@ export const getPortalProfile = (role) => {
         : defaults[role].email,
   };
 
-  return { ...baseProfile, ...savedProfile };
+  const officialEmployeeProfile = officialEmployee
+    ? {
+        name: officialEmployee.name || savedProfile.name || baseProfile.name,
+        email: officialEmployee.email || savedProfile.email || baseProfile.email,
+        employeeId: officialEmployee.id || savedProfile.employeeId || baseProfile.employeeId,
+        department: officialEmployee.department || savedProfile.department || baseProfile.department,
+        jobCode: officialEmployee.jobCode || savedProfile.jobCode || baseProfile.jobCode,
+      }
+    : {};
+
+  return { ...baseProfile, ...savedProfile, ...officialEmployeeProfile };
 };
 
 export const savePortalProfile = (role, profile) => {

@@ -15,6 +15,7 @@ import {
 } from "../../utils/cvApi";
 import { itemMatchesSearch, useHrSearchQuery } from "../../utils/hrSearch";
 import { readFileAsDataUrl, uploadFileToCloudinary } from "../../utils/uploadApi";
+import HRConfirmDialog from "./HRConfirmDialog";
 import HRPortalLayout from "./HRPortalLayout";
 
 const getCVDocument = (cv) => ({
@@ -111,6 +112,7 @@ function CVPreviewFrame({ cv }) {
 function HRCVAccess({ activePage, onNavigate }) {
   const [cvs, setCvs] = useState(() => getStoredCVs());
   const [selectedCV, setSelectedCV] = useState(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState("");
   const [fileActionStatus, setFileActionStatus] = useState("");
   const [isRepairingCV, setIsRepairingCV] = useState(false);
   const searchQuery = useHrSearchQuery();
@@ -218,13 +220,20 @@ function HRCVAccess({ activePage, onNavigate }) {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this CV application?")) {
-      deleteCVApplication(id);
-      await deleteCVApplicationRemote(id).catch(() => {});
-      setCvs(getStoredCVs());
-      setSelectedCV(null);
+  const handleDelete = (id) => {
+    setPendingDeleteId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!pendingDeleteId) {
+      return;
     }
+
+    deleteCVApplication(pendingDeleteId);
+    await deleteCVApplicationRemote(pendingDeleteId).catch(() => {});
+    setCvs(getStoredCVs());
+    setSelectedCV(null);
+    setPendingDeleteId("");
   };
 
   const handleStatusChange = async (cv, status) => {
@@ -341,6 +350,15 @@ function HRCVAccess({ activePage, onNavigate }) {
             )}
           </div>
         </article>
+      )}
+
+      {pendingDeleteId && (
+        <HRConfirmDialog
+          title="Delete CV application?"
+          message="This will remove the candidate application from HR CV Access."
+          onCancel={() => setPendingDeleteId("")}
+          onConfirm={confirmDelete}
+        />
       )}
     </HRPortalLayout>
   );

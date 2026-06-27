@@ -1,6 +1,7 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   FaCamera,
+  FaBuilding,
   FaEnvelope,
   FaIdBadge,
   FaLaptopCode,
@@ -16,10 +17,12 @@ import {
 import {
   getInitialsFromProfile,
   getPortalProfile,
+  profileEvent,
   savePortalProfile,
 } from "../../utils/profileStorage";
-import { getCurrentUser } from "../../utils/authStorage";
+import { currentUserEvent, getCurrentUser } from "../../utils/authStorage";
 import { uploadFileToCloudinary } from "../../utils/uploadApi";
+import { getEmployeeEvent, loadEmployees } from "../../utils/organizationStorage";
 
 const maxProfilePhotoSize = 1024 * 1024;
 
@@ -32,11 +35,29 @@ function EmployeeProfile({ activePage, onNavigate }) {
   const employeeInitials = getInitialsFromProfile(profile);
   const details = [
     { label: "Employee ID", value: profile.employeeId, icon: <FaIdBadge /> },
+    { label: "Department", value: profile.department, icon: <FaBuilding /> },
     { label: "Job Code", value: profile.jobCode, icon: <FaLaptopCode /> },
     { label: "Official Email", value: profile.email, icon: <FaEnvelope /> },
     { label: "Phone", value: profile.phone, icon: <FaPhoneAlt /> },
     { label: "Location", value: profile.location, icon: <FaMapMarkerAlt /> },
   ];
+
+  useEffect(() => {
+    const refreshProfile = () => {
+      setProfile(getPortalProfile("employee"));
+    };
+
+    loadEmployees().then(refreshProfile).catch(() => {});
+    window.addEventListener(getEmployeeEvent(), refreshProfile);
+    window.addEventListener(profileEvent, refreshProfile);
+    window.addEventListener(currentUserEvent, refreshProfile);
+
+    return () => {
+      window.removeEventListener(getEmployeeEvent(), refreshProfile);
+      window.removeEventListener(profileEvent, refreshProfile);
+      window.removeEventListener(currentUserEvent, refreshProfile);
+    };
+  }, []);
 
   const handleProfileChange = (event) => {
     const { name, value } = event.target;
@@ -149,11 +170,14 @@ function EmployeeProfile({ activePage, onNavigate }) {
             <label><span>Employee ID</span><input name="employeeId" value={profile.employeeId} onChange={handleProfileChange} required /></label>
           </div>
           <div className="request-form-row">
+            <label><span>Department</span><input name="department" value={profile.department} onChange={handleProfileChange} required /></label>
             <label><span>Job Code</span><input name="jobCode" value={profile.jobCode} onChange={handleProfileChange} required /></label>
-            <label><span>Phone</span><input name="phone" value={profile.phone} onChange={handleProfileChange} required /></label>
           </div>
           <div className="request-form-row">
+            <label><span>Phone</span><input name="phone" value={profile.phone} onChange={handleProfileChange} required /></label>
             <label><span>Location</span><input name="location" value={profile.location} onChange={handleProfileChange} required /></label>
+          </div>
+          <div className="request-form-row">
             <label><span>Availability</span><input name="availability" value={profile.availability} onChange={handleProfileChange} required /></label>
           </div>
           <label>

@@ -16,7 +16,8 @@ import assignopediaLogo from "../../assets/logo.PNG";
 import "./EmployeeDashboard.css";
 import { useEmployeeProfileImage } from "./useEmployeeProfileImage";
 import { clearCurrentUser } from "../../utils/authStorage";
-import { getCurrentEmployeeNotifications, notificationEvent } from "../../utils/requestNotifications";
+import { getEmployeeNotices, getNoticeDateTime, getNoticeEvent } from "../../utils/noticeStorage";
+import { getCurrentEmployeeNotifications, loadEmployeeNotifications, notificationEvent } from "../../utils/requestNotifications";
 import { getInitialsFromProfile, getPortalProfile } from "../../utils/profileStorage";
 
 const sidebarItems = [
@@ -33,9 +34,12 @@ const sidebarItems = [
 
 function EmployeePortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showAnnouncements, setShowAnnouncements] = useState(false);
   const profileImage = useEmployeeProfileImage();
   const [employeeNotifications, setEmployeeNotifications] = useState(getCurrentEmployeeNotifications);
+  const [announcements, setAnnouncements] = useState(() => getEmployeeNotices());
   const notificationRef = useRef(null);
+  const announcementRef = useRef(null);
   const profile = getPortalProfile("employee");
   const employeeName = profile.name || "Employee";
   const employeeInitials = getInitialsFromProfile(profile);
@@ -53,6 +57,7 @@ function EmployeePortalLayout({ activePage, children, eyebrow, title, onNavigate
       setEmployeeNotifications(getCurrentEmployeeNotifications());
     };
 
+    loadEmployeeNotifications().then(refreshNotifications).catch(() => {});
     window.addEventListener(notificationEvent, refreshNotifications);
     window.addEventListener("storage", refreshNotifications);
     return () => {
@@ -62,7 +67,22 @@ function EmployeePortalLayout({ activePage, children, eyebrow, title, onNavigate
   }, []);
 
   useEffect(() => {
-    if (!showNotifications) {
+    const refreshAnnouncements = () => {
+      setAnnouncements(getEmployeeNotices());
+    };
+
+    refreshAnnouncements();
+    window.addEventListener(getNoticeEvent(), refreshAnnouncements);
+    window.addEventListener("storage", refreshAnnouncements);
+
+    return () => {
+      window.removeEventListener(getNoticeEvent(), refreshAnnouncements);
+      window.removeEventListener("storage", refreshAnnouncements);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!showNotifications && !showAnnouncements) {
       return undefined;
     }
 
@@ -70,11 +90,15 @@ function EmployeePortalLayout({ activePage, children, eyebrow, title, onNavigate
       if (!notificationRef.current?.contains(event.target)) {
         setShowNotifications(false);
       }
+
+      if (!announcementRef.current?.contains(event.target)) {
+        setShowAnnouncements(false);
+      }
     };
 
     document.addEventListener("mousedown", handleOutsideClick);
     return () => document.removeEventListener("mousedown", handleOutsideClick);
-  }, [showNotifications]);
+  }, [showNotifications, showAnnouncements]);
 
   return (
     <main className="employee-dashboard">
@@ -123,7 +147,10 @@ function EmployeePortalLayout({ activePage, children, eyebrow, title, onNavigate
                 type="button"
                 aria-label="Notifications"
                 aria-expanded={showNotifications}
-                onClick={() => setShowNotifications((current) => !current)}
+                onClick={() => {
+                  setShowNotifications((current) => !current);
+                  setShowAnnouncements(false);
+                }}
               >
                 <FaBell />
                 {employeeNotifications.length > 0 && (
@@ -143,9 +170,41 @@ function EmployeePortalLayout({ activePage, children, eyebrow, title, onNavigate
                 </div>
               )}
             </div>
-            <button className="topbar-icon-btn" type="button" aria-label="Announcements">
-              <FaBullhorn />
-            </button>
+            <div className="employee-notification-wrap" ref={announcementRef}>
+              <button
+                className="topbar-icon-btn"
+                type="button"
+                aria-label="Announcements"
+                aria-expanded={showAnnouncements}
+                onClick={() => {
+                  setShowAnnouncements((current) => !current);
+                  setShowNotifications(false);
+                }}
+              >
+                <FaBullhorn />
+                {announcements.length > 0 && (
+                  <span className="portal-notification-count">{announcements.length}</span>
+                )}
+              </button>
+              {showAnnouncements && (
+                <div className="employee-notification-panel" role="status">
+                  <strong>Recent Announcements</strong>
+                  {announcements.length > 0 ? (
+                    announcements.slice(0, 5).map((announcement) => (
+                      <p key={announcement.id}>
+                        <b>{announcement.title}</b>
+                        <small className="employee-announcement-meta">
+                          {getNoticeDateTime(announcement)}
+                        </small>
+                        {announcement.body && <span>{announcement.body}</span>}
+                      </p>
+                    ))
+                  ) : (
+                    <p>No recent announcements.</p>
+                  )}
+                </div>
+              )}
+            </div>
             <div className="topbar-profile">
               <div className={`avatar${profileImage ? " has-image" : ""}`}>
                 {profileImage ? <img src={profileImage} alt={employeeName} /> : employeeInitials}

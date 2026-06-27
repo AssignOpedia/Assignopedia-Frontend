@@ -1,20 +1,42 @@
 import { FaBell, FaBullhorn } from "react-icons/fa";
-import { getCurrentEmployeeNotifications } from "../../utils/requestNotifications";
+import { useEffect, useState } from "react";
+import { getEmployeeNotices, getNoticeDateTime, getNoticeEvent } from "../../utils/noticeStorage";
+import { getCurrentEmployeeNotifications, loadEmployeeNotifications, notificationEvent } from "../../utils/requestNotifications";
 import EmployeePortalLayout from "./EmployeePortalLayout";
 
-const notifications = [
-  "Your WFH request for Friday has been approved.",
-  "New task assigned: Prepare frontend glossary draft.",
-  "Performance review cycle opens next week.",
-  "Monthly townhall scheduled for Friday.",
-];
-
 function EmployeeNotifications({ activePage, onNavigate }) {
-  const employeeNotifications = getCurrentEmployeeNotifications();
-  const allNotifications = [
-    ...employeeNotifications.map((notification) => notification.message),
-    ...notifications,
-  ];
+  const [employeeNotifications, setEmployeeNotifications] = useState(() => getCurrentEmployeeNotifications());
+  const [announcements, setAnnouncements] = useState(() => getEmployeeNotices());
+
+  useEffect(() => {
+    const refreshNotifications = () => {
+      setEmployeeNotifications(getCurrentEmployeeNotifications());
+    };
+
+    loadEmployeeNotifications().then(refreshNotifications).catch(() => {});
+    window.addEventListener(notificationEvent, refreshNotifications);
+    window.addEventListener("storage", refreshNotifications);
+
+    return () => {
+      window.removeEventListener(notificationEvent, refreshNotifications);
+      window.removeEventListener("storage", refreshNotifications);
+    };
+  }, []);
+
+  useEffect(() => {
+    const refreshAnnouncements = () => {
+      setAnnouncements(getEmployeeNotices());
+    };
+
+    refreshAnnouncements();
+    window.addEventListener(getNoticeEvent(), refreshAnnouncements);
+    window.addEventListener("storage", refreshAnnouncements);
+
+    return () => {
+      window.removeEventListener(getNoticeEvent(), refreshAnnouncements);
+      window.removeEventListener("storage", refreshAnnouncements);
+    };
+  }, []);
 
   return (
     <EmployeePortalLayout activePage={activePage} eyebrow="Notifications" title="Notifications Center" onNavigate={onNavigate}>
@@ -22,15 +44,29 @@ function EmployeeNotifications({ activePage, onNavigate }) {
         <article className="portal-card">
           <div className="card-heading"><div><span>Inbox</span><h3>Latest Notifications</h3></div><FaBell /></div>
           <div className="announcement-list">
-            {allNotifications.map((item) => <p key={item}>{item}</p>)}
+            {employeeNotifications.length > 0 ? (
+              employeeNotifications.map((notification) => (
+                <p key={notification.id}>{notification.message}</p>
+              ))
+            ) : (
+              <p>No employee notifications yet.</p>
+            )}
           </div>
         </article>
         <article className="portal-card">
           <div className="card-heading"><div><span>Announcements</span><h3>Company Updates</h3></div><FaBullhorn /></div>
-          <div className="timeline-list">
-            <p><strong>Policy Update</strong><span>WFH policy refreshed</span></p>
-            <p><strong>Townhall</strong><span>Friday, 5:00 PM</span></p>
-            <p><strong>HR Desk</strong><span>Open query window</span></p>
+          <div className="announcement-list">
+            {announcements.length > 0 ? (
+              announcements.map((announcement) => (
+                <p key={announcement.id}>
+                  <strong>{announcement.title}</strong>
+                  <small>{getNoticeDateTime(announcement)}</small>
+                  <span>{announcement.body}</span>
+                </p>
+              ))
+            ) : (
+              <p>No company announcements yet.</p>
+            )}
           </div>
         </article>
       </section>

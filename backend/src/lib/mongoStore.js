@@ -17,6 +17,10 @@ const arrayCollectionStores = {
     collectionName: process.env.MONGODB_CV_APPLICATIONS_COLLECTION || "cvApplications",
     idPrefix: "cv",
   },
+  employees: {
+    collectionName: process.env.MONGODB_EMPLOYEES_COLLECTION || "employees",
+    idPrefix: "employee",
+  },
   leaveRequests: {
     collectionName: process.env.MONGODB_LEAVE_REQUESTS_COLLECTION || "leaveRequests",
     idPrefix: "leave",
@@ -245,19 +249,25 @@ const readArrayCollection = async ({ name, fallback, targetCollectionName, idPre
 
 const writeArrayCollection = async ({ name, data, targetCollectionName, idPrefix }) => {
   const saved = await withStore(async (collection) => {
+    const nextData = Array.isArray(data) ? data : [];
+
     await collection.deleteMany({});
 
-    if (Array.isArray(data) && data.length > 0) {
+    if (Array.isArray(nextData) && nextData.length > 0) {
       await collection.insertMany(
-        data.map((item) => normalizeDocument(item, idPrefix)),
+        nextData.map((item) => normalizeDocument(item, idPrefix)),
         { ordered: false }
       );
     }
 
-    return data;
+    return nextData;
   }, targetCollectionName);
 
-  return saved === null ? jsonStore.write(name, data) : saved;
+  if (saved !== null) {
+    return saved;
+  }
+
+  return jsonStore.write(name, Array.isArray(data) ? data : []);
 };
 
 const read = async (name, fallback) => {

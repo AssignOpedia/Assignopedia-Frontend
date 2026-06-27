@@ -6,7 +6,7 @@ const clone = (value) => JSON.parse(JSON.stringify(value));
 
 const hasUsableData = (value) => {
   if (Array.isArray(value)) {
-    return value.length > 0;
+    return true;
   }
 
   return value && typeof value === "object" && Object.keys(value).length > 0;

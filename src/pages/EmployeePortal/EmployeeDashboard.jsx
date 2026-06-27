@@ -10,11 +10,14 @@ import {
   FaRegCalendarAlt,
   FaSitemap,
 } from "react-icons/fa";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import EmployeePortalLayout from "./EmployeePortalLayout";
 import { useEmployeeProfileImage } from "./useEmployeeProfileImage";
 import { getEmployeeDashboardMetrics } from "../../utils/employeeDashboardMetrics";
-import { getInitialsFromProfile, getPortalProfile } from "../../utils/profileStorage";
+import { getEmployeeNotices, getNoticeDateTime, getNoticeEvent } from "../../utils/noticeStorage";
+import { getInitialsFromProfile, getPortalProfile, profileEvent } from "../../utils/profileStorage";
+import { currentUserEvent } from "../../utils/authStorage";
+import { getEmployeeEvent, loadEmployees } from "../../utils/organizationStorage";
 
 const projects = [
   { name: "Client Research Portal", progress: 82, status: "In Review" },
@@ -28,16 +31,11 @@ const tasks = [
   { title: "Update project tracker notes", due: "Friday, 2:00 PM" },
 ];
 
-const announcements = [
-  "Monthly townhall scheduled for Friday.",
-  "New WFH policy is available in the HR portal.",
-  "Performance review cycle opens next week.",
-];
-
 function EmployeeDashboard({ activePage, onNavigate }) {
   const [showWorkReport, setShowWorkReport] = useState(false);
+  const [announcements, setAnnouncements] = useState(() => getEmployeeNotices());
+  const [profile, setProfile] = useState(() => getPortalProfile("employee"));
   const profileImage = useEmployeeProfileImage();
-  const profile = getPortalProfile("employee");
   const dashboardMetrics = getEmployeeDashboardMetrics();
   const employeeName = profile.name || "Employee";
   const employeeInitials = getInitialsFromProfile(profile);
@@ -48,6 +46,33 @@ function EmployeeDashboard({ activePage, onNavigate }) {
     { label: "Leave Balance", value: dashboardMetrics.cards.leaveBalance, note: dashboardMetrics.notes.leaveBalance, icon: <FaListAlt /> },
     { label: "WFH Days", value: dashboardMetrics.cards.wfhDays, note: dashboardMetrics.notes.wfhDays, icon: <FaLaptopHouse /> },
   ];
+
+  useEffect(() => {
+    const refreshAnnouncements = () => {
+      setAnnouncements(getEmployeeNotices());
+    };
+    const refreshProfile = () => {
+      setProfile(getPortalProfile("employee"));
+    };
+
+    refreshAnnouncements();
+    loadEmployees().then(refreshProfile).catch(() => {});
+    window.addEventListener(getNoticeEvent(), refreshAnnouncements);
+    window.addEventListener(getEmployeeEvent(), refreshProfile);
+    window.addEventListener(profileEvent, refreshProfile);
+    window.addEventListener(currentUserEvent, refreshProfile);
+    window.addEventListener("storage", refreshAnnouncements);
+    window.addEventListener("storage", refreshProfile);
+
+    return () => {
+      window.removeEventListener(getNoticeEvent(), refreshAnnouncements);
+      window.removeEventListener(getEmployeeEvent(), refreshProfile);
+      window.removeEventListener(profileEvent, refreshProfile);
+      window.removeEventListener(currentUserEvent, refreshProfile);
+      window.removeEventListener("storage", refreshAnnouncements);
+      window.removeEventListener("storage", refreshProfile);
+    };
+  }, []);
 
   return (
     <EmployeePortalLayout
@@ -67,6 +92,7 @@ function EmployeeDashboard({ activePage, onNavigate }) {
             <p>{profile.title}</p>
             <div className="profile-tags">
               <span>Employee ID: {profile.employeeId}</span>
+              <span>Department: {profile.department}</span>
               <span>Job Code: {profile.jobCode}</span>
               <span>
                 <FaEnvelope /> {profile.email}
@@ -227,9 +253,17 @@ function EmployeeDashboard({ activePage, onNavigate }) {
             <FaBullhorn />
           </div>
           <div className="announcement-list">
-            {announcements.map((announcement) => (
-              <p key={announcement}>{announcement}</p>
-            ))}
+            {announcements.length > 0 ? (
+              announcements.slice(0, 5).map((announcement) => (
+                <p key={announcement.id}>
+                  <strong>{announcement.title}</strong>
+                  <small>{getNoticeDateTime(announcement)}</small>
+                  <span>{announcement.body}</span>
+                </p>
+              ))
+            ) : (
+              <p>No recent announcements.</p>
+            )}
           </div>
         </article>
       </section>

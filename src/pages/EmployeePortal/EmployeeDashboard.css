@@ -235,6 +235,24 @@
   padding-top:0;
 }
 
+.employee-notification-panel b,
+.employee-notification-panel small,
+.employee-notification-panel span{
+  display:block;
+}
+
+.employee-notification-panel b{
+  color:var(--portal-navy);
+  font-size:.88rem;
+}
+
+.employee-announcement-meta{
+  margin-top:3px;
+  color:#64748b;
+  font-size:.74rem;
+  font-weight:800;
+}
+
 .topbar-profile{
   display:flex;
   align-items:center;
@@ -1882,12 +1900,28 @@
 }
 
 .announcement-list p{
+  display:grid;
+  gap:4px;
   margin:0;
   padding:13px 14px;
   color:rgba(11,34,85,.76);
   background:#f8fbff;
   border-radius:16px;
   line-height:1.5;
+}
+
+.announcement-list p strong{
+  color:var(--portal-navy);
+}
+
+.announcement-list p small{
+  color:#64748b;
+  font-size:.76rem;
+  font-weight:800;
+}
+
+.announcement-list p span{
+  color:#475569;
 }
 
 @media(max-width:1180px){

@@ -6,6 +6,7 @@ import { itemMatchesSearch, useHrSearchQuery } from "../../utils/hrSearch";
 import { createTeamMember, getTeam, saveTeam, teamEvent } from "../../utils/teamStorage";
 import { getCurrentUser } from "../../utils/authStorage";
 import { uploadFileToCloudinary } from "../../utils/uploadApi";
+import HRConfirmDialog from "./HRConfirmDialog";
 import HRPortalLayout from "./HRPortalLayout";
 
 function HROrganizationStructure({ activePage, onNavigate }) {
@@ -19,6 +20,7 @@ function HROrganizationStructure({ activePage, onNavigate }) {
   const [team, setTeam] = useState(() => getTeam());
   const [editingPerson, setEditingPerson] = useState(null);
   const [teamMessage, setTeamMessage] = useState("");
+  const [pendingDelete, setPendingDelete] = useState(null);
   const searchQuery = useHrSearchQuery();
   const isHrUser = String(getCurrentUser().role || "").toLowerCase() === "hr";
   const filteredDepartments = departments.filter((department) =>
@@ -92,10 +94,12 @@ function HROrganizationStructure({ activePage, onNavigate }) {
   };
 
   const handleDelete = (id) => {
-    if (window.confirm("Delete this department?")) {
-      deleteDepartment(id);
-      setDepartments(getDepartments());
-    }
+    setPendingDelete({ type: "department", id });
+  };
+
+  const confirmDeleteDepartment = (id) => {
+    deleteDepartment(id);
+    setDepartments(getDepartments());
   };
 
   const handleCancel = () => {
@@ -146,6 +150,10 @@ function HROrganizationStructure({ activePage, onNavigate }) {
       return;
     }
 
+    setPendingDelete({ type: "member", id: memberId });
+  };
+
+  const confirmDeleteMember = (memberId) => {
     const nextTeam = saveTeam({
       ...team,
       members: team.members.filter((member) => member.id !== memberId),
@@ -154,6 +162,20 @@ function HROrganizationStructure({ activePage, onNavigate }) {
     setTeam(nextTeam);
     setEditingPerson((current) => (current?.id === memberId ? null : current));
     setTeamMessage("Node deleted successfully.");
+  };
+
+  const confirmDelete = () => {
+    if (!pendingDelete) {
+      return;
+    }
+
+    if (pendingDelete.type === "department") {
+      confirmDeleteDepartment(pendingDelete.id);
+    } else if (pendingDelete.type === "member") {
+      confirmDeleteMember(pendingDelete.id);
+    }
+
+    setPendingDelete(null);
   };
 
   const handleTeamImageChange = async (event) => {
@@ -525,6 +547,19 @@ function HROrganizationStructure({ activePage, onNavigate }) {
           )}
         </div>
       </article>
+
+      {pendingDelete && (
+        <HRConfirmDialog
+          title={pendingDelete.type === "department" ? "Delete department?" : "Delete team node?"}
+          message={
+            pendingDelete.type === "department"
+              ? "This department will be removed from the organization structure."
+              : "This team node will be removed from the team structure."
+          }
+          onCancel={() => setPendingDelete(null)}
+          onConfirm={confirmDelete}
+        />
+      )}
     </HRPortalLayout>
   );
 }

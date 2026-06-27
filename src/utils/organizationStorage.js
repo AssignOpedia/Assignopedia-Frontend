@@ -24,41 +24,60 @@ const departmentStore = createApiResourceStore({
 });
 
 const normalizeEmployeeId = (id) => String(id || "").trim().toLowerCase();
+const normalizeEmail = (email) => String(email || "").trim().toLowerCase();
 
-export const createEmployeeID = (id, name, department, jobCode, email) => {
+export const createEmployeeID = async (id, name, department, jobCode, email) => {
   const employees = employeeStore.get();
+  const normalizedEmail = normalizeEmail(email);
   const newEmployee = {
-    id,
-    name,
-    department,
-    jobCode,
-    email,
+    id: id.trim(),
+    name: name.trim(),
+    department: department.trim(),
+    jobCode: jobCode.trim(),
+    email: normalizedEmail,
     createdAt: new Date().toLocaleDateString(),
   };
 
-  employeeStore.save([...employees, newEmployee]).catch(() => {});
+  await employeeStore.save([...employees, newEmployee]);
   return newEmployee;
 };
 
 export const getEmployees = () => employeeStore.get();
 
-export const updateEmployeeID = (id, updates) => {
+export const loadEmployees = () => employeeStore.load();
+
+export const getEmployeeByEmail = (email) => {
+  const normalizedEmail = normalizeEmail(email);
+
+  return employeeStore.get().find((employee) => normalizeEmail(employee.email) === normalizedEmail) || null;
+};
+
+export const updateEmployeeID = async (id, updates) => {
   const employees = employeeStore.get();
   const normalizedId = normalizeEmployeeId(id);
+  const normalizedUpdates = {
+    ...updates,
+    ...(updates.id ? { id: updates.id.trim() } : {}),
+    ...(updates.email ? { email: normalizeEmail(updates.email) } : {}),
+  };
   const nextEmployees = employees.map((emp) =>
-    normalizeEmployeeId(emp.id) === normalizedId ? { ...emp, ...updates } : emp
+    normalizeEmployeeId(emp.id) === normalizedId ? { ...emp, ...normalizedUpdates } : emp
   );
-  const updated = nextEmployees.find((emp) => normalizeEmployeeId(emp.id) === normalizedId) || null;
+  const updated =
+    nextEmployees.find((emp) => normalizeEmployeeId(emp.id) === normalizeEmployeeId(normalizedUpdates.id)) ||
+    nextEmployees.find((emp) => normalizeEmployeeId(emp.id) === normalizedId) ||
+    null;
 
   if (updated) {
-    employeeStore.save(nextEmployees).catch(() => {});
+    await employeeStore.save(nextEmployees);
   }
 
   return updated;
 };
 
-export const deleteEmployee = (id) => {
-  employeeStore.save(employeeStore.get().filter((emp) => emp.id !== id)).catch(() => {});
+export const deleteEmployee = async (id) => {
+  const normalizedId = normalizeEmployeeId(id);
+  await employeeStore.save(employeeStore.get().filter((emp) => normalizeEmployeeId(emp.id) !== normalizedId));
 };
 
 export const getTotalEmployeeCount = () => getEmployees().length + 126;

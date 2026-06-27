@@ -29,16 +29,14 @@ const readAttendanceRecords = () => {
   return attendanceStore.get();
 };
 
-const saveAttendanceRecords = (records) => {
-  attendanceStore.save(records).catch(() => {});
-};
+const saveAttendanceRecords = (records) => attendanceStore.save(records);
 
 export const getAttendanceRecords = () => readAttendanceRecords();
 
 export const loadAttendanceRecords = () => attendanceStore.load();
 
 export const setAttendanceRecords = (records) => {
-  saveAttendanceRecords(Array.isArray(records) ? records : []);
+  saveAttendanceRecords(Array.isArray(records) ? records : []).catch(() => {});
 };
 
 const parseTimeToMinutes = (time) => {
@@ -186,7 +184,7 @@ export const getEmployeeAttendanceForToday = () => {
 export const upsertTodayAttendance = ({ loginTime, logoutTime }) => {
   const currentUser = getCurrentUser();
   const today = getTodayKey();
-  const records = readAttendanceRecords();
+  const records = readAttendanceRecords().map((record) => ({ ...record }));
   const recordIndex = records.findIndex(
     (item) => item.email === currentUser.email && item.date === today
   );
@@ -208,9 +206,68 @@ export const upsertTodayAttendance = ({ loginTime, logoutTime }) => {
     records.unshift(nextRecord);
   }
 
-  saveAttendanceRecords(records);
+  saveAttendanceRecords(records).catch(() => {});
 
   return nextRecord;
+};
+
+const buildEmptyTodayAttendance = (currentUser, today) => ({
+  date: today,
+  employeeName: currentUser.name,
+  email: currentUser.email,
+  loginTime: "",
+  logoutTime: "",
+  status: "Absent",
+});
+
+export const toggleTodayAttendanceField = async (field) => {
+  const currentUser = getCurrentUser();
+  const today = getTodayKey();
+  const records = readAttendanceRecords().map((record) => ({ ...record }));
+  const recordIndex = records.findIndex(
+    (item) => item.email === currentUser.email && item.date === today
+  );
+  const existingRecord = recordIndex >= 0 ? records[recordIndex] : null;
+  const hasExistingValue = Boolean(existingRecord?.[field]);
+  const nextRecord = {
+    ...(existingRecord || {}),
+    id: existingRecord?.id || `attendance-${currentUser.email}-${today}`,
+    date: today,
+    employeeName: currentUser.name,
+    email: currentUser.email,
+    loginTime: existingRecord?.loginTime || "",
+    logoutTime: existingRecord?.logoutTime || "",
+  };
+
+  if (hasExistingValue) {
+    nextRecord[field] = "";
+  } else {
+    nextRecord[field] = formatCurrentTime();
+  }
+
+  nextRecord.status = getAttendanceStatusFromLogin(nextRecord.loginTime);
+
+  const shouldDeleteRecord =
+    (hasExistingValue && field === "loginTime") || (!nextRecord.loginTime && !nextRecord.logoutTime);
+
+  if (shouldDeleteRecord) {
+    if (recordIndex >= 0) {
+      records.splice(recordIndex, 1);
+    }
+  } else if (recordIndex >= 0) {
+    records[recordIndex] = nextRecord;
+  } else {
+    records.unshift(nextRecord);
+  }
+
+  await saveAttendanceRecords(records);
+
+  return {
+    action: hasExistingValue ? "removed" : "recorded",
+    deleted: shouldDeleteRecord,
+    field,
+    record: shouldDeleteRecord ? buildEmptyTodayAttendance(currentUser, today) : nextRecord,
+  };
 };
 
 export const buildAttendanceCsv = (records = readAttendanceRecords()) => {

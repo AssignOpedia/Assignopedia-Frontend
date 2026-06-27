@@ -55,11 +55,16 @@ export const addEmployeeDecisionNotification = ({ type, employeeEmail, status, d
 
 export const getHrRequestNotifications = () => hrStore.get();
 
+export const loadEmployeeNotifications = async () => employeeStore.load();
+
+export const loadHrRequestNotifications = async () => hrStore.load();
+
 export const getCurrentEmployeeNotifications = () => {
   const currentUser = getCurrentUser();
+  const currentEmail = String(currentUser.email || "").trim().toLowerCase();
 
   return employeeStore.get().filter(
-    (notification) => notification.employeeEmail === currentUser.email
+    (notification) => String(notification.employeeEmail || "").trim().toLowerCase() === currentEmail
   );
 };
 

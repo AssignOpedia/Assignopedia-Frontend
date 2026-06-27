@@ -2,16 +2,13 @@ import { useEffect, useState } from "react";
 import { FaCalendarAlt, FaClock, FaSignInAlt, FaSignOutAlt } from "react-icons/fa";
 import {
   attendanceEvent,
-  formatCurrentTime,
-  getAttendanceRecords,
   getEmployeeAttendanceForToday,
   getEmployeeMonthlyAttendanceSummary,
   getEmployeeMonthlyAttendanceTrend,
   loadAttendanceRecords,
-  upsertTodayAttendance,
+  toggleTodayAttendanceField,
 } from "../../utils/attendanceStorage";
 import { currentUserEvent } from "../../utils/authStorage";
-import { syncAttendanceRemote } from "../../utils/hrPortalApi";
 import EmployeePortalLayout from "./EmployeePortalLayout";
 
 function EmployeeAttendance({ activePage, onNavigate }) {
@@ -81,22 +78,38 @@ function EmployeeAttendance({ activePage, onNavigate }) {
     setStatusMessage(message);
   };
 
-  const handleLoginClick = () => {
-    const record = upsertTodayAttendance({ loginTime: formatCurrentTime() });
+  const handleLoginClick = async () => {
+    try {
+      const result = await toggleTodayAttendanceField("loginTime");
 
-    refreshAttendanceState();
-    setAttendanceRecord(record);
-    syncAttendanceRemote(getAttendanceRecords()).catch(() => {});
-    showMessage("Login recorded successfully. HR and Admin can now see it.");
+      refreshAttendanceState();
+      setAttendanceRecord(result.record);
+      showMessage(
+        result.action === "removed"
+          ? "Login removed. The attendance record was deleted from HR and MongoDB."
+          : "Login recorded successfully. HR and Admin can now see it."
+      );
+    } catch (error) {
+      showMessage(error.message || "Could not update attendance. Please try again.");
+    }
   };
 
-  const handleLogoutClick = () => {
-    const record = upsertTodayAttendance({ logoutTime: formatCurrentTime() });
+  const handleLogoutClick = async () => {
+    try {
+      const result = await toggleTodayAttendanceField("logoutTime");
 
-    refreshAttendanceState();
-    setAttendanceRecord(record);
-    syncAttendanceRemote(getAttendanceRecords()).catch(() => {});
-    showMessage("Logout recorded successfully. Attendance report updated.");
+      refreshAttendanceState();
+      setAttendanceRecord(result.record);
+      showMessage(
+        result.action === "removed"
+          ? result.deleted
+            ? "Logout removed. The attendance record was deleted from HR and MongoDB."
+            : "Logout removed. Attendance report updated."
+          : "Logout recorded successfully. Attendance report updated."
+      );
+    } catch (error) {
+      showMessage(error.message || "Could not update attendance. Please try again.");
+    }
   };
 
   return (
@@ -114,10 +127,10 @@ function EmployeeAttendance({ activePage, onNavigate }) {
         </div>
         <div className="leave-action-buttons">
           <button type="button" onClick={handleLoginClick}>
-            Login
+            {attendanceRecord.loginTime ? "Undo Login" : "Login"}
           </button>
           <button type="button" onClick={handleLogoutClick}>
-            Logout
+            {attendanceRecord.logoutTime ? "Undo Logout" : "Logout"}
           </button>
         </div>
       </section>

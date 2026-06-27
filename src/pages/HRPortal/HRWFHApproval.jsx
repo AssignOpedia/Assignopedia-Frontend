@@ -13,12 +13,6 @@ import { itemMatchesSearch, useHrSearchQuery } from "../../utils/hrSearch";
 import { uploadFileToCloudinary } from "../../utils/uploadApi";
 import HRPortalLayout from "./HRPortalLayout";
 
-const requests = [
-  { name: "Nisha Roy", date: "Jun 18", task: "Content QA review", reason: "Home internet installation" },
-  { name: "Rahul Das", date: "Jun 19", task: "Candidate screening", reason: "Medical appointment" },
-  { name: "Sandipan Mondal", date: "Jun 20", task: "Technical content sprint", reason: "Focused documentation work" },
-];
-
 let cachedWfhRequests = [];
 
 const getStoredWfhRequests = () => {
@@ -68,7 +62,7 @@ const createDocumentUrl = (data) => {
 };
 
 function HRWFHApproval({ activePage, onNavigate }) {
-  const [allRequests, setAllRequests] = useState(() => [...getStoredWfhRequests(), ...requests]);
+  const [allRequests, setAllRequests] = useState(() => getStoredWfhRequests());
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [fileActionStatus, setFileActionStatus] = useState("");
   const [isRepairingFile, setIsRepairingFile] = useState(false);
@@ -77,7 +71,7 @@ function HRWFHApproval({ activePage, onNavigate }) {
 
   useEffect(() => {
     const refreshRequests = () => {
-      setAllRequests([...getStoredWfhRequests(), ...requests]);
+      setAllRequests(getStoredWfhRequests());
     };
 
     getWfhRequestsRemote()
@@ -85,7 +79,7 @@ function HRWFHApproval({ activePage, onNavigate }) {
         const customRequests = remoteRequests.filter((request) => !String(request.id || "").startsWith("default-"));
 
         writeStoredWfhRequests(customRequests);
-        setAllRequests([...customRequests, ...requests]);
+        setAllRequests(customRequests);
       })
       .catch(() => {});
 
@@ -101,41 +95,38 @@ function HRWFHApproval({ activePage, onNavigate }) {
   const updateWfhStatus = async (request, status) => {
     const requestKey = getRequestKey(request);
     const decisionDate = formatNotificationDate();
-    const storedRequests = getStoredWfhRequests();
-    const updatedStoredRequests = storedRequests.map((storedRequest) =>
-      getRequestKey(storedRequest) === requestKey
-        ? { ...storedRequest, status, decisionDate }
-        : storedRequest
-    );
 
-    writeStoredWfhRequests(updatedStoredRequests);
-    window.dispatchEvent(new CustomEvent("employee-wfh-request-updated"));
-    setAllRequests((current) =>
-      current.map((currentRequest) =>
-        getRequestKey(currentRequest) === requestKey
-          ? { ...currentRequest, status, decisionDate }
-          : currentRequest
-      )
-    );
-
-    if (request.email) {
-      addEmployeeDecisionNotification({
-        type: "WFH",
-        employeeEmail: request.email,
-        status,
-        decisionDate,
-        detail: `${request.task} on ${request.date}`,
-      });
+    if (!request.id) {
+      return;
     }
 
-    if (request.id) {
-      const response = await decideWfhRequestRemote(request.id, status).catch(() => null);
+    const response = await decideWfhRequestRemote(request.id, status).catch((error) => {
+      setFileActionStatus(error.message || "Could not update this WFH request.");
+      return null;
+    });
 
-      if (response?.requests) {
-        const customRequests = response.requests.filter((item) => !String(item.id || "").startsWith("default-"));
-        writeStoredWfhRequests(customRequests);
-        setAllRequests([...customRequests, ...requests]);
-      }
+    if (!response?.request) {
+      return;
+    }
+
+    const updatedRequest = response.request;
+    const nextRequests = response.requests?.filter((item) => !String(item.id || "").startsWith("default-")) || [];
+
+    writeStoredWfhRequests(nextRequests);
+    setAllRequests(nextRequests);
+    setSelectedRequest((current) =>
+      current && getRequestKey(current) === requestKey ? updatedRequest : current
+    );
+    window.dispatchEvent(new CustomEvent("employee-wfh-request-updated"));
+
+    if (updatedRequest.email) {
+      addEmployeeDecisionNotification({
+        type: "WFH",
+        employeeEmail: updatedRequest.email,
+        status,
+        decisionDate: updatedRequest.decisionDate || decisionDate,
+        detail: `${updatedRequest.task} on ${updatedRequest.date}`,
+      });
     }
   };
 
@@ -329,8 +320,8 @@ function HRWFHApproval({ activePage, onNavigate }) {
   return (
     <HRPortalLayout activePage={activePage} eyebrow="WFH Approval" title="WFH Approval" onNavigate={onNavigate}>
       <section className="hr-page-card-grid">
-        {filteredRequests.length > 0 ? filteredRequests.map((request, index) => (
-          <article className="hr-panel hr-request-card" key={`${request.name}-${request.date}-${index}`}>
+        {filteredRequests.length > 0 ? filteredRequests.map((request) => (
+          <article className="hr-panel hr-request-card" key={request.id || `${request.name}-${request.date}-${request.reason}`}>
             <div className="hr-panel-heading"><div><span>{request.date}</span><h2>{request.name}</h2></div><FaLaptopHouse /></div>
             <p><strong>Project / Task:</strong> {request.task}</p>
             <p><strong>Reason:</strong> {request.reason}</p>
