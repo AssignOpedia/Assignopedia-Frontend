@@ -54,6 +54,29 @@ const highlights = [
   },
 ];
 
+const heroStats = [
+  {
+    icon: <FaUsers />,
+    value: "10K+",
+    label: "Happy Students",
+  },
+  {
+    icon: <FaShieldAlt />,
+    value: "98%",
+    label: "Satisfaction Rate",
+  },
+  {
+    icon: <FaFileAlt />,
+    value: "25K+",
+    label: "Assignments Completed",
+  },
+  {
+    icon: <FaClock />,
+    value: "24/7",
+    label: "Support Available",
+  },
+];
+
 function Home({ onNavigate }) {
   const scrollToFooter = () => {
     document
@@ -63,8 +86,8 @@ function Home({ onNavigate }) {
 
   return (
     <div className="home-page-shell">
+      <ConstellationBackground variant="home" />
       <section className="hero home-hero">
-        <ConstellationBackground variant="home" />
         <div className="hero-bg-shape" aria-hidden="true" />
         <div className="hero-floating-elements" aria-hidden="true">
           <span className="hero-float hero-float-book">
@@ -139,34 +162,15 @@ function Home({ onNavigate }) {
         </div>
 
         <div className="hero-stats-bar" aria-label="Assignopedia results">
-          <div className="hero-stat">
-            <FaUsers aria-hidden="true" />
-            <div>
-              <h3>10K+</h3>
-              <p>Happy Students</p>
+          {heroStats.map((stat) => (
+            <div className="hero-stat" key={stat.label}>
+              {stat.icon}
+              <div>
+                <h3>{stat.value}</h3>
+                <p>{stat.label}</p>
+              </div>
             </div>
-          </div>
-          <div className="hero-stat">
-            <FaShieldAlt aria-hidden="true" />
-            <div>
-              <h3>98%</h3>
-              <p>Satisfaction Rate</p>
-            </div>
-          </div>
-          <div className="hero-stat">
-            <FaFileAlt aria-hidden="true" />
-            <div>
-              <h3>25K+</h3>
-              <p>Assignments Completed</p>
-            </div>
-          </div>
-          <div className="hero-stat">
-            <FaClock aria-hidden="true" />
-            <div>
-              <h3>24/7</h3>
-              <p>Support Available</p>
-            </div>
-          </div>
+          ))}
         </div>
       </section>
 
