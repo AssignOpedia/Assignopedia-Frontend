@@ -10,10 +10,12 @@ import {
   FaIdBadge,
   FaLaptopHouse,
   FaSearch,
+  FaSignInAlt,
   FaSignOutAlt,
 } from "react-icons/fa";
 import "./HRDashboard.css";
-import { clearCurrentUser } from "../../utils/authStorage";
+import { clearCurrentUser, getCurrentUser } from "../../utils/authStorage";
+import { logoutAccountRemote } from "../../utils/authApi";
 import { getPasswordResetRequests, passwordResetRequestEvent } from "../../utils/passwordResetRequests";
 import { getInitialsFromProfile, getPortalProfile } from "../../utils/profileStorage";
 import { getHrRequestNotifications, notificationEvent } from "../../utils/requestNotifications";
@@ -24,6 +26,7 @@ const sidebarItems = [
   { label: "Leave Approval", icon: <FaCalendarCheck />, page: "hr-leave-approval" },
   { label: "WFH Approval", icon: <FaLaptopHouse />, page: "hr-wfh-approval" },
   { label: "Attendance Checking", icon: <FaClipboardList />, page: "hr-attendance-checking" },
+  { label: "Attendance", icon: <FaSignInAlt />, page: "hr-login-logout" },
   { label: "Notice Board", icon: <FaBell />, page: "hr-notice-board" },
   { label: "CV Access", icon: <FaFileAlt />, page: "hr-cv-access" },
   { label: "Employee ID", icon: <FaIdBadge />, page: "hr-employee-id" },
@@ -72,7 +75,13 @@ function HRPortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [showNotifications]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const currentUser = getCurrentUser();
+
+    if (currentUser?.email && currentUser?.role) {
+      await logoutAccountRemote(currentUser).catch(() => {});
+    }
+
     clearCurrentUser();
     onNavigate("hr-login");
   };

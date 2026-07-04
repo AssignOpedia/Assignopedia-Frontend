@@ -1,0 +1,59 @@
+services:
+  - type: web
+    name: assignopedia-backend
+    env: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: CLIENT_ORIGIN
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_REQUIRE_CONNECTION
+        value: true
+      - key: MONGODB_DB_NAME
+        value: assignopedia
+      - key: MONGODB_COLLECTION
+        value: appStores
+      - key: MONGODB_USERS_COLLECTION
+        value: users
+      - key: MONGODB_BLOG_POSTS_COLLECTION
+        value: blogPosts
+      - key: MONGODB_CV_APPLICATIONS_COLLECTION
+        value: cvApplications
+      - key: MONGODB_EMPLOYEES_COLLECTION
+        value: employees
+      - key: MONGODB_ATTENDANCE_COLLECTION
+        value: attendance
+      - key: MONGODB_LEAVE_REQUESTS_COLLECTION
+        value: leaveRequests
+      - key: MONGODB_WFH_REQUESTS_COLLECTION
+        value: wfhRequests
+      - key: MONGODB_NOTICES_COLLECTION
+        value: notices
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+
+  - type: web
+    name: assignopedia-frontend
+    env: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: VITE_API_URL
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

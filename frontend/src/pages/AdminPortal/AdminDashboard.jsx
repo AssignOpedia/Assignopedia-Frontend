@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   FaBriefcase,
   FaChartBar,
@@ -15,7 +16,17 @@ import {
   FaUsers,
 } from "react-icons/fa";
 import AdminPortalLayout from "./AdminPortalLayout";
+import {
+  attendanceEvent,
+  getAttendanceRecords,
+  getHrAttendanceRecords,
+  getRecordDisplayName,
+  getRecordRole,
+  getTodayKey,
+  loadAttendanceRecords,
+} from "../../utils/attendanceStorage";
 import { getPasswordResetRequests } from "../../utils/passwordResetRequests";
+import { getEmployeeEvent, getEmployees, loadEmployees } from "../../utils/organizationStorage";
 
 const dashboardCards = [
   { label: "Total Active Employees", value: "248", trend: "+12 this month", icon: <FaUsers /> },
@@ -26,12 +37,36 @@ const dashboardCards = [
   { label: "Total Clients", value: "132", trend: "14 new clients", icon: <FaLayerGroup /> },
 ];
 
-const employees = [
-  { name: "Ananya Sen", role: "Project Lead", status: "Present", workload: "82%" },
-  { name: "Rahul Verma", role: "Frontend Engineer", status: "Present", workload: "76%" },
-  { name: "Meera Joshi", role: "QA Analyst", status: "Leave", workload: "64%" },
-  { name: "Arjun Mehta", role: "Sales Manager", status: "Remote", workload: "71%" },
-];
+const asDirectoryEmployee = (employee) => ({
+  id: employee.id || employee.email || employee.name,
+  name: employee.name || "Employee",
+  role: employee.role || employee.jobCode || "Employee",
+  status: employee.status || "Present",
+  statusClass: String(employee.status || "Present").trim().toLowerCase().replace(/\s+/g, "-"),
+  workload: `${Number(employee.score || 0)}%`,
+});
+
+const asHrDirectoryEmployee = (record) => {
+  const status = record.loginTime ? "Present" : "Absent";
+  const performance = record.loginTime ? 100 : 0;
+
+  return {
+    id: `hr-${record.id || record.email || record.date}`,
+    name: getRecordDisplayName(record),
+    role: getRecordRole(record),
+    status,
+    statusClass: String(status).trim().toLowerCase().replace(/\s+/g, "-"),
+    workload: `${Number(record.score || record.performance || performance)}%`,
+  };
+};
+
+const getPresentHrDirectoryRows = (records) => {
+  const today = getTodayKey();
+
+  return getHrAttendanceRecords(records)
+    .filter((record) => record.date === today && record.loginTime)
+    .map(asHrDirectoryEmployee);
+};
 
 const revenueBars = [
   { month: "Apr", value: 52 },
@@ -75,7 +110,41 @@ const teams = [
 ];
 
 function AdminDashboard({ activePage, onNavigate }) {
+  const [employees, setEmployees] = useState(() => getEmployees().map(asDirectoryEmployee));
+  const [hrRows, setHrRows] = useState(() => getPresentHrDirectoryRows(getAttendanceRecords()));
   const passwordResetRequests = getPasswordResetRequests();
+  const directoryRows = [...hrRows, ...employees];
+
+  useEffect(() => {
+    const refreshEmployees = () => {
+      setEmployees(getEmployees().map(asDirectoryEmployee));
+    };
+
+    const event = getEmployeeEvent();
+    window.addEventListener(event, refreshEmployees);
+    window.addEventListener("storage", refreshEmployees);
+    loadEmployees().then(refreshEmployees).catch(() => {});
+
+    return () => {
+      window.removeEventListener(event, refreshEmployees);
+      window.removeEventListener("storage", refreshEmployees);
+    };
+  }, []);
+
+  useEffect(() => {
+    const refreshHrRows = () => {
+      setHrRows(getPresentHrDirectoryRows(getAttendanceRecords()));
+    };
+
+    window.addEventListener(attendanceEvent, refreshHrRows);
+    window.addEventListener("storage", refreshHrRows);
+    loadAttendanceRecords().then(refreshHrRows).catch(() => {});
+
+    return () => {
+      window.removeEventListener(attendanceEvent, refreshHrRows);
+      window.removeEventListener("storage", refreshHrRows);
+    };
+  }, []);
 
   return (
     <AdminPortalLayout
@@ -111,17 +180,26 @@ function AdminDashboard({ activePage, onNavigate }) {
             </div>
             <FaUsers />
           </div>
-          <div className="employee-table">
-            {employees.map((employee) => (
-              <div className="employee-row" key={employee.name}>
+          <div className="employee-table dashboard-employee-directory-list">
+            {directoryRows.length > 0 ? directoryRows.map((employee) => (
+              <div className="employee-row" key={employee.id}>
                 <span>
                   <strong>{employee.name}</strong>
                   <small>{employee.role}</small>
                 </span>
-                <em className={employee.status.toLowerCase()}>{employee.status}</em>
+                <em className={employee.statusClass}>{employee.status}</em>
                 <b>{employee.workload}</b>
               </div>
-            ))}
+            )) : (
+              <div className="employee-row">
+                <span>
+                  <strong>No people present yet.</strong>
+                  <small>Employee and HR attendance will appear here.</small>
+                </span>
+                <em className="remote">Waiting</em>
+                <b>0%</b>
+              </div>
+            )}
           </div>
         </article>
 

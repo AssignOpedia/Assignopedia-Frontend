@@ -25,6 +25,25 @@ export const formatCurrentTime = () =>
     hour12: true,
   });
 
+const formatDateLabel = (value) => {
+  if (!value) {
+    return "";
+  }
+
+  const [year, month, day] = String(value).split("-");
+  const date = year && month && day ? new Date(Number(year), Number(month) - 1, Number(day)) : new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
 const readAttendanceRecords = () => {
   return attendanceStore.get();
 };
@@ -89,6 +108,58 @@ export const getAttendanceStatusFromLogin = (loginTime) => {
 
   return isLateLogin(loginTime) ? "Late" : "Present";
 };
+
+export const formatAttendanceDateTime = (value, fallbackDate = "", fallbackTime = "") => {
+  if (value) {
+    const date = new Date(value);
+
+    if (!Number.isNaN(date.getTime())) {
+      return date.toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      });
+    }
+  }
+
+  if (fallbackDate && fallbackTime) {
+    return `${formatDateLabel(fallbackDate)}, ${fallbackTime}`;
+  }
+
+  return fallbackTime || "-";
+};
+
+export const getRecordRole = (record) =>
+  record.jobRole || record.role || record.jobCode || (record.userRole === "hr" ? "Human Resources" : "Employee");
+
+export const getRecordDisplayName = (record) => record.employeeName || record.name || "User";
+
+export const getLateCountForRecord = (record, records = readAttendanceRecords()) => {
+  if (Number(record.lateCount || 0) > 0) {
+    return Number(record.lateCount);
+  }
+
+  const email = String(record.email || "").trim().toLowerCase();
+
+  if (!email) {
+    return 0;
+  }
+
+  return records.filter(
+    (item) =>
+      String(item.email || "").trim().toLowerCase() === email &&
+      (item.isLate || getAttendanceStatusFromLogin(item.loginTime) === "Late")
+  ).length;
+};
+
+export const getHrAttendanceRecords = (records = readAttendanceRecords()) =>
+  records.filter((record) => String(record.userRole || record.portalRole || "").toLowerCase() === "hr");
+
+export const getEmployeeAttendanceRecords = (records = readAttendanceRecords()) =>
+  records.filter((record) => String(record.userRole || record.portalRole || "employee").toLowerCase() === "employee");
 
 export const getEmployeeMonthlyAttendanceSummary = () => {
   const currentUser = getCurrentUser();
@@ -175,6 +246,9 @@ export const getEmployeeAttendanceForToday = () => {
     date: today,
     employeeName: currentUser.name,
     email: currentUser.email,
+    userRole: currentUser.role || "employee",
+    portalRole: currentUser.role || "employee",
+    jobRole: currentUser.role === "hr" ? "Human Resources" : "Employee",
     loginTime: "",
     logoutTime: "",
     status: "Absent",
@@ -184,6 +258,7 @@ export const getEmployeeAttendanceForToday = () => {
 export const upsertTodayAttendance = ({ loginTime, logoutTime }) => {
   const currentUser = getCurrentUser();
   const today = getTodayKey();
+  const nowIso = new Date().toISOString();
   const records = readAttendanceRecords().map((record) => ({ ...record }));
   const recordIndex = records.findIndex(
     (item) => item.email === currentUser.email && item.date === today
@@ -195,9 +270,15 @@ export const upsertTodayAttendance = ({ loginTime, logoutTime }) => {
     date: today,
     employeeName: currentUser.name,
     email: currentUser.email,
+    userRole: currentUser.role || "employee",
+    portalRole: currentUser.role || "employee",
+    jobRole: existingRecord.jobRole || (currentUser.role === "hr" ? "Human Resources" : "Employee"),
     loginTime: loginTime ?? existingRecord.loginTime ?? "",
     logoutTime: logoutTime ?? existingRecord.logoutTime ?? "",
+    loginDateTime: loginTime ? nowIso : existingRecord.loginDateTime || "",
+    logoutDateTime: logoutTime ? nowIso : existingRecord.logoutDateTime || "",
     status: getAttendanceStatusFromLogin(loginTime ?? existingRecord.loginTime ?? ""),
+    isLate: isLateLogin(loginTime ?? existingRecord.loginTime ?? ""),
   };
 
   if (recordIndex >= 0) {
@@ -215,6 +296,9 @@ const buildEmptyTodayAttendance = (currentUser, today) => ({
   date: today,
   employeeName: currentUser.name,
   email: currentUser.email,
+  userRole: currentUser.role || "employee",
+  portalRole: currentUser.role || "employee",
+  jobRole: currentUser.role === "hr" ? "Human Resources" : "Employee",
   loginTime: "",
   logoutTime: "",
   status: "Absent",
@@ -223,6 +307,7 @@ const buildEmptyTodayAttendance = (currentUser, today) => ({
 export const toggleTodayAttendanceField = async (field) => {
   const currentUser = getCurrentUser();
   const today = getTodayKey();
+  const nowIso = new Date().toISOString();
   const records = readAttendanceRecords().map((record) => ({ ...record }));
   const recordIndex = records.findIndex(
     (item) => item.email === currentUser.email && item.date === today
@@ -235,17 +320,36 @@ export const toggleTodayAttendanceField = async (field) => {
     date: today,
     employeeName: currentUser.name,
     email: currentUser.email,
+    userRole: existingRecord?.userRole || currentUser.role || "employee",
+    portalRole: existingRecord?.portalRole || currentUser.role || "employee",
+    jobRole: existingRecord?.jobRole || (currentUser.role === "hr" ? "Human Resources" : "Employee"),
     loginTime: existingRecord?.loginTime || "",
     logoutTime: existingRecord?.logoutTime || "",
+    loginDateTime: existingRecord?.loginDateTime || "",
+    logoutDateTime: existingRecord?.logoutDateTime || "",
   };
 
   if (hasExistingValue) {
     nextRecord[field] = "";
+    if (field === "loginTime") {
+      nextRecord.loginDateTime = "";
+    }
+    if (field === "logoutTime") {
+      nextRecord.logoutDateTime = "";
+    }
   } else {
     nextRecord[field] = formatCurrentTime();
+    if (field === "loginTime") {
+      nextRecord.loginDateTime = nowIso;
+    }
+    if (field === "logoutTime") {
+      nextRecord.logoutDateTime = nowIso;
+    }
   }
 
   nextRecord.status = getAttendanceStatusFromLogin(nextRecord.loginTime);
+  nextRecord.isLate = isLateLogin(nextRecord.loginTime);
+  nextRecord.lateStatus = nextRecord.isLate ? "Late" : "On Time";
 
   const shouldDeleteRecord =
     (hasExistingValue && field === "loginTime") || (!nextRecord.loginTime && !nextRecord.logoutTime);
@@ -271,29 +375,43 @@ export const toggleTodayAttendanceField = async (field) => {
 };
 
 export const buildAttendanceCsv = (records = readAttendanceRecords()) => {
-  const headers = ["Date", "Employee", "Email", "Login", "Logout", "Status"];
+  const headers = [
+    "Name",
+    "Job Role",
+    "Email",
+    "Employee Login Date and Time",
+    "Employee Logout Date and Time",
+    "Attendance Status",
+    "Late Login",
+    "Late Count",
+  ];
   const rows = records.map((record) => [
-    record.date,
-    record.employeeName,
+    getRecordDisplayName(record),
+    getRecordRole(record),
     record.email,
-    record.loginTime || "-",
-    record.logoutTime || "-",
-    record.status,
+    formatAttendanceDateTime(record.loginDateTime, record.date, record.loginTime),
+    formatAttendanceDateTime(record.logoutDateTime, record.date, record.logoutTime),
+    record.status || getAttendanceStatusFromLogin(record.loginTime),
+    record.isLate || getAttendanceStatusFromLogin(record.loginTime) === "Late" ? "Late" : "On Time",
+    getLateCountForRecord(record, records),
   ]);
   const escapeCell = (cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`;
 
   return [headers, ...rows].map((row) => row.map(escapeCell).join(",")).join("\n");
 };
 
-export const downloadAttendanceCsv = () => {
-  const records = readAttendanceRecords();
+export const downloadAttendanceCsv = async ({ todayOnly = true } = {}) => {
+  const loadedRecords = await loadAttendanceRecords().catch(() => readAttendanceRecords());
+  const sourceRecords = Array.isArray(loadedRecords) ? loadedRecords : readAttendanceRecords();
+  const today = getTodayKey();
+  const records = todayOnly ? sourceRecords.filter((record) => record.date === today) : sourceRecords;
   const csv = buildAttendanceCsv(records);
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
 
   link.href = url;
-  link.download = `attendance-report-${getTodayKey()}.csv`;
+  link.download = `${todayOnly ? "todays" : "attendance"}-attendance-report-${today}.csv`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

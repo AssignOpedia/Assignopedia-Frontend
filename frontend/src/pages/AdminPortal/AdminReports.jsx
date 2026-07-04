@@ -5,7 +5,7 @@ import { getPortalResource } from "../../utils/portalDataApi";
 import AdminPortalLayout from "./AdminPortalLayout";
 
 const fallbackReports = [
-  { title: "Attendance Reports", detail: "Daily presence, leave, and remote work summaries", type: "attendance", updated: "Today" },
+  { title: "Today's Attendance Reports", detail: "Daily login, logout, role, status, and late-login summary", type: "attendance", updated: "Today" },
   { title: "Employee Performance Reports", detail: "Score trends, rankings, quality, and productivity", type: "performance", updated: "2 hours ago" },
   { title: "Project Reports", detail: "Milestones, delays, ownership, and deadline movement", type: "projects", updated: "Yesterday" },
   { title: "Revenue Reports", detail: "Monthly revenue, team contribution, and billing codes", type: "revenue", updated: "Today" },
@@ -41,7 +41,7 @@ function AdminReports({ activePage, onNavigate }) {
           <article className="admin-panel report-card" key={report.title}>
             <div className="report-icon">{reportIcons[report.type] || <FaFileAlt />}</div>
             <span>{report.updated}</span>
-            <h2>{report.title}</h2>
+            <h2>{report.type === "attendance" ? "Today's Attendance Reports" : report.title}</h2>
             <p>{report.detail}</p>
             <button type="button" onClick={report.type === "attendance" ? downloadAttendanceCsv : undefined}><FaDownload /> Download</button>
           </article>

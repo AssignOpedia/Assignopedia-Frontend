@@ -11,18 +11,21 @@ import {
   FaRegCalendarAlt,
   FaSearch,
   FaShieldAlt,
+  FaSignInAlt,
   FaSignOutAlt,
   FaUsers,
   FaWallet,
 } from "react-icons/fa";
 import "./AdminDashboard.css";
-import { clearCurrentUser } from "../../utils/authStorage";
+import { clearCurrentUser, getCurrentUser } from "../../utils/authStorage";
+import { logoutAccountRemote } from "../../utils/authApi";
 import { getPasswordResetRequests, passwordResetRequestEvent } from "../../utils/passwordResetRequests";
 import { getInitialsFromProfile, getPortalProfile } from "../../utils/profileStorage";
 
 const sidebarItems = [
   { label: "Dashboard", icon: <FaHome />, page: "admin-dashboard" },
   { label: "Employee Management", icon: <FaUsers />, page: "admin-employees" },
+  { label: "HR Management", icon: <FaSignInAlt />, page: "admin-hr-login-logout" },
   { label: "Project Management", icon: <FaProjectDiagram />, page: "admin-projects" },
   { label: "Revenue Tracking", icon: <FaWallet />, page: "admin-revenue" },
   { label: "Reports", icon: <FaFileAlt />, page: "admin-reports" },
@@ -65,7 +68,13 @@ function AdminPortalLayout({ activePage, children, title, eyebrow, description, 
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [showNotifications]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const currentUser = getCurrentUser();
+
+    if (currentUser?.email && currentUser?.role) {
+      await logoutAccountRemote(currentUser).catch(() => {});
+    }
+
     clearCurrentUser();
     onNavigate("admin-login");
   };

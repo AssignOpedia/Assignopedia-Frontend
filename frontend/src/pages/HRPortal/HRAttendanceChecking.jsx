@@ -2,8 +2,12 @@ import { useEffect, useState } from "react";
 import { FaClipboardList } from "react-icons/fa";
 import {
   attendanceEvent,
+  formatAttendanceDateTime,
   getAttendanceRecords,
   getAttendanceStatusFromLogin,
+  getLateCountForRecord,
+  getRecordDisplayName,
+  getRecordRole,
   getTodayKey,
   setAttendanceRecords,
 } from "../../utils/attendanceStorage";
@@ -69,7 +73,7 @@ function HRAttendanceChecking({ activePage, onNavigate }) {
         <div className="hr-panel-heading"><div><span>Today: {todayLabel}</span><h2>Employee Attendance Records</h2></div><FaClipboardList /></div>
         <div className="hr-table-wrap">
           <table className="hr-table">
-            <thead><tr><th>Date</th><th>Employee</th><th>Email</th><th>Login</th><th>Logout</th><th>Status</th></tr></thead>
+            <thead><tr><th>Date</th><th>Name</th><th>Job Role</th><th>Login</th><th>Logout</th><th>Status</th><th>Late Count</th></tr></thead>
             <tbody>
               {filteredRows.length > 0 ? filteredRows.map((row) => {
                 const status = getAttendanceStatusFromLogin(row.loginTime);
@@ -77,13 +81,14 @@ function HRAttendanceChecking({ activePage, onNavigate }) {
 
                 return (
                   <tr key={`${row.email}-${row.date}`}>
-                    <td>{formatAttendanceDate(row.date)}{isToday ? " (Today)" : ""}</td><td>{row.employeeName}</td><td>{row.email}</td><td>{row.loginTime || "-"}</td><td>{row.logoutTime || "-"}</td>
+                    <td>{formatAttendanceDate(row.date)}{isToday ? " (Today)" : ""}</td><td>{getRecordDisplayName(row)}<br /><small>{row.email}</small></td><td>{getRecordRole(row)}</td><td>{formatAttendanceDateTime(row.loginDateTime, row.date, row.loginTime)}</td><td>{formatAttendanceDateTime(row.logoutDateTime, row.date, row.logoutTime)}</td>
                     <td><span className={`hr-status ${status.toLowerCase().replace(" ", "-")}`}>{status}</span></td>
+                    <td>{getLateCountForRecord(row, rows)}</td>
                   </tr>
                 );
               }) : (
                 <tr>
-                  <td colSpan="6">
+                  <td colSpan="7">
                     {rows.length === 0
                       ? "No employee attendance has been recorded yet."
                       : "No attendance records match the current search."}

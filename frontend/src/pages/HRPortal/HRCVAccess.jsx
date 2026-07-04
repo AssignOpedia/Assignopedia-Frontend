@@ -25,8 +25,6 @@ const getCVDocument = (cv) => ({
   fileType: cv?.cvFileType || "application/pdf",
 });
 
-const isPdfUrl = (url = "") => /\.pdf($|[?#])/i.test(url);
-
 const getCloudinaryAttachmentUrl = (url = "", fileName = "candidate-cv.pdf") => {
   if (!url.includes("res.cloudinary.com") || !url.includes("/upload/")) {
     return url;

@@ -468,6 +468,27 @@
   gap: 12px;
 }
 
+.dashboard-employee-directory-list {
+  max-height: 276px;
+  overflow-y: auto;
+  padding-right: 4px;
+  overscroll-behavior: contain;
+}
+
+.dashboard-employee-directory-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dashboard-employee-directory-list::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 999px;
+}
+
+.dashboard-employee-directory-list::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
 .employee-row {
   justify-content: space-between;
   gap: 12px;
@@ -737,6 +758,11 @@
   grid-template-columns: 1.4fr 0.9fr 0.8fr 0.8fr 1fr;
 }
 
+.attendance-management-table .admin-table-head,
+.attendance-management-table .admin-table-row {
+  grid-template-columns: 1.35fr 0.85fr 1.15fr 1.15fr 0.7fr;
+}
+
 .admin-table-head {
   padding: 0 12px;
   color: #64748b;
@@ -787,10 +813,16 @@
 }
 
 .admin-table-row em.absent,
+.admin-table-row em.late,
 .project-list p span.delayed,
 .admin-table-row em.blocked {
   background: #fee2e2;
   color: #b91c1c;
+}
+
+.admin-table-row em.late {
+  background: #ffedd5;
+  color: #c2410c;
 }
 
 .project-list p span.completed {

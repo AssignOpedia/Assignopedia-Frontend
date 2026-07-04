@@ -1,6 +1,6 @@
 # Assignopedia Express Backend
 
-This backend gives the portal real API endpoints backed by MongoDB Atlas. If MongoDB is unavailable during local development, the API falls back to JSON files in `backend/data` so the app can still run.
+This backend gives the portal real API endpoints backed by MongoDB Atlas. If MongoDB is unavailable during local development, the API falls back to JSON files in `data` so the app can still run.
 
 ## Run
 
@@ -27,6 +27,8 @@ MONGODB_COLLECTION=appStores
 ```
 
 The health endpoint reports the active database provider and connection status.
+
+On Render, set `CLIENT_ORIGIN` to the deployed frontend URL and keep `MONGODB_URI` configured with your MongoDB Atlas connection string.
 
 ## Email
 

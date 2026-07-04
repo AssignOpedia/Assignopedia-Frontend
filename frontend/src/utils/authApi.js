@@ -27,3 +27,6 @@ export const registerAccountRemote = ({ name, email, password, role }) =>
 
 export const loginAccountRemote = ({ email, password, role }) =>
   request("/auth/login", { email, password, role });
+
+export const logoutAccountRemote = ({ name, email, role }) =>
+  request("/auth/logout", { name, email, role });

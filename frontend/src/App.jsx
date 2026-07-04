@@ -12,6 +12,7 @@ import Footer from "./components/shared/Footer";
 import AuthForm from "./components/Auth";
 import AdminDashboard from "./pages/AdminPortal/AdminDashboard";
 import AdminEmployees from "./pages/AdminPortal/AdminEmployees";
+import AdminHRLoginLogout from "./pages/AdminPortal/AdminHRLoginLogout";
 import AdminProjects from "./pages/AdminPortal/AdminProjects";
 import AdminReports from "./pages/AdminPortal/AdminReports";
 import AdminRevenue from "./pages/AdminPortal/AdminRevenue";
@@ -22,6 +23,7 @@ import HRAttendanceChecking from "./pages/HRPortal/HRAttendanceChecking";
 import HRCVAccess from "./pages/HRPortal/HRCVAccess";
 import HRDashboard from "./pages/HRPortal/HRDashboard";
 import HREmployeeID from "./pages/HRPortal/HREmployeeID";
+import HRLoginLogout from "./pages/HRPortal/HRLoginLogout";
 import HRLeaveApproval from "./pages/HRPortal/HRLeaveApproval";
 import HRNoticeBoard from "./pages/HRPortal/HRNoticeBoard";
 import HROrganizationStructure from "./pages/HRPortal/HROrganizationStructure";
@@ -53,6 +55,7 @@ const hrPages = [
   "hr-leave-approval",
   "hr-wfh-approval",
   "hr-attendance-checking",
+  "hr-login-logout",
   "hr-notice-board",
   "hr-cv-access",
   "hr-employee-id",
@@ -63,6 +66,7 @@ const hrPages = [
 const adminPages = [
   "admin-dashboard",
   "admin-employees",
+  "admin-hr-login-logout",
   "admin-projects",
   "admin-revenue",
   "admin-reports",
@@ -159,6 +163,10 @@ function App() {
       return <AdminEmployees activePage={activePage} onNavigate={handleNavigate} />;
     }
 
+    if (activePage === "admin-hr-login-logout") {
+      return <AdminHRLoginLogout activePage={activePage} onNavigate={handleNavigate} />;
+    }
+
     if (activePage === "admin-projects") {
       return <AdminProjects activePage={activePage} onNavigate={handleNavigate} />;
     }
@@ -197,6 +205,10 @@ function App() {
 
     if (activePage === "hr-attendance-checking") {
       return <HRAttendanceChecking activePage={activePage} onNavigate={handleNavigate} />;
+    }
+
+    if (activePage === "hr-login-logout") {
+      return <HRLoginLogout activePage={activePage} onNavigate={handleNavigate} />;
     }
 
     if (activePage === "hr-notice-board") {

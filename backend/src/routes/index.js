@@ -55,6 +55,203 @@ const publicAccount = (account) => {
 
 const generateOtp = () => String(Math.floor(100000 + Math.random() * 900000));
 
+const normalizeEmail = (email) => String(email || "").trim().toLowerCase();
+const attendanceLateCutoffMinutes = Number(process.env.ATTENDANCE_LATE_CUTOFF_MINUTES || 11 * 60 + 15);
+
+const formatDateKey = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
+const formatClockTime = (date = new Date()) =>
+  date.toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+
+const parseTimeToMinutes = (time) => {
+  const match = String(time || "").match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+
+  if (!match) {
+    return null;
+  }
+
+  const [, hourText, minuteText, periodText] = match;
+  const period = periodText.toUpperCase();
+  let hour = Number(hourText);
+  const minute = Number(minuteText);
+
+  if (period === "PM" && hour !== 12) {
+    hour += 12;
+  }
+
+  if (period === "AM" && hour === 12) {
+    hour = 0;
+  }
+
+  return hour * 60 + minute;
+};
+
+const isLateAttendanceTime = (time) => {
+  const minutes = parseTimeToMinutes(time);
+
+  return minutes !== null && minutes > attendanceLateCutoffMinutes;
+};
+
+const getAttendanceStatus = (loginTime) => {
+  if (!loginTime) {
+    return "Absent";
+  }
+
+  return isLateAttendanceTime(loginTime) ? "Late" : "Present";
+};
+
+const makeEmployeeId = (account) => {
+  const idSource = String(account.id || account.email || Date.now())
+    .replace(/^account-/, "")
+    .replace(/[^a-z0-9]+/gi, "-")
+    .replace(/^-+|-+$/g, "")
+    .toUpperCase();
+
+  return `EMP-${idSource || Date.now()}`;
+};
+
+const employeeFromAccount = (account, existing = {}) => ({
+  id: existing.id || makeEmployeeId(account),
+  name: existing.name || account.name || "Employee",
+  department: existing.department || existing.team || "General",
+  jobCode: existing.jobCode || existing.role || "Employee",
+  email: normalizeEmail(existing.email || account.email),
+  role: existing.role || existing.jobCode || "Employee",
+  team: existing.team || existing.department || "General",
+  status: existing.status || "Present",
+  score: Number(existing.score || 0),
+  createdAt: existing.createdAt || new Date().toLocaleDateString(),
+  updatedAt: nowIso(),
+});
+
+const getAccountJobRole = async (account) => {
+  if (!account) {
+    return "";
+  }
+
+  if (account.role === "hr") {
+    return account.title || "Human Resources";
+  }
+
+  if (account.role === "employee") {
+    const employees = await store.read("employees", defaults.employees);
+    const employee = employees.find((item) => normalizeEmail(item.email) === normalizeEmail(account.email));
+
+    return employee?.jobCode || employee?.role || employee?.department || account.title || "Employee";
+  }
+
+  return account.title || account.role || "";
+};
+
+const countLateRecords = (records, email) =>
+  records.filter((record) => normalizeEmail(record.email) === normalizeEmail(email) && Boolean(record.isLate)).length;
+
+const recordAttendanceActivity = async (account, action) => {
+  if (!account || !["employee", "hr"].includes(account.role)) {
+    return null;
+  }
+
+  const now = new Date();
+  const today = formatDateKey(now);
+  const time = formatClockTime(now);
+  const iso = now.toISOString();
+  const jobRole = await getAccountJobRole(account);
+  let savedRecord = null;
+
+  await store.update("attendance", defaults.attendance, (current) => {
+    const records = current.map((record) => ({ ...record }));
+    const recordIndex = records.findIndex(
+      (record) => normalizeEmail(record.email) === normalizeEmail(account.email) && record.date === today
+    );
+    const existingRecord = recordIndex >= 0 ? records[recordIndex] : {};
+    const nextRecord = {
+      ...existingRecord,
+      id: existingRecord.id || `attendance-${account.role}-${normalizeEmail(account.email)}-${today}`,
+      date: today,
+      employeeName: existingRecord.employeeName || account.name || "User",
+      name: existingRecord.name || account.name || "User",
+      email: normalizeEmail(account.email),
+      userRole: account.role,
+      portalRole: account.role,
+      jobRole,
+      loginTime: existingRecord.loginTime || "",
+      logoutTime: existingRecord.logoutTime || "",
+      loginDateTime: existingRecord.loginDateTime || "",
+      logoutDateTime: existingRecord.logoutDateTime || "",
+      createdAt: existingRecord.createdAt || iso,
+      updatedAt: iso,
+    };
+
+    if (action === "login") {
+      nextRecord.loginTime = time;
+      nextRecord.loginDateTime = iso;
+    }
+
+    if (action === "logout") {
+      nextRecord.logoutTime = time;
+      nextRecord.logoutDateTime = iso;
+    }
+
+    nextRecord.status = getAttendanceStatus(nextRecord.loginTime);
+    nextRecord.isLate = isLateAttendanceTime(nextRecord.loginTime);
+    nextRecord.lateStatus = nextRecord.isLate ? "Late" : "On Time";
+
+    const lateCountBeforeSave = countLateRecords(records, account.email);
+    const existingWasLate = Boolean(existingRecord.isLate);
+    nextRecord.lateCount = lateCountBeforeSave + (nextRecord.isLate && !existingWasLate ? 1 : 0);
+
+    if (recordIndex >= 0) {
+      records[recordIndex] = nextRecord;
+    } else {
+      records.unshift(nextRecord);
+    }
+
+    savedRecord = nextRecord;
+    return records;
+  });
+
+  return savedRecord;
+};
+
+const syncEmployeeAccount = async (account) => {
+  if (!account || account.role !== "employee") {
+    return null;
+  }
+
+  let syncedEmployee = null;
+  const accountEmail = normalizeEmail(account.email);
+
+  await store.update("employees", defaults.employees, (current) => {
+    const existingIndex = current.findIndex((employee) => normalizeEmail(employee.email) === accountEmail);
+
+    if (existingIndex < 0) {
+      syncedEmployee = employeeFromAccount(account);
+      return [syncedEmployee, ...current];
+    }
+
+    return current.map((employee, index) => {
+      if (index !== existingIndex) {
+        return employee;
+      }
+
+      syncedEmployee = employeeFromAccount(account, employee);
+      return syncedEmployee;
+    });
+  });
+
+  return syncedEmployee;
+};
+
 router.get("/sync/:resource", asyncRoute(async (req, res) => {
   const target = syncStores[req.params.resource];
 
@@ -240,11 +437,29 @@ router.post("/auth/register", validateRegister, loadAccounts, rejectDuplicateEma
   };
 
   await store.write("accounts", [...req.accounts, account]);
-  res.status(201).json({ user: publicAccount(account) });
+  const employee = await syncEmployeeAccount(account);
+  const attendance = await recordAttendanceActivity(account, "login");
+  res.status(201).json({ user: publicAccount(account), employee, attendance });
 }));
 
 router.post("/auth/login", validateLogin, loadAccounts, requireMatchingAccount, asyncRoute(async (req, res) => {
-  res.json({ user: publicAccount(req.account) });
+  const employee = await syncEmployeeAccount(req.account);
+  const attendance = await recordAttendanceActivity(req.account, "login");
+  res.json({ user: publicAccount(req.account), employee, attendance });
+}));
+
+router.post("/auth/logout", loadAccounts, asyncRoute(async (req, res) => {
+  required(req.body, ["email", "role"]);
+  const email = normalizeEmail(req.body.email);
+  const role = String(req.body.role || "").trim().toLowerCase();
+  const account = req.accounts.find((item) => normalizeEmail(item.email) === email && item.role === role) || {
+    email,
+    role,
+    name: req.body.name || "User",
+  };
+  const attendance = await recordAttendanceActivity(account, "logout");
+
+  res.json({ ok: true, attendance });
 }));
 
 router.post("/auth/forgot-password", asyncRoute(async (req, res) => {

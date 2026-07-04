@@ -109,8 +109,8 @@ process.on("SIGTERM", () => stopAll(0));
 start("api", ["--prefix", "backend", "run", "dev"]);
 
 waitForPort(Number(process.env.PORT || 5000))
-  .then(() => start("vite", ["run", "dev:frontend"]))
+  .then(() => start("vite", ["--prefix", "frontend", "run", "dev"]))
   .catch((error) => {
     process.stderr.write(`[dev] ${error.message}; starting Vite anyway.\n`);
-    start("vite", ["run", "dev:frontend"]);
+    start("vite", ["--prefix", "frontend", "run", "dev"]);
   });

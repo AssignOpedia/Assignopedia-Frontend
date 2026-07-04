@@ -15,7 +15,8 @@ import {
 import assignopediaLogo from "../../assets/logo.PNG";
 import "./EmployeeDashboard.css";
 import { useEmployeeProfileImage } from "./useEmployeeProfileImage";
-import { clearCurrentUser } from "../../utils/authStorage";
+import { clearCurrentUser, getCurrentUser } from "../../utils/authStorage";
+import { logoutAccountRemote } from "../../utils/authApi";
 import { getEmployeeNotices, getNoticeDateTime, getNoticeEvent } from "../../utils/noticeStorage";
 import { getCurrentEmployeeNotifications, loadEmployeeNotifications, notificationEvent } from "../../utils/requestNotifications";
 import { getInitialsFromProfile, getPortalProfile } from "../../utils/profileStorage";
@@ -44,8 +45,14 @@ function EmployeePortalLayout({ activePage, children, eyebrow, title, onNavigate
   const employeeName = profile.name || "Employee";
   const employeeInitials = getInitialsFromProfile(profile);
 
-  const handleMenuClick = (page) => {
+  const handleMenuClick = async (page) => {
     if (page === "employee-login") {
+      const currentUser = getCurrentUser();
+
+      if (currentUser?.email && currentUser?.role) {
+        await logoutAccountRemote(currentUser).catch(() => {});
+      }
+
       clearCurrentUser();
     }
 

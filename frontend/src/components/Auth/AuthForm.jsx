@@ -75,6 +75,7 @@ const AuthForm = ({
     return () => document.removeEventListener("keydown", handleEscape);
   }, [isRoleForm, onClose]);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     setFormData({ name: "", email: "", password: "" });
     setAuthError("");
@@ -86,6 +87,7 @@ const AuthForm = ({
     setResetId("");
     setResetMessage("");
   }, [role, mode]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleChange = (event) => {
     const { name, value } = event.target;
