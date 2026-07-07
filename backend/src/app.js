@@ -7,6 +7,7 @@ const { getHealth } = require("./controller/healthController");
 const { errorHandler, notFound } = require("./middleware/errorMiddleware");
 
 const app = express();
+const requestBodyLimit = process.env.REQUEST_BODY_LIMIT || process.env.UPLOAD_BODY_LIMIT || "2gb";
 const clientOrigins = (process.env.CLIENT_ORIGIN || "http://localhost:5173")
   .split(",")
   .map((origin) => origin.trim().replace(/\/$/, ""))
@@ -39,8 +40,8 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json({ limit: "25mb" }));
-app.use(express.urlencoded({ extended: true, limit: "25mb" }));
+app.use(express.json({ limit: requestBodyLimit }));
+app.use(express.urlencoded({ extended: true, limit: requestBodyLimit }));
 
 app.get("/", (req, res) => {
   res.json({

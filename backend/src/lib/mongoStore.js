@@ -29,6 +29,10 @@ const arrayCollectionStores = {
     collectionName: process.env.MONGODB_NOTICES_COLLECTION || "notices",
     idPrefix: "notice",
   },
+  projects: {
+    collectionName: process.env.MONGODB_PROJECT_MANAGEMENT_COLLECTION || process.env.MONGODB_PROJECTS_COLLECTION || "projectManagement",
+    idPrefix: "project",
+  },
   wfhRequests: {
     collectionName: process.env.MONGODB_WFH_REQUESTS_COLLECTION || "wfhRequests",
     idPrefix: "wfh",
@@ -75,6 +79,25 @@ const uniqueAccountsByEmailAndRole = (accounts = []) => {
 const normalizeDocument = (item, prefix) => {
   const id = item.id || `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
   return { ...item, id, _id: id };
+};
+
+const normalizeDocuments = (items, prefix) => {
+  const seenIds = new Set();
+
+  return (Array.isArray(items) ? items : []).map((item) => {
+    const document = normalizeDocument(item, prefix);
+    const baseId = String(document._id || document.id);
+    let id = baseId;
+    let index = 2;
+
+    while (seenIds.has(id)) {
+      id = `${baseId}-${index}`;
+      index += 1;
+    }
+
+    seenIds.add(id);
+    return { ...document, id, _id: id };
+  });
 };
 
 const getCollection = async (targetCollectionName = collectionName) => {
@@ -236,7 +259,7 @@ const readArrayCollection = async ({ name, fallback, targetCollectionName, idPre
 
     if (Array.isArray(seededItems) && seededItems.length > 0) {
       await collection.insertMany(
-        seededItems.map((item) => normalizeDocument(item, idPrefix)),
+        normalizeDocuments(seededItems, idPrefix),
         { ordered: false }
       );
     }
@@ -255,7 +278,7 @@ const writeArrayCollection = async ({ name, data, targetCollectionName, idPrefix
 
     if (Array.isArray(nextData) && nextData.length > 0) {
       await collection.insertMany(
-        nextData.map((item) => normalizeDocument(item, idPrefix)),
+        normalizeDocuments(nextData, idPrefix),
         { ordered: false }
       );
     }

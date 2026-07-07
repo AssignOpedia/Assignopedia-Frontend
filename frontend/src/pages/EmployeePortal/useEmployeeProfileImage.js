@@ -10,18 +10,22 @@ export const getEmployeeProfileImage = () => {
   return profile.imageDataUrl || profile.imageUrl || "";
 };
 
-export const saveEmployeeProfileImage = (imageData) => {
+export const saveEmployeeProfileImage = (image) => {
   const user = getCurrentUser();
   const profile = getPortalProfile("employee");
+  const imageUrl = typeof image === "string" ? image : image?.url || "";
   const nextProfile = {
     ...profile,
     email: user.email || profile.email,
-    imageDataUrl: imageData,
-    imageUrl: imageData,
+    imageDataUrl: imageUrl,
+    imageUrl,
+    imagePublicId: typeof image === "object" ? image.publicId || "" : profile.imagePublicId || "",
+    imageResourceType: typeof image === "object" ? image.resourceType || "image" : profile.imageResourceType || "image",
+    imageName: typeof image === "object" ? image.fileName || image.fileName || "" : profile.imageName || "",
   };
 
   savePortalProfile("employee", nextProfile);
-  window.dispatchEvent(new CustomEvent(profileImageEvent, { detail: { imageData } }));
+  window.dispatchEvent(new CustomEvent(profileImageEvent, { detail: { imageData: imageUrl } }));
 };
 
 export const moveEmployeeProfileImage = () => {

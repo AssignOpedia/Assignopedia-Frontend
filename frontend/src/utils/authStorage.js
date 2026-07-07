@@ -78,19 +78,34 @@ export const loginAccount = ({ email, password, role }) => {
   return null;
 };
 
-export const findAccountByEmail = (email) => {
+export const findAccountByEmail = (email, role = "") => {
   const normalizedEmail = email.trim().toLowerCase();
+  const normalizedRole = role.trim().toLowerCase();
 
-  return readAccounts().find((account) => account.email === normalizedEmail) || null;
+  return (
+    readAccounts().find(
+      (account) =>
+        account.email === normalizedEmail &&
+        (!normalizedRole || account.role === normalizedRole)
+    ) || null
+  );
 };
 
-export const updateAccountPassword = ({ email, password }) => {
+export const updateAccountPassword = ({ email, password, role = "" }) => {
   const normalizedEmail = email.trim().toLowerCase();
+  const normalizedRole = role.trim().toLowerCase();
   const accounts = readAccounts();
   const nextAccounts = accounts.map((account) =>
-    account.email === normalizedEmail ? { ...account, password } : account
+    account.email === normalizedEmail && (!normalizedRole || account.role === normalizedRole)
+      ? { ...account, password }
+      : account
   );
-  const updatedAccount = nextAccounts.find((account) => account.email === normalizedEmail) || null;
+  const updatedAccount =
+    nextAccounts.find(
+      (account) =>
+        account.email === normalizedEmail &&
+        (!normalizedRole || account.role === normalizedRole)
+    ) || null;
 
   if (updatedAccount) {
     saveAccounts(nextAccounts);
@@ -137,17 +152,22 @@ export const setCurrentUser = (user) => {
 export const rememberRegisteredAccount = (account) => {
   const accounts = readAccounts();
   const normalizedEmail = account.email?.trim().toLowerCase();
+  const normalizedRole = account.role?.trim().toLowerCase();
   const nextAccount = {
     ...account,
     email: normalizedEmail,
-    role: account.role?.trim().toLowerCase(),
+    role: normalizedRole,
   };
-  const exists = accounts.some((savedAccount) => savedAccount.email === normalizedEmail);
+  const exists = accounts.some(
+    (savedAccount) => savedAccount.email === normalizedEmail && savedAccount.role === normalizedRole
+  );
 
   if (exists) {
     accountStore.setLocal(
       accounts.map((savedAccount) =>
-        savedAccount.email === normalizedEmail ? { ...savedAccount, ...nextAccount } : savedAccount
+        savedAccount.email === normalizedEmail && savedAccount.role === normalizedRole
+          ? { ...savedAccount, ...nextAccount }
+          : savedAccount
       )
     );
     return nextAccount;

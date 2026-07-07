@@ -157,6 +157,59 @@ const findUploadByFileName = async (fileName, folders = ["assignopedia/wfh-reque
   return null;
 };
 
+const deleteUpload = async (publicId, resourceType = "image") => {
+  if (!publicId || !isCloudinaryConfigured()) {
+    return { deleted: false, skipped: true };
+  }
+
+  const result = await cloudinary.uploader.destroy(publicId, {
+    resource_type: resourceType || "image",
+    invalidate: true,
+  });
+
+  return {
+    deleted: result?.result === "ok" || result?.result === "not found",
+    result: result?.result || "",
+    publicId,
+    resourceType,
+  };
+};
+
+const getImageAsset = (profile = {}) => ({
+  publicId: profile.imagePublicId || profile.profileImagePublicId || profile.avatarPublicId || "",
+  resourceType: profile.imageResourceType || profile.profileImageResourceType || profile.avatarResourceType || "image",
+});
+
+const deleteReplacedProfileImages = async (previousProfiles = {}, nextProfiles = {}) => {
+  if (!previousProfiles || typeof previousProfiles !== "object" || !nextProfiles || typeof nextProfiles !== "object") {
+    return [];
+  }
+
+  const deletions = [];
+  const profileKeys = new Set([...Object.keys(previousProfiles), ...Object.keys(nextProfiles)]);
+  const nextPublicIds = new Set(
+    Object.values(nextProfiles)
+      .map((profile) => getImageAsset(profile).publicId)
+      .filter(Boolean)
+  );
+
+  for (const key of profileKeys) {
+    const previousAsset = getImageAsset(previousProfiles[key]);
+    const nextAsset = getImageAsset(nextProfiles[key]);
+
+    if (previousAsset.publicId && previousAsset.publicId !== nextAsset.publicId && !nextPublicIds.has(previousAsset.publicId)) {
+      deletions.push(await deleteUpload(previousAsset.publicId, previousAsset.resourceType).catch((error) => ({
+        deleted: false,
+        error: error.message,
+        publicId: previousAsset.publicId,
+        resourceType: previousAsset.resourceType,
+      })));
+    }
+  }
+
+  return deletions;
+};
+
 const normalizeMediaPayload = async (payload, folder = "assignopedia/uploads") => {
   if (Array.isArray(payload)) {
     return Promise.all(payload.map((item) => normalizeMediaPayload(item, folder)));
@@ -243,6 +296,8 @@ module.exports = {
   findUploadByFileName,
   isCloudinaryConfigured,
   isDataUrl,
+  deleteReplacedProfileImages,
+  deleteUpload,
   normalizeMediaPayload,
   uploadDataUrl,
 };

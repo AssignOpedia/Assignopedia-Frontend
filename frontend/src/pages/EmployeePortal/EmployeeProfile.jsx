@@ -105,7 +105,7 @@ function EmployeeProfile({ activePage, onNavigate }) {
         resourceType: "image",
       });
 
-      saveEmployeeProfileImage(upload.url);
+      saveEmployeeProfileImage(upload);
       setPhotoError("");
     } catch (error) {
       setPhotoError(error.message || "Cloudinary upload failed.");

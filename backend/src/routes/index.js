@@ -1,6 +1,7 @@
 const express = require("express");
 const store = require("../lib/mongoStore");
 const {
+  deleteReplacedProfileImages,
   findUploadByFileName,
   isDataUrl,
   normalizeMediaPayload,
@@ -57,21 +58,36 @@ const generateOtp = () => String(Math.floor(100000 + Math.random() * 900000));
 
 const normalizeEmail = (email) => String(email || "").trim().toLowerCase();
 const attendanceLateCutoffMinutes = Number(process.env.ATTENDANCE_LATE_CUTOFF_MINUTES || 11 * 60 + 15);
+const attendanceAutoLogoutMinutes = Number(process.env.ATTENDANCE_AUTO_LOGOUT_MINUTES || 21 * 60);
+const attendanceMaintenanceIntervalMs = Number(process.env.ATTENDANCE_MAINTENANCE_INTERVAL_MS || 5 * 60 * 1000);
+const attendanceTimeZone = process.env.ATTENDANCE_TIME_ZONE || "Asia/Kolkata";
+
+const getTimeZoneParts = (date = new Date()) => {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: attendanceTimeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+  const value = (type) => parts.find((part) => part.type === type)?.value || "";
+
+  return {
+    year: value("year"),
+    month: value("month"),
+    day: value("day"),
+    hour: Number(value("hour") || 0) % 24,
+    minute: Number(value("minute") || 0),
+  };
+};
 
 const formatDateKey = (date = new Date()) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
+  const { year, month, day } = getTimeZoneParts(date);
 
   return `${year}-${month}-${day}`;
 };
-
-const formatClockTime = (date = new Date()) =>
-  date.toLocaleTimeString("en-IN", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
 
 const parseTimeToMinutes = (time) => {
   const match = String(time || "").match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
@@ -110,6 +126,72 @@ const getAttendanceStatus = (loginTime) => {
   return isLateAttendanceTime(loginTime) ? "Late" : "Present";
 };
 
+const getAutoLogoutIso = (dateKey) => new Date(`${dateKey}T21:00:00+05:30`).toISOString();
+
+const closeStaleAttendanceSessions = (records, now = new Date()) => {
+  const today = formatDateKey(now);
+  const { hour, minute } = getTimeZoneParts(now);
+  const currentMinutes = hour * 60 + minute;
+  let changed = false;
+
+  const closedRecords = (Array.isArray(records) ? records : []).map((record) => {
+    if (!record?.date || !record.loginTime || record.logoutTime) {
+      return record;
+    }
+
+    const isPreviousDay = String(record.date) < today;
+    const isTodayPastCutoff = String(record.date) === today && currentMinutes >= attendanceAutoLogoutMinutes;
+
+    if (!isPreviousDay && !isTodayPastCutoff) {
+      return record;
+    }
+
+    changed = true;
+
+    return {
+      ...record,
+      logoutTime: "09:00 PM",
+      logoutDateTime: record.logoutDateTime || getAutoLogoutIso(record.date),
+      autoLogout: true,
+      autoLogoutReason: "Attendance auto-closed at 9:00 PM",
+      status: record.status || getAttendanceStatus(record.loginTime),
+      updatedAt: now.toISOString(),
+    };
+  });
+
+  return { records: closedRecords, changed };
+};
+
+const readAttendanceRecords = async () => {
+  const records = await store.read("attendance", defaults.attendance);
+  const closed = closeStaleAttendanceSessions(records);
+
+  if (closed.changed) {
+    await store.write("attendance", closed.records);
+  }
+
+  return closed.records;
+};
+
+const writeAttendanceRecords = async (records) => {
+  const closed = closeStaleAttendanceSessions(records);
+
+  return store.write("attendance", closed.records);
+};
+
+const runAttendanceMaintenance = async () => {
+  try {
+    await readAttendanceRecords();
+  } catch (error) {
+    console.warn(`Attendance maintenance failed. ${error.message}`);
+  }
+};
+
+if (attendanceMaintenanceIntervalMs > 0) {
+  setInterval(runAttendanceMaintenance, attendanceMaintenanceIntervalMs);
+  runAttendanceMaintenance();
+}
+
 const makeEmployeeId = (account) => {
   const idSource = String(account.id || account.email || Date.now())
     .replace(/^account-/, "")
@@ -133,95 +215,6 @@ const employeeFromAccount = (account, existing = {}) => ({
   createdAt: existing.createdAt || new Date().toLocaleDateString(),
   updatedAt: nowIso(),
 });
-
-const getAccountJobRole = async (account) => {
-  if (!account) {
-    return "";
-  }
-
-  if (account.role === "hr") {
-    return account.title || "Human Resources";
-  }
-
-  if (account.role === "employee") {
-    const employees = await store.read("employees", defaults.employees);
-    const employee = employees.find((item) => normalizeEmail(item.email) === normalizeEmail(account.email));
-
-    return employee?.jobCode || employee?.role || employee?.department || account.title || "Employee";
-  }
-
-  return account.title || account.role || "";
-};
-
-const countLateRecords = (records, email) =>
-  records.filter((record) => normalizeEmail(record.email) === normalizeEmail(email) && Boolean(record.isLate)).length;
-
-const recordAttendanceActivity = async (account, action) => {
-  if (!account || !["employee", "hr"].includes(account.role)) {
-    return null;
-  }
-
-  const now = new Date();
-  const today = formatDateKey(now);
-  const time = formatClockTime(now);
-  const iso = now.toISOString();
-  const jobRole = await getAccountJobRole(account);
-  let savedRecord = null;
-
-  await store.update("attendance", defaults.attendance, (current) => {
-    const records = current.map((record) => ({ ...record }));
-    const recordIndex = records.findIndex(
-      (record) => normalizeEmail(record.email) === normalizeEmail(account.email) && record.date === today
-    );
-    const existingRecord = recordIndex >= 0 ? records[recordIndex] : {};
-    const nextRecord = {
-      ...existingRecord,
-      id: existingRecord.id || `attendance-${account.role}-${normalizeEmail(account.email)}-${today}`,
-      date: today,
-      employeeName: existingRecord.employeeName || account.name || "User",
-      name: existingRecord.name || account.name || "User",
-      email: normalizeEmail(account.email),
-      userRole: account.role,
-      portalRole: account.role,
-      jobRole,
-      loginTime: existingRecord.loginTime || "",
-      logoutTime: existingRecord.logoutTime || "",
-      loginDateTime: existingRecord.loginDateTime || "",
-      logoutDateTime: existingRecord.logoutDateTime || "",
-      createdAt: existingRecord.createdAt || iso,
-      updatedAt: iso,
-    };
-
-    if (action === "login") {
-      nextRecord.loginTime = time;
-      nextRecord.loginDateTime = iso;
-    }
-
-    if (action === "logout") {
-      nextRecord.logoutTime = time;
-      nextRecord.logoutDateTime = iso;
-    }
-
-    nextRecord.status = getAttendanceStatus(nextRecord.loginTime);
-    nextRecord.isLate = isLateAttendanceTime(nextRecord.loginTime);
-    nextRecord.lateStatus = nextRecord.isLate ? "Late" : "On Time";
-
-    const lateCountBeforeSave = countLateRecords(records, account.email);
-    const existingWasLate = Boolean(existingRecord.isLate);
-    nextRecord.lateCount = lateCountBeforeSave + (nextRecord.isLate && !existingWasLate ? 1 : 0);
-
-    if (recordIndex >= 0) {
-      records[recordIndex] = nextRecord;
-    } else {
-      records.unshift(nextRecord);
-    }
-
-    savedRecord = nextRecord;
-    return records;
-  });
-
-  return savedRecord;
-};
 
 const syncEmployeeAccount = async (account) => {
   if (!account || account.role !== "employee") {
@@ -259,6 +252,11 @@ router.get("/sync/:resource", asyncRoute(async (req, res) => {
     throw createError(404, "Sync resource not found");
   }
 
+  if (target.storeName === "attendance") {
+    res.json(await readAttendanceRecords());
+    return;
+  }
+
   res.json(await store.read(target.storeName, target.fallback));
 }));
 
@@ -269,10 +267,17 @@ router.put("/sync/:resource", asyncRoute(async (req, res) => {
     throw createError(404, "Sync resource not found");
   }
 
-  const data = await store.write(
-    target.storeName,
-    await normalizeMediaPayload(req.body, `assignopedia/${target.storeName}`)
-  );
+  const body = await normalizeMediaPayload(req.body, `assignopedia/${target.storeName}`);
+  if (target.storeName === "profiles") {
+    const previousProfiles = await store.read("profiles", defaults.profiles);
+    const data = await store.write("profiles", body);
+
+    await deleteReplacedProfileImages(previousProfiles, data);
+    res.json(data);
+    return;
+  }
+
+  const data = target.storeName === "attendance" ? await writeAttendanceRecords(body) : await store.write(target.storeName, body);
   res.json(data);
 }));
 
@@ -289,11 +294,16 @@ router.post("/uploads", asyncRoute(async (req, res) => {
 
 const collectionRoute = ({ path, storeName, fallback, idPrefix, requiredFields = [] }) => {
   router.get(path, asyncRoute(async (req, res) => {
+    if (storeName === "attendance") {
+      res.json(await readAttendanceRecords());
+      return;
+    }
+
     res.json(await store.read(storeName, fallback));
   }));
 
   router.get(`${path}/:id`, asyncRoute(async (req, res) => {
-    const items = await store.read(storeName, fallback);
+    const items = storeName === "attendance" ? await readAttendanceRecords() : await store.read(storeName, fallback);
     const item = items.find((currentItem) => currentItem.id === req.params.id);
 
     if (!item) {
@@ -327,8 +337,9 @@ const collectionRoute = ({ path, storeName, fallback, idPrefix, requiredFields =
           : currentItem
       );
     });
+    const responseItems = storeName === "attendance" ? await writeAttendanceRecords(items) : items;
 
-    res.status(created ? 201 : 200).json({ item, items });
+    res.status(created ? 201 : 200).json({ item, items: responseItems });
   }));
 
   router.put(`${path}/:id`, asyncRoute(async (req, res) => {
@@ -344,23 +355,25 @@ const collectionRoute = ({ path, storeName, fallback, idPrefix, requiredFields =
         return updatedItem;
       })
     );
+    const responseItems = storeName === "attendance" ? await writeAttendanceRecords(items) : items;
 
     if (!updatedItem) {
       throw createError(404, "Item not found");
     }
 
-    res.json({ item: updatedItem, items });
+    res.json({ item: updatedItem, items: responseItems });
   }));
 
   router.delete(`${path}/:id`, asyncRoute(async (req, res) => {
-    const current = await store.read(storeName, fallback);
+    const current = storeName === "attendance" ? await readAttendanceRecords() : await store.read(storeName, fallback);
     const exists = current.some((item) => item.id === req.params.id);
 
     if (!exists) {
       throw createError(404, "Item not found");
     }
 
-    const items = await store.write(storeName, current.filter((item) => item.id !== req.params.id));
+    const nextItems = current.filter((item) => item.id !== req.params.id);
+    const items = storeName === "attendance" ? await writeAttendanceRecords(nextItems) : await store.write(storeName, nextItems);
     res.json({ id: req.params.id, items });
   }));
 };
@@ -438,28 +451,20 @@ router.post("/auth/register", validateRegister, loadAccounts, rejectDuplicateEma
 
   await store.write("accounts", [...req.accounts, account]);
   const employee = await syncEmployeeAccount(account);
-  const attendance = await recordAttendanceActivity(account, "login");
-  res.status(201).json({ user: publicAccount(account), employee, attendance });
+  res.status(201).json({ user: publicAccount(account), employee });
 }));
 
 router.post("/auth/login", validateLogin, loadAccounts, requireMatchingAccount, asyncRoute(async (req, res) => {
   const employee = await syncEmployeeAccount(req.account);
-  const attendance = await recordAttendanceActivity(req.account, "login");
-  res.json({ user: publicAccount(req.account), employee, attendance });
+  await readAttendanceRecords();
+  res.json({ user: publicAccount(req.account), employee });
 }));
 
 router.post("/auth/logout", loadAccounts, asyncRoute(async (req, res) => {
   required(req.body, ["email", "role"]);
-  const email = normalizeEmail(req.body.email);
-  const role = String(req.body.role || "").trim().toLowerCase();
-  const account = req.accounts.find((item) => normalizeEmail(item.email) === email && item.role === role) || {
-    email,
-    role,
-    name: req.body.name || "User",
-  };
-  const attendance = await recordAttendanceActivity(account, "logout");
+  await readAttendanceRecords();
 
-  res.json({ ok: true, attendance });
+  res.json({ ok: true });
 }));
 
 router.post("/auth/forgot-password", asyncRoute(async (req, res) => {
@@ -574,10 +579,18 @@ router.get("/accounts", asyncRoute(async (req, res) => {
 router.patch("/accounts/password", asyncRoute(async (req, res) => {
   required(req.body, ["email", "password"]);
   const email = req.body.email.trim().toLowerCase();
+  const role = String(req.body.role || "").trim().toLowerCase();
+  const existingAccounts = await store.read("accounts", defaults.accounts);
+  const matchingAccounts = existingAccounts.filter((account) => account.email === email);
+
+  if (!role && matchingAccounts.length > 1) {
+    throw createError(400, "Role is required when this email is registered in multiple portals.");
+  }
+
   let updated = null;
   const accounts = await store.update("accounts", defaults.accounts, (current) =>
     current.map((account) => {
-      if (account.email !== email) {
+      if (account.email !== email || (role && account.role !== role)) {
         return account;
       }
 
@@ -606,11 +619,13 @@ router.get("/profiles/:role/:email", asyncRoute(async (req, res) => {
 router.put("/profiles/:role/:email", asyncRoute(async (req, res) => {
   const key = `${req.params.role}:${req.params.email.toLowerCase()}`;
   const body = await normalizeMediaPayload(req.body, "assignopedia/profiles");
+  const previousProfiles = await store.read("profiles", defaults.profiles);
   const profiles = await store.update("profiles", defaults.profiles, (current) => ({
     ...current,
     [key]: { ...(current[key] || {}), ...body, updatedAt: nowIso() },
   }));
 
+  await deleteReplacedProfileImages(previousProfiles, profiles);
   res.json({ profile: profiles[key], profiles });
 }));
 

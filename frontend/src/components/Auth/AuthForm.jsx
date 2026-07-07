@@ -123,7 +123,7 @@ const AuthForm = ({
       return;
     }
 
-    const account = findAccountByEmail(resetData.email);
+    const account = findAccountByEmail(resetData.email, role);
 
     if (!account) {
       setAuthError("No registered account found with this email.");
@@ -157,6 +157,7 @@ const AuthForm = ({
         updateAccountPassword({
           email: resetData.email,
           password: resetData.newPassword,
+          role,
         });
         setFormData((current) => ({
           ...current,
@@ -184,6 +185,7 @@ const AuthForm = ({
     updateAccountPassword({
       email: resetData.email,
       password: resetData.newPassword,
+      role,
     });
 
     setFormData((current) => ({

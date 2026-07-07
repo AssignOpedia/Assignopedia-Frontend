@@ -43,6 +43,7 @@ function HRPortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
   const notificationCount = passwordResetRequests.length + requestNotifications.length;
   const hasNotifications = notificationCount > 0;
   const profile = getPortalProfile("hr");
+  const profileImage = profile.imageUrl || profile.imageDataUrl || "";
 
   useEffect(() => {
     const refreshNotifications = () => {
@@ -199,7 +200,9 @@ function HRPortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
               )}
             </div>
             <div className="hr-profile">
-              <div>{getInitialsFromProfile(profile)}</div>
+              <div className={profileImage ? "has-image" : ""}>
+                {profileImage ? <img src={profileImage} alt={profile.name} /> : getInitialsFromProfile(profile)}
+              </div>
               <span>
                 <strong>{profile.name}</strong>
                 <small>{profile.title}</small>

@@ -18,12 +18,14 @@ export const getTodayKey = () => {
   return `${year}-${month}-${day}`;
 };
 
-export const formatCurrentTime = () =>
-  new Date().toLocaleTimeString("en-IN", {
+const formatTime = (date = new Date()) =>
+  date.toLocaleTimeString("en-IN", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,
   });
+
+export const formatCurrentTime = () => formatTime();
 
 const formatDateLabel = (value) => {
   if (!value) {
@@ -110,6 +112,10 @@ export const getAttendanceStatusFromLogin = (loginTime) => {
 };
 
 export const formatAttendanceDateTime = (value, fallbackDate = "", fallbackTime = "") => {
+  if (fallbackDate && fallbackTime) {
+    return `${formatDateLabel(fallbackDate)}, ${fallbackTime}`;
+  }
+
   if (value) {
     const date = new Date(value);
 
@@ -123,10 +129,6 @@ export const formatAttendanceDateTime = (value, fallbackDate = "", fallbackTime 
         hour12: true,
       });
     }
-  }
-
-  if (fallbackDate && fallbackTime) {
-    return `${formatDateLabel(fallbackDate)}, ${fallbackTime}`;
   }
 
   return fallbackTime || "-";
@@ -161,12 +163,39 @@ export const getHrAttendanceRecords = (records = readAttendanceRecords()) =>
 export const getEmployeeAttendanceRecords = (records = readAttendanceRecords()) =>
   records.filter((record) => String(record.userRole || record.portalRole || "employee").toLowerCase() === "employee");
 
+const normalizeValue = (value) => String(value || "").trim().toLowerCase();
+
+const getCurrentUserRole = (currentUser) => normalizeValue(currentUser.role || "employee");
+
+const getAttendanceRecordRole = (record) => {
+  const explicitRole = normalizeValue(record.userRole || record.portalRole);
+
+  if (explicitRole) {
+    return explicitRole;
+  }
+
+  const descriptiveRole = normalizeValue(record.role || record.jobRole || record.jobCode);
+
+  if (descriptiveRole === "hr" || descriptiveRole.includes("human resources")) {
+    return "hr";
+  }
+
+  return "employee";
+};
+
+const matchesCurrentAttendanceUser = (record, currentUser) =>
+  normalizeValue(record.email) === normalizeValue(currentUser.email) &&
+  getAttendanceRecordRole(record) === getCurrentUserRole(currentUser);
+
+const buildCurrentAttendanceId = (currentUser, date) =>
+  `attendance-${getCurrentUserRole(currentUser)}-${normalizeValue(currentUser.email)}-${date}`;
+
 export const getEmployeeMonthlyAttendanceSummary = () => {
   const currentUser = getCurrentUser();
   const today = new Date();
   const monthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
   const monthlyRecords = readAttendanceRecords().filter(
-    (record) => record.email === currentUser.email && record.date?.startsWith(monthKey)
+    (record) => matchesCurrentAttendanceUser(record, currentUser) && record.date?.startsWith(monthKey)
   );
   const presentRecords = monthlyRecords.filter((record) => record.loginTime);
   const loginMinutes = presentRecords
@@ -204,7 +233,7 @@ export const getEmployeeMonthlyAttendanceTrend = () => {
   const monthKey = `${year}-${String(month + 1).padStart(2, "0")}`;
   const daysElapsed = today.getDate();
   const monthlyRecords = readAttendanceRecords().filter(
-    (record) => record.email === currentUser.email && record.date?.startsWith(monthKey)
+    (record) => matchesCurrentAttendanceUser(record, currentUser) && record.date?.startsWith(monthKey)
   );
   const recordsByDate = new Map(
     monthlyRecords.map((record) => [record.date, record])
@@ -235,7 +264,7 @@ export const getEmployeeAttendanceForToday = () => {
   const currentUser = getCurrentUser();
   const today = getTodayKey();
   const record = readAttendanceRecords().find(
-    (item) => item.email === currentUser.email && item.date === today
+    (item) => matchesCurrentAttendanceUser(item, currentUser) && item.date === today
   );
 
   if (record) {
@@ -258,15 +287,16 @@ export const getEmployeeAttendanceForToday = () => {
 export const upsertTodayAttendance = ({ loginTime, logoutTime }) => {
   const currentUser = getCurrentUser();
   const today = getTodayKey();
-  const nowIso = new Date().toISOString();
+  const now = new Date();
+  const nowIso = now.toISOString();
   const records = readAttendanceRecords().map((record) => ({ ...record }));
   const recordIndex = records.findIndex(
-    (item) => item.email === currentUser.email && item.date === today
+    (item) => matchesCurrentAttendanceUser(item, currentUser) && item.date === today
   );
   const existingRecord = recordIndex >= 0 ? records[recordIndex] : {};
   const nextRecord = {
     ...existingRecord,
-    id: existingRecord.id || `attendance-${currentUser.email}-${today}`,
+    id: buildCurrentAttendanceId(currentUser, today),
     date: today,
     employeeName: currentUser.name,
     email: currentUser.email,
@@ -307,16 +337,18 @@ const buildEmptyTodayAttendance = (currentUser, today) => ({
 export const toggleTodayAttendanceField = async (field) => {
   const currentUser = getCurrentUser();
   const today = getTodayKey();
-  const nowIso = new Date().toISOString();
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const clockTime = formatTime(now);
   const records = readAttendanceRecords().map((record) => ({ ...record }));
   const recordIndex = records.findIndex(
-    (item) => item.email === currentUser.email && item.date === today
+    (item) => matchesCurrentAttendanceUser(item, currentUser) && item.date === today
   );
   const existingRecord = recordIndex >= 0 ? records[recordIndex] : null;
   const hasExistingValue = Boolean(existingRecord?.[field]);
   const nextRecord = {
     ...(existingRecord || {}),
-    id: existingRecord?.id || `attendance-${currentUser.email}-${today}`,
+    id: buildCurrentAttendanceId(currentUser, today),
     date: today,
     employeeName: currentUser.name,
     email: currentUser.email,
@@ -338,7 +370,7 @@ export const toggleTodayAttendanceField = async (field) => {
       nextRecord.logoutDateTime = "";
     }
   } else {
-    nextRecord[field] = formatCurrentTime();
+    nextRecord[field] = clockTime;
     if (field === "loginTime") {
       nextRecord.loginDateTime = nowIso;
     }

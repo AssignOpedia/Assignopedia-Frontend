@@ -1197,6 +1197,226 @@
   font-weight: 800;
 }
 
+.admin-project-status {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #eef2ff;
+  color: #1e3a8a;
+  font-weight: 800;
+}
+
+.project-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(15, 23, 42, 0.34);
+  animation: adminProjectOverlayIn 0.18s ease both;
+}
+
+.project-drawer {
+  width: min(560px, 100vw);
+  height: 100vh;
+  overflow-y: auto;
+  padding: 24px;
+  background: #fff;
+  box-shadow: -28px 0 60px rgba(15, 23, 42, 0.2);
+  animation: adminProjectDrawerIn 0.22s ease both;
+}
+
+.project-drawer header,
+.project-drawer-section-title,
+.project-employee-option {
+  display: flex;
+  align-items: center;
+}
+
+.project-drawer header {
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.project-drawer header span,
+.project-drawer-section-title span {
+  color: #2563eb;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.project-drawer header h2 {
+  margin: 4px 0 0;
+  color: #0f172a;
+  font-size: 1.45rem;
+}
+
+.project-drawer header button {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: #fee2e2;
+  color: #b91c1c;
+  cursor: pointer;
+}
+
+.project-drawer-form,
+.project-drawer-form label,
+.project-drawer-section,
+.project-employee-picker,
+.project-word-allocation {
+  display: grid;
+  gap: 12px;
+}
+
+.project-drawer-form label span {
+  color: #475569;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.project-drawer-form input,
+.project-drawer-form textarea {
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #0f172a;
+  font: inherit;
+}
+
+.project-drawer-form input {
+  min-height: 46px;
+  padding: 0 12px;
+}
+
+.project-drawer-form textarea {
+  min-height: 154px;
+  padding: 12px;
+  resize: vertical;
+}
+
+.project-drawer-section {
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.project-drawer-section-title {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.project-drawer-section-title small {
+  color: #64748b;
+  font-weight: 800;
+}
+
+.project-employee-picker {
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.project-employee-option {
+  gap: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.project-employee-option input {
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  accent-color: #2563eb;
+}
+
+.project-employee-option strong,
+.project-employee-option small {
+  display: block;
+}
+
+.project-employee-option strong {
+  color: #0f172a;
+}
+
+.project-employee-option small {
+  color: #64748b;
+  font-size: 0.76rem;
+}
+
+.project-word-allocation {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.project-upload-zone {
+  min-height: 150px;
+  place-items: center;
+  align-content: center;
+  padding: 20px;
+  border: 1px dashed #93c5fd;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #2563eb;
+  text-align: center;
+  cursor: pointer;
+}
+
+.project-upload-zone input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.project-upload-zone svg {
+  font-size: 1.65rem;
+}
+
+.project-upload-zone strong,
+.project-upload-zone small {
+  display: block;
+}
+
+.project-drawer-form > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  border: 0;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #fff;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.project-drawer-form > button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+@keyframes adminProjectOverlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes adminProjectDrawerIn {
+  from { transform: translateX(32px); }
+  to { transform: translateX(0); }
+}
+
 .toggle {
   position: relative;
   width: 46px;
@@ -1341,6 +1561,14 @@
 
   .admin-blog-list-actions {
     justify-content: flex-start;
+  }
+
+  .project-drawer {
+    padding: 18px;
+  }
+
+  .project-word-allocation {
+    grid-template-columns: 1fr;
   }
 
   .admin-topbar-actions {
