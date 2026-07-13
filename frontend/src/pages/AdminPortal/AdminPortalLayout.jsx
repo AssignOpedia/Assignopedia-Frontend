@@ -21,6 +21,7 @@ import { clearCurrentUser, getCurrentUser } from "../../utils/authStorage";
 import { logoutAccountRemote } from "../../utils/authApi";
 import { getPasswordResetRequests, passwordResetRequestEvent } from "../../utils/passwordResetRequests";
 import { getInitialsFromProfile, getPortalProfile } from "../../utils/profileStorage";
+import { getSearchQuery, setSearchQuery } from "../../utils/portalSearch";
 
 const sidebarItems = [
   { label: "Dashboard", icon: <FaHome />, page: "admin-dashboard" },
@@ -37,6 +38,7 @@ const sidebarItems = [
 function AdminPortalLayout({ activePage, children, title, eyebrow, description, action, onNavigate }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [passwordResetRequests, setPasswordResetRequests] = useState(getPasswordResetRequests);
+  const [searchText, setSearchText] = useState(() => getSearchQuery("admin"));
   const notificationRef = useRef(null);
   const profile = getPortalProfile("admin");
 
@@ -77,6 +79,13 @@ function AdminPortalLayout({ activePage, children, title, eyebrow, description, 
 
     clearCurrentUser();
     onNavigate("admin-login");
+  };
+
+  const handleSearchChange = (event) => {
+    const nextQuery = event.target.value;
+
+    setSearchText(nextQuery);
+    setSearchQuery("admin", nextQuery);
   };
 
   return (
@@ -126,7 +135,12 @@ function AdminPortalLayout({ activePage, children, title, eyebrow, description, 
         <header className="admin-topbar">
           <label className="admin-search">
             <FaSearch aria-hidden="true" />
-            <input type="search" placeholder="Search employees, projects, reports..." />
+            <input
+              type="search"
+              placeholder="Search employees, projects, reports..."
+              value={searchText}
+              onChange={handleSearchChange}
+            />
           </label>
 
           <div className="admin-topbar-actions">

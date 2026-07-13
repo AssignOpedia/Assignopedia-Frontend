@@ -71,7 +71,7 @@ function HRAttendanceChecking({ activePage, onNavigate }) {
     <HRPortalLayout activePage={activePage} eyebrow="Attendance" title="Attendance Checking" onNavigate={onNavigate}>
       <article className="hr-panel">
         <div className="hr-panel-heading"><div><span>Today: {todayLabel}</span><h2>Employee Attendance Records</h2></div><FaClipboardList /></div>
-        <div className="hr-table-wrap">
+        <div className="hr-table-wrap hr-attendance-checking-table-wrap">
           <table className="hr-table">
             <thead><tr><th>Date</th><th>Name</th><th>Job Role</th><th>Login</th><th>Logout</th><th>Status</th><th>Late Count</th></tr></thead>
             <tbody>

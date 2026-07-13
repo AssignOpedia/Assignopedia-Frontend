@@ -1,4 +1,5 @@
 import { createApiResourceStore } from "./apiResourceStore";
+import { getCurrentUser } from "./authStorage";
 
 const noticeEvent = "assignopedia-notice-updated";
 
@@ -13,6 +14,14 @@ const noticeStore = createApiResourceStore({
   event: noticeEvent,
   fallback: getDefaultNotices(),
 });
+
+const noticeReadStore = createApiResourceStore({
+  resource: "noticeReadReceipts",
+  event: noticeEvent,
+  fallback: [],
+});
+
+const normalizeEmail = (email) => String(email || "").trim().toLowerCase();
 
 export const getNoticeDateTime = (notice = {}) => {
   const timestampFromId = Number(String(notice.id || "").split("-")[0]);
@@ -65,6 +74,63 @@ export const getNotices = () => noticeStore.get();
 
 export const getEmployeeNotices = () =>
   getNotices().filter((notice) => !String(notice.id || "").startsWith("default-"));
+
+export const loadEmployeeNotices = async () => {
+  await Promise.all([
+    noticeStore.load().catch(() => noticeStore.get()),
+    noticeReadStore.load().catch(() => noticeReadStore.get()),
+  ]);
+
+  return getEmployeeNotices();
+};
+
+export const getCurrentEmployeeUnreadNotices = () => {
+  const currentEmail = normalizeEmail(getCurrentUser().email);
+  const readNoticeIds = new Set(
+    noticeReadStore
+      .get()
+      .filter((receipt) => normalizeEmail(receipt.employeeEmail) === currentEmail)
+      .map((receipt) => receipt.noticeId)
+  );
+
+  return getEmployeeNotices().filter((notice) => !readNoticeIds.has(notice.id));
+};
+
+export const markCurrentEmployeeNoticesRead = async (noticeIds = null) => {
+  const currentEmail = normalizeEmail(getCurrentUser().email);
+  const selectedIds = Array.isArray(noticeIds) ? new Set(noticeIds) : null;
+  const readAt = new Date().toISOString();
+  const targetNotices = getEmployeeNotices().filter((notice) => !selectedIds || selectedIds.has(notice.id));
+
+  if (targetNotices.length === 0) {
+    return getEmployeeNotices();
+  }
+
+  const existingReceipts = await noticeReadStore.load().catch(() => noticeReadStore.get());
+  const receiptKeys = new Set(
+    (Array.isArray(existingReceipts) ? existingReceipts : []).map(
+      (receipt) => `${normalizeEmail(receipt.employeeEmail)}:${receipt.noticeId}`
+    )
+  );
+  const nextReceipts = [...(Array.isArray(existingReceipts) ? existingReceipts : [])];
+
+  targetNotices.forEach((notice) => {
+    const key = `${currentEmail}:${notice.id}`;
+
+    if (!receiptKeys.has(key)) {
+      nextReceipts.push({
+        id: `${notice.id}-${currentEmail}`,
+        noticeId: notice.id,
+        employeeEmail: currentEmail,
+        readAt,
+      });
+      receiptKeys.add(key);
+    }
+  });
+
+  await noticeReadStore.save(nextReceipts);
+  return getEmployeeNotices();
+};
 
 export const deleteNotice = (id) => {
   noticeStore.save(getNotices().filter((notice) => notice.id !== id)).catch(() => {});

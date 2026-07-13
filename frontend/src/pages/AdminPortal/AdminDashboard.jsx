@@ -44,6 +44,9 @@ const asDirectoryEmployee = (employee) => ({
   status: employee.status || "Present",
   statusClass: String(employee.status || "Present").trim().toLowerCase().replace(/\s+/g, "-"),
   workload: `${Number(employee.score || 0)}%`,
+  taskCompletionScore: Number(employee.taskCompletionScore || employee.performance?.taskCompletion || 0),
+  taskOnTimeScore: Number(employee.taskOnTimeScore || employee.performance?.deadlineReliability || 0),
+  performance: employee.performance || {},
 });
 
 const asHrDirectoryEmployee = (record) => {
@@ -83,23 +86,10 @@ const clientStats = [
   { label: "Startup", value: "20%", color: "#a855f7" },
 ];
 
-const analytics = [
-  { label: "Productivity", value: 88 },
-  { label: "Attendance", value: 90 },
-  { label: "Task Quality", value: 84 },
-  { label: "SLA Health", value: 93 },
-];
-
 const projects = [
   { name: "Client ERP Migration", progress: 78, due: "24 Jun", health: "On Track" },
   { name: "Assignopedia LMS", progress: 64, due: "29 Jun", health: "Review" },
   { name: "Finance Automation", progress: 91, due: "02 Jul", health: "Ahead" },
-];
-
-const rankings = [
-  { name: "Priya Kapoor", score: 98, team: "Delivery" },
-  { name: "Sourav Das", score: 95, team: "Engineering" },
-  { name: "Neha Iyer", score: 93, team: "Client Success" },
 ];
 
 const teams = [
@@ -114,6 +104,25 @@ function AdminDashboard({ activePage, onNavigate }) {
   const [hrRows, setHrRows] = useState(() => getPresentHrDirectoryRows(getAttendanceRecords()));
   const passwordResetRequests = getPasswordResetRequests();
   const directoryRows = [...hrRows, ...employees];
+  const rankedEmployees = [...employees]
+    .filter((employee) => Number(employee.workload.replace("%", "")) > 0)
+    .sort((a, b) => Number(b.workload.replace("%", "")) - Number(a.workload.replace("%", "")))
+    .slice(0, 5);
+  const averagePerformance = Math.round(
+    employees.reduce((total, employee) => total + Number(employee.workload.replace("%", "") || 0), 0) / Math.max(employees.length, 1)
+  );
+  const averageTaskCompletion = Math.round(
+    employees.reduce((total, employee) => total + Number(employee.taskCompletionScore || employee.performance?.taskCompletion || 0), 0) / Math.max(employees.length, 1)
+  );
+  const averageDeadlineReliability = Math.round(
+    employees.reduce((total, employee) => total + Number(employee.taskOnTimeScore || employee.performance?.deadlineReliability || 0), 0) / Math.max(employees.length, 1)
+  );
+  const analytics = [
+    { label: "Productivity", value: averagePerformance },
+    { label: "Attendance", value: 90 },
+    { label: "Task Quality", value: averageTaskCompletion },
+    { label: "SLA Health", value: averageDeadlineReliability },
+  ];
 
   useEffect(() => {
     const refreshEmployees = () => {
@@ -124,8 +133,12 @@ function AdminDashboard({ activePage, onNavigate }) {
     window.addEventListener(event, refreshEmployees);
     window.addEventListener("storage", refreshEmployees);
     loadEmployees().then(refreshEmployees).catch(() => {});
+    const refreshInterval = window.setInterval(() => {
+      loadEmployees().then(refreshEmployees).catch(() => {});
+    }, 5000);
 
     return () => {
+      window.clearInterval(refreshInterval);
       window.removeEventListener(event, refreshEmployees);
       window.removeEventListener("storage", refreshEmployees);
     };
@@ -335,14 +348,14 @@ function AdminDashboard({ activePage, onNavigate }) {
             <FaStar />
           </div>
           <div className="ranking-list">
-            {rankings.map((person, index) => (
-              <div key={person.name}>
+            {(rankedEmployees.length ? rankedEmployees : employees.slice(0, 3)).map((person, index) => (
+              <div key={person.id || person.name}>
                 <b>{index + 1}</b>
                 <span>
                   <strong>{person.name}</strong>
-                  <small>{person.team}</small>
+                  <small>{person.role}</small>
                 </span>
-                <em>{person.score}</em>
+                <em>{person.workload}</em>
               </div>
             ))}
           </div>

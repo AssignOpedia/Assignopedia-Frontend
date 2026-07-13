@@ -33,6 +33,10 @@ const arrayCollectionStores = {
     collectionName: process.env.MONGODB_PROJECT_MANAGEMENT_COLLECTION || process.env.MONGODB_PROJECTS_COLLECTION || "projectManagement",
     idPrefix: "project",
   },
+  taskSubmissions: {
+    collectionName: process.env.MONGODB_TASK_SUBMISSIONS_COLLECTION || "taskSubmissions",
+    idPrefix: "task-submission",
+  },
   wfhRequests: {
     collectionName: process.env.MONGODB_WFH_REQUESTS_COLLECTION || "wfhRequests",
     idPrefix: "wfh",

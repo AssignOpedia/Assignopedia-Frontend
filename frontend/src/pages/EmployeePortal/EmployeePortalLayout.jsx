@@ -17,9 +17,23 @@ import "./EmployeeDashboard.css";
 import { useEmployeeProfileImage } from "./useEmployeeProfileImage";
 import { clearCurrentUser, getCurrentUser } from "../../utils/authStorage";
 import { logoutAccountRemote } from "../../utils/authApi";
-import { getEmployeeNotices, getNoticeDateTime, getNoticeEvent } from "../../utils/noticeStorage";
-import { getCurrentEmployeeNotifications, loadEmployeeNotifications, notificationEvent } from "../../utils/requestNotifications";
+import {
+  getCurrentEmployeeUnreadNotices,
+  getEmployeeNotices,
+  getNoticeDateTime,
+  getNoticeEvent,
+  loadEmployeeNotices,
+  markCurrentEmployeeNoticesRead,
+} from "../../utils/noticeStorage";
+import {
+  getCurrentEmployeeNotifications,
+  getCurrentEmployeeUnreadNotifications,
+  loadEmployeeNotifications,
+  markCurrentEmployeeNotificationsRead,
+  notificationEvent,
+} from "../../utils/requestNotifications";
 import { getInitialsFromProfile, getPortalProfile } from "../../utils/profileStorage";
+import { getSearchQuery, setSearchQuery } from "../../utils/portalSearch";
 
 const sidebarItems = [
   { label: "Dashboard", icon: <FaHome />, page: "employee-dashboard" },
@@ -38,7 +52,10 @@ function EmployeePortalLayout({ activePage, children, eyebrow, title, onNavigate
   const [showAnnouncements, setShowAnnouncements] = useState(false);
   const profileImage = useEmployeeProfileImage();
   const [employeeNotifications, setEmployeeNotifications] = useState(getCurrentEmployeeNotifications);
+  const [unreadEmployeeNotifications, setUnreadEmployeeNotifications] = useState(getCurrentEmployeeUnreadNotifications);
   const [announcements, setAnnouncements] = useState(() => getEmployeeNotices());
+  const [unreadAnnouncements, setUnreadAnnouncements] = useState(getCurrentEmployeeUnreadNotices);
+  const [searchText, setSearchText] = useState(() => getSearchQuery("employee"));
   const notificationRef = useRef(null);
   const announcementRef = useRef(null);
   const profile = getPortalProfile("employee");
@@ -59,9 +76,17 @@ function EmployeePortalLayout({ activePage, children, eyebrow, title, onNavigate
     onNavigate(page);
   };
 
+  const handleSearchChange = (event) => {
+    const nextQuery = event.target.value;
+
+    setSearchText(nextQuery);
+    setSearchQuery("employee", nextQuery);
+  };
+
   useEffect(() => {
     const refreshNotifications = () => {
       setEmployeeNotifications(getCurrentEmployeeNotifications());
+      setUnreadEmployeeNotifications(getCurrentEmployeeUnreadNotifications());
     };
 
     loadEmployeeNotifications().then(refreshNotifications).catch(() => {});
@@ -73,12 +98,31 @@ function EmployeePortalLayout({ activePage, children, eyebrow, title, onNavigate
     };
   }, []);
 
+  const handleNotificationToggle = () => {
+    const shouldOpen = !showNotifications;
+
+    setShowNotifications(shouldOpen);
+    setShowAnnouncements(false);
+
+    if (!shouldOpen || unreadEmployeeNotifications.length === 0) {
+      return;
+    }
+
+    markCurrentEmployeeNotificationsRead(unreadEmployeeNotifications.map((notification) => notification.id))
+      .then((notifications) => {
+        setEmployeeNotifications(notifications);
+        setUnreadEmployeeNotifications(getCurrentEmployeeUnreadNotifications());
+      })
+      .catch(() => {});
+  };
+
   useEffect(() => {
     const refreshAnnouncements = () => {
       setAnnouncements(getEmployeeNotices());
+      setUnreadAnnouncements(getCurrentEmployeeUnreadNotices());
     };
 
-    refreshAnnouncements();
+    loadEmployeeNotices().then(refreshAnnouncements).catch(() => {});
     window.addEventListener(getNoticeEvent(), refreshAnnouncements);
     window.addEventListener("storage", refreshAnnouncements);
 
@@ -87,6 +131,24 @@ function EmployeePortalLayout({ activePage, children, eyebrow, title, onNavigate
       window.removeEventListener("storage", refreshAnnouncements);
     };
   }, []);
+
+  const handleAnnouncementToggle = () => {
+    const shouldOpen = !showAnnouncements;
+
+    setShowAnnouncements(shouldOpen);
+    setShowNotifications(false);
+
+    if (!shouldOpen || unreadAnnouncements.length === 0) {
+      return;
+    }
+
+    markCurrentEmployeeNoticesRead(unreadAnnouncements.map((announcement) => announcement.id))
+      .then((notices) => {
+        setAnnouncements(notices);
+        setUnreadAnnouncements(getCurrentEmployeeUnreadNotices());
+      })
+      .catch(() => {});
+  };
 
   useEffect(() => {
     if (!showNotifications && !showAnnouncements) {
@@ -143,7 +205,12 @@ function EmployeePortalLayout({ activePage, children, eyebrow, title, onNavigate
           <div className="topbar-actions">
             <label className="portal-search">
               <FaSearch aria-hidden="true" />
-              <input type="search" placeholder="Search projects, tasks..." />
+              <input
+                type="search"
+                placeholder="Search projects, tasks..."
+                value={searchText}
+                onChange={handleSearchChange}
+              />
             </label>
             <div
               className="employee-notification-wrap"
@@ -154,22 +221,24 @@ function EmployeePortalLayout({ activePage, children, eyebrow, title, onNavigate
                 type="button"
                 aria-label="Notifications"
                 aria-expanded={showNotifications}
-                onClick={() => {
-                  setShowNotifications((current) => !current);
-                  setShowAnnouncements(false);
-                }}
+                onClick={handleNotificationToggle}
               >
                 <FaBell />
-                {employeeNotifications.length > 0 && (
-                  <span className="portal-notification-count">{employeeNotifications.length}</span>
+                {unreadEmployeeNotifications.length > 0 && (
+                  <span className="portal-notification-count">{unreadEmployeeNotifications.length}</span>
                 )}
               </button>
               {showNotifications && (
                 <div className="employee-notification-panel" role="status">
                   <strong>Notifications</strong>
                   {employeeNotifications.length > 0 ? (
-                    employeeNotifications.slice(0, 5).map((notification) => (
-                      <p key={notification.id}>{notification.message}</p>
+                    employeeNotifications.map((notification) => (
+                      <p key={notification.id}>
+                        <b>{notification.type || "Notification"}</b>
+                        <small className="employee-announcement-meta">{notification.date}</small>
+                        <span>{notification.message}</span>
+                        {notification.detail && <span>{notification.detail}</span>}
+                      </p>
                     ))
                   ) : (
                     <p>No new notifications.</p>
@@ -183,14 +252,11 @@ function EmployeePortalLayout({ activePage, children, eyebrow, title, onNavigate
                 type="button"
                 aria-label="Announcements"
                 aria-expanded={showAnnouncements}
-                onClick={() => {
-                  setShowAnnouncements((current) => !current);
-                  setShowNotifications(false);
-                }}
+                onClick={handleAnnouncementToggle}
               >
                 <FaBullhorn />
-                {announcements.length > 0 && (
-                  <span className="portal-notification-count">{announcements.length}</span>
+                {unreadAnnouncements.length > 0 && (
+                  <span className="portal-notification-count">{unreadAnnouncements.length}</span>
                 )}
               </button>
               {showAnnouncements && (

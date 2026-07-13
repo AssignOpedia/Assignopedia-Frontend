@@ -41,6 +41,7 @@ const syncStores = {
   settings: { storeName: "settings", fallback: defaults.settings },
   systemEvents: { storeName: "systemEvents", fallback: defaults.systemEvents },
   tasks: { storeName: "tasks", fallback: defaults.tasks },
+  taskSubmissions: { storeName: "taskSubmissions", fallback: defaults.taskSubmissions },
   team: { storeName: "team", fallback: defaults.team },
   wfhRequests: { storeName: "wfhRequests", fallback: defaults.wfhRequests },
 };
@@ -245,6 +246,37 @@ const syncEmployeeAccount = async (account) => {
   return syncedEmployee;
 };
 
+const syncRegisteredEmployeeAccounts = async () => {
+  const accounts = await store.read("accounts", defaults.accounts);
+  const employeeAccounts = (Array.isArray(accounts) ? accounts : []).filter(
+    (account) => normalizeEmail(account.role) === "employee"
+  );
+
+  if (employeeAccounts.length === 0) {
+    return store.read("employees", defaults.employees);
+  }
+
+  return store.update("employees", defaults.employees, (current) => {
+    const employeesByEmail = new Map(
+      (Array.isArray(current) ? current : []).map((employee) => [normalizeEmail(employee.email), employee])
+    );
+
+    employeeAccounts.forEach((account) => {
+      const email = normalizeEmail(account.email);
+
+      if (!email) {
+        return;
+      }
+
+      employeesByEmail.set(email, employeeFromAccount(account, employeesByEmail.get(email) || {}));
+    });
+
+    return Array.from(employeesByEmail.values()).sort((a, b) =>
+      String(a.name || "").localeCompare(String(b.name || ""))
+    );
+  });
+};
+
 router.get("/sync/:resource", asyncRoute(async (req, res) => {
   const target = syncStores[req.params.resource];
 
@@ -254,6 +286,17 @@ router.get("/sync/:resource", asyncRoute(async (req, res) => {
 
   if (target.storeName === "attendance") {
     res.json(await readAttendanceRecords());
+    return;
+  }
+
+  if (target.storeName === "projects") {
+    res.json(await completeProjectsFromSubmissions());
+    return;
+  }
+
+  if (target.storeName === "employees") {
+    await syncRegisteredEmployeeAccounts();
+    res.json(await updateAllEmployeePerformanceFromSubmissions());
     return;
   }
 
@@ -299,11 +342,28 @@ const collectionRoute = ({ path, storeName, fallback, idPrefix, requiredFields =
       return;
     }
 
+    if (storeName === "projects") {
+      res.json(await completeProjectsFromSubmissions());
+      return;
+    }
+
+    if (storeName === "employees") {
+      await syncRegisteredEmployeeAccounts();
+      res.json(await updateAllEmployeePerformanceFromSubmissions());
+      return;
+    }
+
     res.json(await store.read(storeName, fallback));
   }));
 
   router.get(`${path}/:id`, asyncRoute(async (req, res) => {
-    const items = storeName === "attendance" ? await readAttendanceRecords() : await store.read(storeName, fallback);
+    const items = storeName === "attendance"
+      ? await readAttendanceRecords()
+      : storeName === "projects"
+        ? await completeProjectsFromSubmissions()
+        : storeName === "employees"
+          ? (await syncRegisteredEmployeeAccounts(), await updateAllEmployeePerformanceFromSubmissions())
+        : await store.read(storeName, fallback);
     const item = items.find((currentItem) => currentItem.id === req.params.id);
 
     if (!item) {
@@ -436,6 +496,320 @@ const getStoredCvFile = (item) => {
 
 const safeFileName = (fileName) =>
   String(fileName || "document").replace(/[\r\n"]/g, "").replace(/[\\/]/g, "-");
+
+const getProjectTitle = (project = {}) => project.title || project.name || "Untitled Project";
+
+const getProjectDeadlineDateTime = (project = {}) => {
+  if (project.deadlineDateTime) {
+    return project.deadlineDateTime;
+  }
+
+  if (project.deadlineDate && project.deadlineTime) {
+    return new Date(`${project.deadlineDate}T${project.deadlineTime}:00+05:30`).toISOString();
+  }
+
+  return "";
+};
+
+const findProjectForSubmission = async (submission) => {
+  const projects = await store.read("projects", defaults.projects);
+  const projectId = String(submission.projectId || "");
+  const projectTitle = String(submission.projectTitle || "");
+
+  return (Array.isArray(projects) ? projects : []).find((project) =>
+    String(project.id || "") === projectId ||
+    String(getProjectTitle(project)) === projectTitle
+  ) || null;
+};
+
+const getSubmissionPerformanceStatus = (submission, project) => {
+  const deadlineDateTime = getProjectDeadlineDateTime(project);
+
+  if (!deadlineDateTime) {
+    return {
+      deadlineDate: project?.deadlineDate || "",
+      deadlineTime: project?.deadlineTime || "",
+      deadlineDateTime: "",
+      submittedOnTime: true,
+      submissionTimingStatus: "On Time",
+    };
+  }
+
+  const submittedAt = new Date(submission.submittedAt || submission.createdAt || nowIso()).getTime();
+  const deadlineAt = new Date(deadlineDateTime).getTime();
+  const submittedOnTime = Number.isNaN(deadlineAt) || submittedAt <= deadlineAt;
+
+  return {
+    deadlineDate: project?.deadlineDate || "",
+    deadlineTime: project?.deadlineTime || "",
+    deadlineDateTime,
+    submittedOnTime,
+    submissionTimingStatus: submittedOnTime ? "On Time" : "Late",
+  };
+};
+
+const completeProjectFromSubmission = async (submission) => {
+  let completedProject = null;
+  const projectId = String(submission.projectId || "");
+  const projectTitle = String(submission.projectTitle || "");
+  const completedAt = submission.submittedAt || nowIso();
+  const projects = await store.update("projects", defaults.projects, (current) =>
+    current.map((project) => {
+      const matchesProject =
+        String(project.id || "") === projectId ||
+        String(getProjectTitle(project)) === projectTitle;
+
+      if (!matchesProject) {
+        return project;
+      }
+
+      completedProject = {
+        ...project,
+        status: "Completed",
+        progress: 100,
+        completedAt,
+        deliveredAt: completedAt,
+        lastSubmissionId: submission.id,
+        lastSubmittedBy: submission.employeeEmail,
+        updatedAt: nowIso(),
+      };
+
+      return completedProject;
+    })
+  );
+
+  return { completedProject, projects };
+};
+
+const getSubmissionTime = (submission = {}) => {
+  const date = new Date(submission.submittedAt || submission.createdAt || 0);
+
+  return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+};
+
+const completeProjectsFromSubmissions = async () => {
+  const [projects, submissions] = await Promise.all([
+    store.read("projects", defaults.projects),
+    store.read("taskSubmissions", defaults.taskSubmissions),
+  ]);
+
+  if (!Array.isArray(submissions) || submissions.length === 0) {
+    return projects;
+  }
+
+  let changed = false;
+  const completedProjects = (Array.isArray(projects) ? projects : []).map((project) => {
+    const projectId = String(project.id || getProjectTitle(project));
+    const projectTitle = String(getProjectTitle(project));
+    const matchingSubmissions = submissions
+      .filter((submission) =>
+        String(submission.projectId || "") === projectId ||
+        String(submission.projectTitle || "") === projectTitle
+      )
+      .sort((a, b) => getSubmissionTime(b) - getSubmissionTime(a));
+
+    if (matchingSubmissions.length === 0) {
+      return project;
+    }
+
+    const latestSubmission = matchingSubmissions[0];
+    const completedAt = latestSubmission.submittedAt || latestSubmission.createdAt || nowIso();
+    const alreadyCompleted =
+      project.status === "Completed" &&
+      Number(project.progress || 0) === 100 &&
+      project.deliveredAt &&
+      project.lastSubmissionId === latestSubmission.id;
+
+    if (alreadyCompleted) {
+      return project;
+    }
+
+    changed = true;
+
+    return {
+      ...project,
+      status: "Completed",
+      progress: 100,
+      completedAt: project.completedAt || completedAt,
+      deliveredAt: project.deliveredAt || completedAt,
+      lastSubmissionId: latestSubmission.id,
+      lastSubmittedBy: latestSubmission.employeeEmail,
+      updatedAt: nowIso(),
+    };
+  });
+
+  if (changed) {
+    await store.write("projects", completedProjects);
+  }
+
+  return completedProjects;
+};
+
+const calculateTaskPerformance = (submissions) => {
+  const completedSubmissions = (Array.isArray(submissions) ? submissions : []).filter(
+    (submission) => submission.status === "Completed" || submission.status === "Submitted"
+  );
+  const completedCount = completedSubmissions.length;
+  const onTimeCount = completedSubmissions.filter((submission) => submission.submittedOnTime !== false).length;
+  const lateCount = Math.max(completedCount - onTimeCount, 0);
+  const completionScore = completedCount > 0 ? 100 : 0;
+  const onTimeScore = completedCount > 0 ? Math.round((onTimeCount / completedCount) * 100) : 0;
+  const score = completedCount > 0 ? Math.round((completionScore * 0.45) + (onTimeScore * 0.55)) : 0;
+
+  return {
+    score,
+    completionScore,
+    onTimeScore,
+    completedCount,
+    onTimeCount,
+    lateCount,
+  };
+};
+
+const updateEmployeePerformanceFromSubmissions = async (employeeEmail, fallbackName = "Employee") => {
+  const email = normalizeEmail(employeeEmail);
+
+  if (!email) {
+    return null;
+  }
+
+  const submissions = await store.read("taskSubmissions", defaults.taskSubmissions);
+  const employeeSubmissions = (Array.isArray(submissions) ? submissions : []).filter(
+    (submission) => normalizeEmail(submission.employeeEmail) === email
+  );
+  const performance = calculateTaskPerformance(employeeSubmissions);
+  let updatedEmployee = null;
+
+  await store.update("employees", defaults.employees, (current) => {
+    const existingIndex = current.findIndex((employee) => normalizeEmail(employee.email) === email);
+    const performanceUpdates = {
+      score: performance.score,
+      taskCompletionScore: performance.completionScore,
+      taskOnTimeScore: performance.onTimeScore,
+      taskCompletedCount: performance.completedCount,
+      onTimeTaskCount: performance.onTimeCount,
+      lateTaskCount: performance.lateCount,
+      performance: {
+        taskCompletion: performance.completionScore,
+        deadlineReliability: performance.onTimeScore,
+        completedTasks: performance.completedCount,
+        onTimeTasks: performance.onTimeCount,
+        lateTasks: performance.lateCount,
+        updatedAt: nowIso(),
+      },
+      updatedAt: nowIso(),
+    };
+
+    if (existingIndex < 0) {
+      updatedEmployee = {
+        id: `EMP-${email.replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "").toUpperCase()}`,
+        name: fallbackName,
+        email,
+        department: "Delivery",
+        jobCode: "Employee",
+        role: "Employee",
+        team: "Delivery",
+        status: "Present",
+        createdAt: new Date().toLocaleDateString(),
+        ...performanceUpdates,
+      };
+
+      return [updatedEmployee, ...current];
+    }
+
+    return current.map((employee, index) => {
+      if (index !== existingIndex) {
+        return employee;
+      }
+
+      updatedEmployee = {
+        ...employee,
+        name: employee.name || fallbackName,
+        ...performanceUpdates,
+      };
+      return updatedEmployee;
+    });
+  });
+
+  return updatedEmployee;
+};
+
+const updateAllEmployeePerformanceFromSubmissions = async () => {
+  const submissions = await store.read("taskSubmissions", defaults.taskSubmissions);
+  const submissionsByEmail = new Map();
+
+  (Array.isArray(submissions) ? submissions : []).forEach((submission) => {
+    const email = normalizeEmail(submission.employeeEmail);
+
+    if (!email) {
+      return;
+    }
+
+    submissionsByEmail.set(email, [...(submissionsByEmail.get(email) || []), submission]);
+  });
+
+  if (submissionsByEmail.size === 0) {
+    return store.read("employees", defaults.employees);
+  }
+
+  return store.update("employees", defaults.employees, (current) => {
+    const employeesByEmail = new Map(current.map((employee) => [normalizeEmail(employee.email), employee]));
+
+    submissionsByEmail.forEach((employeeSubmissions, email) => {
+      const performance = calculateTaskPerformance(employeeSubmissions);
+      const latestSubmission = [...employeeSubmissions].sort((a, b) => getSubmissionTime(b) - getSubmissionTime(a))[0] || {};
+      const employee = employeesByEmail.get(email) || {
+        id: `EMP-${email.replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "").toUpperCase()}`,
+        name: latestSubmission.employeeName || "Employee",
+        email,
+        department: "Delivery",
+        jobCode: "Employee",
+        role: "Employee",
+        team: "Delivery",
+        status: "Present",
+        createdAt: new Date().toLocaleDateString(),
+      };
+
+      employeesByEmail.set(email, {
+        ...employee,
+        score: performance.score,
+        taskCompletionScore: performance.completionScore,
+        taskOnTimeScore: performance.onTimeScore,
+        taskCompletedCount: performance.completedCount,
+        onTimeTaskCount: performance.onTimeCount,
+        lateTaskCount: performance.lateCount,
+        performance: {
+          ...(employee.performance || {}),
+          taskCompletion: performance.completionScore,
+          deadlineReliability: performance.onTimeScore,
+          completedTasks: performance.completedCount,
+          onTimeTasks: performance.onTimeCount,
+          lateTasks: performance.lateCount,
+          updatedAt: nowIso(),
+        },
+        updatedAt: nowIso(),
+      });
+    });
+
+    const knownEmails = new Set();
+    const merged = [];
+
+    current.forEach((employee) => {
+      const email = normalizeEmail(employee.email);
+      const updatedEmployee = employeesByEmail.get(email) || employee;
+      knownEmails.add(email);
+      merged.push(updatedEmployee);
+    });
+
+    employeesByEmail.forEach((employee, email) => {
+      if (!knownEmails.has(email)) {
+        merged.unshift(employee);
+      }
+    });
+
+    return merged;
+  });
+};
 
 router.post("/auth/register", validateRegister, loadAccounts, rejectDuplicateEmail, asyncRoute(async (req, res) => {
   const { email, name, password, role } = req.authBody;
@@ -875,6 +1249,50 @@ router.get("/cv-applications/:id/document", asyncRoute(async (req, res) => {
 collectionRoute({ path: "/cv-applications", storeName: "cvApplications", fallback: defaults.cvApplications, idPrefix: "cv", requiredFields: ["fullName", "email"] });
 collectionRoute({ path: "/password-reset-requests", storeName: "passwordResetRequests", fallback: defaults.passwordResetRequests, idPrefix: "password-reset", requiredFields: ["email"] });
 collectionRoute({ path: "/tasks", storeName: "tasks", fallback: defaults.tasks, idPrefix: "task", requiredFields: ["title"] });
+router.post("/task-submissions", asyncRoute(async (req, res) => {
+  const body = await normalizeMediaPayload(req.body, "assignopedia/taskSubmissions");
+  required(body, ["projectId", "employeeEmail"]);
+
+  const submittedAt = body.submittedAt || nowIso();
+  const matchingProject = await findProjectForSubmission(body);
+  const timing = getSubmissionPerformanceStatus({ ...body, submittedAt }, matchingProject);
+  const submission = {
+    id: body.id || makeId("task-submission"),
+    ...body,
+    employeeEmail: normalizeEmail(body.employeeEmail),
+    status: "Completed",
+    ...timing,
+    submittedAt,
+    createdAt: body.createdAt || submittedAt,
+    updatedAt: nowIso(),
+  };
+  let created = true;
+  const items = await store.update("taskSubmissions", defaults.taskSubmissions, (current) => {
+    const existingIndex = current.findIndex((item) => item.id === submission.id);
+
+    if (existingIndex < 0) {
+      return [submission, ...current];
+    }
+
+    created = false;
+    return current.map((item, index) =>
+      index === existingIndex
+        ? { ...item, ...submission, createdAt: item.createdAt || submission.createdAt }
+        : item
+    );
+  });
+  const { completedProject, projects } = await completeProjectFromSubmission(submission);
+  const employee = await updateEmployeePerformanceFromSubmissions(submission.employeeEmail, submission.employeeName);
+
+  res.status(created ? 201 : 200).json({
+    item: submission,
+    items,
+    project: completedProject,
+    projects,
+    employee,
+  });
+}));
+collectionRoute({ path: "/task-submissions", storeName: "taskSubmissions", fallback: defaults.taskSubmissions, idPrefix: "task-submission", requiredFields: ["projectId", "employeeEmail"] });
 collectionRoute({ path: "/revenue", storeName: "revenue", fallback: defaults.revenue, idPrefix: "revenue" });
 collectionRoute({ path: "/reports", storeName: "reports", fallback: defaults.reports, idPrefix: "report" });
 collectionRoute({ path: "/system-events", storeName: "systemEvents", fallback: defaults.systemEvents, idPrefix: "system" });

@@ -745,6 +745,66 @@
   gap: 10px;
 }
 
+.employee-directory-table {
+  max-height: 374px;
+  overflow-y: auto;
+  padding-right: 4px;
+  overscroll-behavior: contain;
+}
+
+.employee-directory-table .admin-table-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  background: #fff;
+}
+
+.employee-directory-table::-webkit-scrollbar {
+  width: 8px;
+}
+
+.employee-directory-table::-webkit-scrollbar-track {
+  background: #eef2ff;
+  border-radius: 999px;
+}
+
+.employee-directory-table::-webkit-scrollbar-thumb {
+  background: #c7d2fe;
+  border-radius: 999px;
+}
+
+.employee-attendance-activity-table {
+  max-height: 374px;
+  overflow-y: auto;
+  padding-right: 4px;
+  overscroll-behavior: contain;
+}
+
+.employee-attendance-activity-table .admin-table-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  background: #fff;
+}
+
+.employee-attendance-activity-table::-webkit-scrollbar {
+  width: 8px;
+}
+
+.employee-attendance-activity-table::-webkit-scrollbar-track {
+  background: #eef2ff;
+  border-radius: 999px;
+}
+
+.employee-attendance-activity-table::-webkit-scrollbar-thumb {
+  background: #c7d2fe;
+  border-radius: 999px;
+}
+
 .admin-table-head,
 .admin-table-row {
   display: grid;
@@ -828,6 +888,156 @@
 .project-list p span.completed {
   background: #e0f2fe;
   color: #0369a1;
+}
+
+.project-summary-trigger {
+  display: block;
+  width: 100%;
+  padding: 0;
+  color: inherit;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  font: inherit;
+}
+
+.project-summary-trigger.has-submissions {
+  cursor: pointer;
+}
+
+.project-summary-trigger:disabled {
+  cursor: default;
+}
+
+.project-summary-trigger.has-submissions:hover p strong,
+.project-summary-trigger.has-submissions:focus-visible p strong {
+  color: #1d4ed8;
+}
+
+.project-summary-trigger:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.22);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+.project-submission-details {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.project-submission-details h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1rem;
+}
+
+.project-submission-card {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.project-submission-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.project-submission-meta p {
+  display: block;
+  min-width: 0;
+  padding: 10px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.project-submission-meta strong,
+.project-submission-meta span,
+.project-submission-note strong,
+.project-submission-note p {
+  display: block;
+}
+
+.project-list .project-submission-meta p span {
+  width: auto;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.project-submission-meta strong {
+  overflow-wrap: anywhere;
+  color: #0f172a;
+  font-size: 0.88rem;
+}
+
+.project-submission-meta p span {
+  margin-top: 4px;
+}
+
+.project-submission-note {
+  padding: 11px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.project-submission-note strong {
+  margin-bottom: 6px;
+  color: #1d4ed8;
+  font-size: 0.76rem;
+}
+
+.project-submission-note p {
+  margin: 0;
+  color: #475569;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.project-submission-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.project-submission-files a {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-width: min(100%, 240px);
+  min-height: 40px;
+  padding: 9px 10px;
+  color: #0f172a;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  text-decoration: none;
+}
+
+.project-submission-files a span {
+  min-width: 0;
+  overflow: hidden;
+  color: #0f172a;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-submission-files a small {
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 900;
 }
 
 .admin-table-row button,
@@ -1269,6 +1479,7 @@
 .project-drawer-form label,
 .project-drawer-section,
 .project-employee-picker,
+.project-deadline-fields,
 .project-word-allocation {
   display: grid;
   gap: 12px;
@@ -1353,6 +1564,7 @@
   font-size: 0.76rem;
 }
 
+.project-deadline-fields,
 .project-word-allocation {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -1569,6 +1781,18 @@
 
   .project-word-allocation {
     grid-template-columns: 1fr;
+  }
+
+  .project-deadline-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .project-submission-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .project-submission-files a {
+    width: 100%;
   }
 
   .admin-topbar-actions {

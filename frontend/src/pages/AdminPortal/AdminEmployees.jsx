@@ -22,6 +22,11 @@ const asAdminEmployee = (employee) => ({
   status: employee.status || "Present",
   score: Number(employee.score || 0),
   email: employee.email || "",
+  taskCompletionScore: Number(employee.taskCompletionScore || employee.performance?.taskCompletion || 0),
+  taskOnTimeScore: Number(employee.taskOnTimeScore || employee.performance?.deadlineReliability || 0),
+  taskCompletedCount: Number(employee.taskCompletedCount || employee.performance?.completedTasks || 0),
+  onTimeTaskCount: Number(employee.onTimeTaskCount || employee.performance?.onTimeTasks || 0),
+  lateTaskCount: Number(employee.lateTaskCount || employee.performance?.lateTasks || 0),
 });
 
 const sortAttendanceRows = (records) =>
@@ -46,8 +51,12 @@ function AdminEmployees({ activePage, onNavigate }) {
     window.addEventListener(event, refreshEmployees);
     window.addEventListener("storage", refreshEmployees);
     loadEmployees().then(refreshEmployees).catch(() => {});
+    const refreshInterval = window.setInterval(() => {
+      loadEmployees().then(refreshEmployees).catch(() => {});
+    }, 5000);
 
     return () => {
+      window.clearInterval(refreshInterval);
       window.removeEventListener(event, refreshEmployees);
       window.removeEventListener("storage", refreshEmployees);
     };
@@ -73,6 +82,14 @@ function AdminEmployees({ activePage, onNavigate }) {
   const averageScore = Math.round(
     employees.reduce((total, employee) => total + Number(employee.score || 0), 0) / Math.max(employees.length, 1)
   );
+  const averageTaskCompletion = Math.round(
+    employees.reduce((total, employee) => total + Number(employee.taskCompletionScore || 0), 0) / Math.max(employees.length, 1)
+  );
+  const averageDeadlineReliability = Math.round(
+    employees.reduce((total, employee) => total + Number(employee.taskOnTimeScore || 0), 0) / Math.max(employees.length, 1)
+  );
+  const totalCompletedTasks = employees.reduce((total, employee) => total + Number(employee.taskCompletedCount || 0), 0);
+  const totalLateTasks = employees.reduce((total, employee) => total + Number(employee.lateTaskCount || 0), 0);
 
   return (
     <AdminPortalLayout
@@ -96,7 +113,7 @@ function AdminEmployees({ activePage, onNavigate }) {
             <div><span>Directory</span><h2>Employee List</h2></div>
             <FaUsers />
           </div>
-          <div className="admin-table employee-management-table">
+          <div className="admin-table employee-management-table employee-directory-table">
             <div className="admin-table-head"><span>Employee</span><span>Team</span><span>Status</span><span>Performance</span><span>Action</span></div>
             {employees.length > 0 ? employees.map((employee) => (
               <div className="admin-table-row" key={employee.id}>
@@ -124,8 +141,12 @@ function AdminEmployees({ activePage, onNavigate }) {
             <FaUserClock />
           </div>
           <div className="analytics-list">
-            {["Delivery Quality", "Attendance Health", "Task Completion", "Peer Feedback"].map((label, index) => {
-              const value = [92, 90, 86, 84][index];
+            {[
+              ["Delivery Quality", averageScore],
+              ["Deadline Reliability", averageDeadlineReliability],
+              ["Task Completion", averageTaskCompletion],
+              ["Completed / Late", totalCompletedTasks ? Math.round(((totalCompletedTasks - totalLateTasks) / totalCompletedTasks) * 100) : 0],
+            ].map(([label, value]) => {
               return (
                 <div key={label}>
                   <p><span>{label}</span><strong>{value}%</strong></p>
@@ -141,7 +162,7 @@ function AdminEmployees({ activePage, onNavigate }) {
             <div><span>Attendance</span><h2>Employee Login / Logout Activity</h2></div>
             <FaUserClock />
           </div>
-          <div className="admin-table employee-management-table attendance-management-table">
+          <div className="admin-table employee-management-table attendance-management-table employee-attendance-activity-table">
             <div className="admin-table-head"><span>Employee</span><span>Job Role</span><span>Login</span><span>Logout</span><span>Late</span></div>
             {attendanceRows.length > 0 ? attendanceRows.map((record) => {
               const status = record.status || getAttendanceStatusFromLogin(record.loginTime);

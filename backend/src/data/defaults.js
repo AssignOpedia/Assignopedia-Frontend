@@ -34,9 +34,6 @@ const departments = [
 
 const projects = [
   { id: "project-1", name: "Client ERP Migration", owner: "Ananya Sen", status: "Active", progress: 78, deadline: "24 Jun" },
-  { id: "project-2", name: "Assignopedia LMS", owner: "Rahul Verma", status: "Delayed", progress: 54, deadline: "26 Jun" },
-  { id: "project-3", name: "Finance Automation", owner: "Sourav Das", status: "Completed", progress: 100, deadline: "18 Jun" },
-  { id: "project-4", name: "CRM Analytics", owner: "Neha Iyer", status: "Active", progress: 68, deadline: "03 Jul" },
 ];
 
 const tasks = [
@@ -141,6 +138,7 @@ module.exports = {
   reports,
   systemEvents,
   tasks,
+  taskSubmissions: [],
   team,
   wfhRequests: [],
 };

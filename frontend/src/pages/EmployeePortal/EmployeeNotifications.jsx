@@ -1,7 +1,19 @@
 import { FaBell, FaBullhorn } from "react-icons/fa";
 import { useEffect, useState } from "react";
-import { getEmployeeNotices, getNoticeDateTime, getNoticeEvent } from "../../utils/noticeStorage";
-import { getCurrentEmployeeNotifications, loadEmployeeNotifications, notificationEvent } from "../../utils/requestNotifications";
+import {
+  getCurrentEmployeeUnreadNotices,
+  getEmployeeNotices,
+  getNoticeDateTime,
+  getNoticeEvent,
+  loadEmployeeNotices,
+  markCurrentEmployeeNoticesRead,
+} from "../../utils/noticeStorage";
+import {
+  getCurrentEmployeeNotifications,
+  loadEmployeeNotifications,
+  markCurrentEmployeeNotificationsRead,
+  notificationEvent,
+} from "../../utils/requestNotifications";
 import EmployeePortalLayout from "./EmployeePortalLayout";
 
 function EmployeeNotifications({ activePage, onNavigate }) {
@@ -9,32 +21,52 @@ function EmployeeNotifications({ activePage, onNavigate }) {
   const [announcements, setAnnouncements] = useState(() => getEmployeeNotices());
 
   useEffect(() => {
-    const refreshNotifications = () => {
-      setEmployeeNotifications(getCurrentEmployeeNotifications());
+    const refreshAndMarkNotificationsRead = () => {
+      const notifications = getCurrentEmployeeNotifications();
+      const unreadIds = notifications
+        .filter((notification) => !notification.readAt)
+        .map((notification) => notification.id);
+
+      setEmployeeNotifications(notifications);
+
+      if (unreadIds.length > 0) {
+        markCurrentEmployeeNotificationsRead(unreadIds)
+          .then(setEmployeeNotifications)
+          .catch(() => {});
+      }
     };
 
-    loadEmployeeNotifications().then(refreshNotifications).catch(() => {});
-    window.addEventListener(notificationEvent, refreshNotifications);
-    window.addEventListener("storage", refreshNotifications);
+    loadEmployeeNotifications().then(refreshAndMarkNotificationsRead).catch(() => {});
+    window.addEventListener(notificationEvent, refreshAndMarkNotificationsRead);
+    window.addEventListener("storage", refreshAndMarkNotificationsRead);
 
     return () => {
-      window.removeEventListener(notificationEvent, refreshNotifications);
-      window.removeEventListener("storage", refreshNotifications);
+      window.removeEventListener(notificationEvent, refreshAndMarkNotificationsRead);
+      window.removeEventListener("storage", refreshAndMarkNotificationsRead);
     };
   }, []);
 
   useEffect(() => {
-    const refreshAnnouncements = () => {
-      setAnnouncements(getEmployeeNotices());
+    const refreshAndMarkAnnouncementsRead = () => {
+      const notices = getEmployeeNotices();
+      const unreadNoticeIds = getCurrentEmployeeUnreadNotices().map((notice) => notice.id);
+
+      setAnnouncements(notices);
+
+      if (unreadNoticeIds.length > 0) {
+        markCurrentEmployeeNoticesRead(unreadNoticeIds)
+          .then(setAnnouncements)
+          .catch(() => {});
+      }
     };
 
-    refreshAnnouncements();
-    window.addEventListener(getNoticeEvent(), refreshAnnouncements);
-    window.addEventListener("storage", refreshAnnouncements);
+    loadEmployeeNotices().then(refreshAndMarkAnnouncementsRead).catch(() => {});
+    window.addEventListener(getNoticeEvent(), refreshAndMarkAnnouncementsRead);
+    window.addEventListener("storage", refreshAndMarkAnnouncementsRead);
 
     return () => {
-      window.removeEventListener(getNoticeEvent(), refreshAnnouncements);
-      window.removeEventListener("storage", refreshAnnouncements);
+      window.removeEventListener(getNoticeEvent(), refreshAndMarkAnnouncementsRead);
+      window.removeEventListener("storage", refreshAndMarkAnnouncementsRead);
     };
   }, []);
 
@@ -46,7 +78,12 @@ function EmployeeNotifications({ activePage, onNavigate }) {
           <div className="announcement-list">
             {employeeNotifications.length > 0 ? (
               employeeNotifications.map((notification) => (
-                <p key={notification.id}>{notification.message}</p>
+                <p key={notification.id}>
+                  <strong>{notification.type || "Notification"}</strong>
+                  <small>{notification.date}</small>
+                  <span>{notification.message}</span>
+                  {notification.detail && <span>{notification.detail}</span>}
+                </p>
               ))
             ) : (
               <p>No employee notifications yet.</p>

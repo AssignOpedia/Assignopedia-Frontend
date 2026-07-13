@@ -1,41 +1,16 @@
-import { useEffect, useState } from "react";
+import {
+  getSearchQuery,
+  itemMatchesSearch,
+  setSearchQuery,
+  usePortalSearchQuery,
+} from "./portalSearch";
 
-const hrSearchEvent = "assignopedia-hr-search-updated";
-let hrSearchQuery = "";
+const hrSearchScope = "hr";
 
-export const getHrSearchQuery = () => hrSearchQuery;
+export { itemMatchesSearch };
 
-export const setHrSearchQuery = (query) => {
-  hrSearchQuery = query;
-  window.dispatchEvent(new CustomEvent(hrSearchEvent, { detail: query }));
-};
+export const getHrSearchQuery = () => getSearchQuery(hrSearchScope);
 
-export const itemMatchesSearch = (item, query) => {
-  const normalizedQuery = query.trim().toLowerCase();
+export const setHrSearchQuery = (query) => setSearchQuery(hrSearchScope, query);
 
-  if (!normalizedQuery) {
-    return true;
-  }
-
-  return Object.values(item)
-    .filter((value) => value !== null && value !== undefined)
-    .some((value) => String(value).toLowerCase().includes(normalizedQuery));
-};
-
-export const useHrSearchQuery = () => {
-  const [query, setQuery] = useState(getHrSearchQuery);
-
-  useEffect(() => {
-    const handleSearchUpdate = (event) => {
-      setQuery(event.detail || getHrSearchQuery());
-    };
-
-    window.addEventListener(hrSearchEvent, handleSearchUpdate);
-
-    return () => {
-      window.removeEventListener(hrSearchEvent, handleSearchUpdate);
-    };
-  }, []);
-
-  return query;
-};
+export const useHrSearchQuery = () => usePortalSearchQuery(hrSearchScope);
