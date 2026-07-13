@@ -1,9 +1,6 @@
 import { useEffect, useState } from "react";
 import {
   FaBriefcase,
-  FaChartBar,
-  FaChartLine,
-  FaChartPie,
   FaDownload,
   FaLayerGroup,
   FaLock,
@@ -19,6 +16,7 @@ import AdminPortalLayout from "./AdminPortalLayout";
 import {
   attendanceEvent,
   getAttendanceRecords,
+  getEmployeeAttendanceRecords,
   getHrAttendanceRecords,
   getRecordDisplayName,
   getRecordRole,
@@ -27,15 +25,7 @@ import {
 } from "../../utils/attendanceStorage";
 import { getPasswordResetRequests } from "../../utils/passwordResetRequests";
 import { getEmployeeEvent, getEmployees, loadEmployees } from "../../utils/organizationStorage";
-
-const dashboardCards = [
-  { label: "Total Active Employees", value: "248", trend: "+12 this month", icon: <FaUsers /> },
-  { label: "Present Today", value: "224", trend: "90.3% attendance", icon: <FaUserCheck /> },
-  { label: "Absent Today", value: "24", trend: "8 on approved leave", icon: <FaUserMinus /> },
-  { label: "Total Projects", value: "56", trend: "18 high priority", icon: <FaBriefcase /> },
-  { label: "Total Revenue", value: "$1.84M", trend: "+18.4% QoQ", icon: <FaChartLine /> },
-  { label: "Total Clients", value: "132", trend: "14 new clients", icon: <FaLayerGroup /> },
-];
+import { getPortalResource } from "../../utils/portalDataApi";
 
 const asDirectoryEmployee = (employee) => ({
   id: employee.id || employee.email || employee.name,
@@ -71,26 +61,36 @@ const getPresentHrDirectoryRows = (records) => {
     .map(asHrDirectoryEmployee);
 };
 
-const revenueBars = [
-  { month: "Apr", value: 52 },
-  { month: "May", value: 68 },
-  { month: "Jun", value: 74 },
-  { month: "Jul", value: 61 },
-  { month: "Aug", value: 86 },
-  { month: "Sep", value: 92 },
-];
-
-const clientStats = [
-  { label: "Enterprise", value: "46%", color: "#4f46e5" },
-  { label: "SMB", value: "34%", color: "#06b6d4" },
-  { label: "Startup", value: "20%", color: "#a855f7" },
-];
-
-const projects = [
+const fallbackProjects = [
   { name: "Client ERP Migration", progress: 78, due: "24 Jun", health: "On Track" },
   { name: "Assignopedia LMS", progress: 64, due: "29 Jun", health: "Review" },
   { name: "Finance Automation", progress: 91, due: "02 Jul", health: "Ahead" },
 ];
+
+const getDateTime = (value) => {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date.getTime();
+};
+
+const isDateInsideLeaveRequest = (request, dateKey) => {
+  const range = String(request.dates || request.date || "");
+
+  if (range.includes(dateKey)) {
+    return true;
+  }
+
+  const [startText, endText] = range.split(" - ").map((part) => part?.trim());
+  const target = getDateTime(`${dateKey}T00:00:00`);
+  const start = getDateTime(`${startText}T00:00:00`);
+  const end = getDateTime(`${(endText || startText)}T23:59:59`);
+
+  return target !== null && start !== null && end !== null && target >= start && target <= end;
+};
 
 const teams = [
   { name: "Engineering", score: "91%", change: "+7%" },
@@ -102,8 +102,53 @@ const teams = [
 function AdminDashboard({ activePage, onNavigate }) {
   const [employees, setEmployees] = useState(() => getEmployees().map(asDirectoryEmployee));
   const [hrRows, setHrRows] = useState(() => getPresentHrDirectoryRows(getAttendanceRecords()));
+  const [attendanceRecords, setAttendanceRecords] = useState(() => getAttendanceRecords());
+  const [projects, setProjects] = useState(fallbackProjects);
+  const [leaveRequests, setLeaveRequests] = useState([]);
   const passwordResetRequests = getPasswordResetRequests();
   const directoryRows = [...hrRows, ...employees];
+  const today = getTodayKey();
+  const employeeAttendanceToday = getEmployeeAttendanceRecords(attendanceRecords).filter((record) => record.date === today);
+  const presentToday = employeeAttendanceToday.filter((record) => record.loginTime).length;
+  const totalActiveEmployees = employees.length;
+  const absentToday = Math.max(totalActiveEmployees - presentToday, 0);
+  const attendancePercent = totalActiveEmployees ? Math.round((presentToday / totalActiveEmployees) * 100) : 0;
+  const approvedLeaveToday = leaveRequests.filter((request) => {
+    const status = String(request.status || "").toLowerCase();
+    const requesterRole = String(request.requesterRole || "employee").toLowerCase();
+
+    return requesterRole === "employee" && status === "approved" && isDateInsideLeaveRequest(request, today);
+  }).length;
+  const activeProjects = projects.filter((project) => String(project.status || "Active").toLowerCase() !== "archived");
+  const highPriorityProjects = activeProjects.filter((project) =>
+    String(project.priority || project.health || "").toLowerCase().includes("high")
+  ).length;
+  const dashboardCards = [
+    {
+      label: "Total Active Employees",
+      value: String(totalActiveEmployees),
+      trend: totalActiveEmployees ? "Synced from employee accounts" : "No registered employees yet",
+      icon: <FaUsers />,
+    },
+    {
+      label: "Present Today",
+      value: String(presentToday),
+      trend: `${attendancePercent}% attendance`,
+      icon: <FaUserCheck />,
+    },
+    {
+      label: "Absent Today",
+      value: String(absentToday),
+      trend: `${approvedLeaveToday} on approved leave`,
+      icon: <FaUserMinus />,
+    },
+    {
+      label: "Total Projects",
+      value: String(activeProjects.length),
+      trend: highPriorityProjects ? `${highPriorityProjects} high priority` : "Synced project records",
+      icon: <FaBriefcase />,
+    },
+  ];
   const rankedEmployees = [...employees]
     .filter((employee) => Number(employee.workload.replace("%", "")) > 0)
     .sort((a, b) => Number(b.workload.replace("%", "")) - Number(a.workload.replace("%", "")))
@@ -119,7 +164,7 @@ function AdminDashboard({ activePage, onNavigate }) {
   );
   const analytics = [
     { label: "Productivity", value: averagePerformance },
-    { label: "Attendance", value: 90 },
+    { label: "Attendance", value: attendancePercent },
     { label: "Task Quality", value: averageTaskCompletion },
     { label: "SLA Health", value: averageDeadlineReliability },
   ];
@@ -146,16 +191,45 @@ function AdminDashboard({ activePage, onNavigate }) {
 
   useEffect(() => {
     const refreshHrRows = () => {
-      setHrRows(getPresentHrDirectoryRows(getAttendanceRecords()));
+      const records = getAttendanceRecords();
+
+      setAttendanceRecords(records);
+      setHrRows(getPresentHrDirectoryRows(records));
     };
 
     window.addEventListener(attendanceEvent, refreshHrRows);
     window.addEventListener("storage", refreshHrRows);
-    loadAttendanceRecords().then(refreshHrRows).catch(() => {});
+    loadAttendanceRecords().then((records) => {
+      const nextRecords = Array.isArray(records) ? records : getAttendanceRecords();
+
+      setAttendanceRecords(nextRecords);
+      setHrRows(getPresentHrDirectoryRows(nextRecords));
+    }).catch(() => {});
 
     return () => {
       window.removeEventListener(attendanceEvent, refreshHrRows);
       window.removeEventListener("storage", refreshHrRows);
+    };
+  }, []);
+
+  useEffect(() => {
+    const refreshDashboardResources = () => {
+      Promise.all([
+        getPortalResource("projects", fallbackProjects),
+        getPortalResource("leaveRequests", []),
+      ]).then(([projectData, leaveData]) => {
+        setProjects(Array.isArray(projectData) ? projectData : fallbackProjects);
+        setLeaveRequests(Array.isArray(leaveData) ? leaveData : []);
+      });
+    };
+
+    refreshDashboardResources();
+    window.addEventListener("hr-leave-request-updated", refreshDashboardResources);
+    window.addEventListener("storage", refreshDashboardResources);
+
+    return () => {
+      window.removeEventListener("hr-leave-request-updated", refreshDashboardResources);
+      window.removeEventListener("storage", refreshDashboardResources);
     };
   }, []);
 
@@ -164,7 +238,7 @@ function AdminDashboard({ activePage, onNavigate }) {
       activePage={activePage}
       eyebrow="Central command center"
       title="Admin Dashboard"
-      description="Track people, revenue, clients, projects, and system health from a single operational view."
+      description="Track people, attendance, projects, and system health from a single operational view."
       onNavigate={onNavigate}
       action={(
         <button type="button">
@@ -173,7 +247,7 @@ function AdminDashboard({ activePage, onNavigate }) {
         </button>
       )}
     >
-      <section className="admin-card-grid" aria-label="Admin dashboard cards">
+      <section className="admin-card-grid admin-dashboard-card-grid" aria-label="Admin dashboard cards">
         {dashboardCards.map((card) => (
           <article className="admin-stat-card" key={card.label}>
             <div>{card.icon}</div>
@@ -184,7 +258,7 @@ function AdminDashboard({ activePage, onNavigate }) {
         ))}
       </section>
 
-      <section className="admin-content-grid">
+      <section className="admin-content-grid admin-dashboard-content-grid">
         <article className="admin-panel employee-directory">
           <div className="admin-panel-heading">
             <div>
@@ -246,49 +320,6 @@ function AdminDashboard({ activePage, onNavigate }) {
                 </span>
               </div>
             )}
-          </div>
-        </article>
-
-        <article className="admin-panel revenue-overview">
-          <div className="admin-panel-heading">
-            <div>
-              <span>Finance</span>
-              <h2>Revenue Overview</h2>
-            </div>
-            <FaChartBar />
-          </div>
-          <div className="revenue-chart">
-            {revenueBars.map((bar) => (
-              <div key={bar.month}>
-                <span style={{ height: `${bar.value}%` }} />
-                <small>{bar.month}</small>
-              </div>
-            ))}
-          </div>
-        </article>
-
-        <article className="admin-panel client-statistics">
-          <div className="admin-panel-heading">
-            <div>
-              <span>Growth</span>
-              <h2>Client Statistics</h2>
-            </div>
-            <FaChartPie />
-          </div>
-          <div className="client-stat-layout">
-            <div className="client-donut">
-              <strong>132</strong>
-              <small>Clients</small>
-            </div>
-            <div className="client-legend">
-              {clientStats.map((item) => (
-                <p key={item.label}>
-                  <i style={{ background: item.color }} />
-                  <span>{item.label}</span>
-                  <strong>{item.value}</strong>
-                </p>
-              ))}
-            </div>
           </div>
         </article>
 
@@ -390,9 +421,9 @@ function AdminDashboard({ activePage, onNavigate }) {
           </div>
           <div className="report-actions">
             <button type="button">Employee Report</button>
-            <button type="button">Revenue Report</button>
             <button type="button">Project Report</button>
-            <button type="button">Client Report</button>
+            <button type="button">Attendance Report</button>
+            <button type="button">System Report</button>
           </div>
         </article>
       </section>

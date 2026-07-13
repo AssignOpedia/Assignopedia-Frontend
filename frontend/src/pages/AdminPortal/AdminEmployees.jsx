@@ -13,6 +13,7 @@ import {
 } from "../../utils/attendanceStorage";
 import { getEmployeeEvent, getEmployees, loadEmployees } from "../../utils/organizationStorage";
 import AdminPortalLayout from "./AdminPortalLayout";
+import AdminRequestReview from "./AdminRequestReview";
 
 const asAdminEmployee = (employee) => ({
   id: employee.id || employee.email || employee.name,
@@ -185,6 +186,12 @@ function AdminEmployees({ activePage, onNavigate }) {
             )}
           </div>
         </article>
+
+        <AdminRequestReview
+          requesterRole="employee"
+          eyebrow="Employee Requests"
+          title="Employee Leave and WFH Requests"
+        />
       </section>
     </AdminPortalLayout>
   );

@@ -1299,7 +1299,16 @@ collectionRoute({ path: "/system-events", storeName: "systemEvents", fallback: d
 
 router.patch("/leave-requests/:id/decision", asyncRoute(async (req, res) => {
   required(req.body, ["status"]);
-  const decisionDate = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  const approverRole = normalizeEmail(req.body.approverRole || "hr");
+  const decidedBy = req.body.decidedBy || (approverRole === "admin" ? "Admin" : "HR");
+  const decisionComment = req.body.decisionComment || "";
+  const decisionDate = new Date().toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
   let request = null;
   const requests = await store.update("leaveRequests", defaults.leaveRequests, (current) =>
     current.map((item) => {
@@ -1307,25 +1316,53 @@ router.patch("/leave-requests/:id/decision", asyncRoute(async (req, res) => {
         return item;
       }
 
-      request = { ...item, status: req.body.status, decisionDate, updatedAt: nowIso() };
+      if (normalizeEmail(item.requesterRole || "employee") === "hr" && approverRole !== "admin") {
+        return item;
+      }
+
+      request = {
+        ...item,
+        status: req.body.status,
+        approverRole,
+        decidedBy,
+        decisionComment,
+        decisionDate,
+        decisionDateTime: nowIso(),
+        updatedAt: nowIso(),
+      };
       return request;
     })
   );
 
   if (!request) {
+    const existingRequests = await store.read("leaveRequests", defaults.leaveRequests);
+    const existingRequest = existingRequests.find((item) => item.id === req.params.id);
+
+    if (existingRequest && normalizeEmail(existingRequest.requesterRole || "employee") === "hr" && approverRole !== "admin") {
+      throw createError(403, "Only Admin can approve or reject HR leave requests.");
+    }
+
     throw createError(404, "Leave request not found");
   }
 
   if (request.email) {
-    await store.update("employeeNotifications", defaults.employeeNotifications, (current) => [
+    const notificationStore = normalizeEmail(request.requesterRole || "employee") === "hr"
+      ? "hrNotifications"
+      : "employeeNotifications";
+    const notificationFallback = notificationStore === "hrNotifications"
+      ? defaults.hrNotifications
+      : defaults.employeeNotifications;
+
+    await store.update(notificationStore, notificationFallback, (current) => [
       {
         id: makeId("notification"),
         type: "Leave",
         employeeEmail: request.email,
+        hrEmail: request.email,
         status: request.status,
         detail: `${request.type} for ${request.dates || request.date || ""}`,
         date: decisionDate,
-        message: `Your Leave request was ${request.status.toLowerCase()} by HR on ${decisionDate}.`,
+        message: `Your Leave request was ${request.status.toLowerCase()} by ${decidedBy} on ${decisionDate}.`,
       },
       ...current,
     ]);
@@ -1336,7 +1373,16 @@ router.patch("/leave-requests/:id/decision", asyncRoute(async (req, res) => {
 
 router.patch("/wfh-requests/:id/decision", asyncRoute(async (req, res) => {
   required(req.body, ["status"]);
-  const decisionDate = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  const approverRole = normalizeEmail(req.body.approverRole || "hr");
+  const decidedBy = req.body.decidedBy || (approverRole === "admin" ? "Admin" : "HR");
+  const decisionComment = req.body.decisionComment || "";
+  const decisionDate = new Date().toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
   let request = null;
   const requests = await store.update("wfhRequests", defaults.wfhRequests, (current) =>
     current.map((item) => {
@@ -1344,25 +1390,53 @@ router.patch("/wfh-requests/:id/decision", asyncRoute(async (req, res) => {
         return item;
       }
 
-      request = { ...item, status: req.body.status, decisionDate, updatedAt: nowIso() };
+      if (normalizeEmail(item.requesterRole || "employee") === "hr" && approverRole !== "admin") {
+        return item;
+      }
+
+      request = {
+        ...item,
+        status: req.body.status,
+        approverRole,
+        decidedBy,
+        decisionComment,
+        decisionDate,
+        decisionDateTime: nowIso(),
+        updatedAt: nowIso(),
+      };
       return request;
     })
   );
 
   if (!request) {
+    const existingRequests = await store.read("wfhRequests", defaults.wfhRequests);
+    const existingRequest = existingRequests.find((item) => item.id === req.params.id);
+
+    if (existingRequest && normalizeEmail(existingRequest.requesterRole || "employee") === "hr" && approverRole !== "admin") {
+      throw createError(403, "Only Admin can approve or reject HR WFH requests.");
+    }
+
     throw createError(404, "WFH request not found");
   }
 
   if (request.email) {
-    await store.update("employeeNotifications", defaults.employeeNotifications, (current) => [
+    const notificationStore = normalizeEmail(request.requesterRole || "employee") === "hr"
+      ? "hrNotifications"
+      : "employeeNotifications";
+    const notificationFallback = notificationStore === "hrNotifications"
+      ? defaults.hrNotifications
+      : defaults.employeeNotifications;
+
+    await store.update(notificationStore, notificationFallback, (current) => [
       {
         id: makeId("notification"),
         type: "WFH",
         employeeEmail: request.email,
+        hrEmail: request.email,
         status: request.status,
         detail: `${request.task || "WFH"} on ${request.date || ""}`,
         date: decisionDate,
-        message: `Your WFH request was ${request.status.toLowerCase()} by HR on ${decisionDate}.`,
+        message: `Your WFH request was ${request.status.toLowerCase()} by ${decidedBy} on ${decisionDate}.`,
       },
       ...current,
     ]);

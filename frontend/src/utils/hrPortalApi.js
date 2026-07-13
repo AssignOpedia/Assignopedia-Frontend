@@ -34,10 +34,10 @@ export const createLeaveRequestRemote = (request) =>
     body: JSON.stringify(request),
   });
 
-export const decideLeaveRequestRemote = (id, status) =>
+export const decideLeaveRequestRemote = (id, status, details = {}) =>
   requestJson(`/leave-requests/${id}/decision`, {
     method: "PATCH",
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ status, ...details }),
   });
 
 export const getWfhRequestsRemote = () => requestJson("/wfh-requests");
@@ -72,10 +72,10 @@ export const updateWfhRequestRemote = (id, request) =>
     body: JSON.stringify(request),
   });
 
-export const decideWfhRequestRemote = (id, status) =>
+export const decideWfhRequestRemote = (id, status, details = {}) =>
   requestJson(`/wfh-requests/${id}/decision`, {
     method: "PATCH",
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ status, ...details }),
   });
 
 export const getAttendanceRemote = () => requestJson("/attendance");

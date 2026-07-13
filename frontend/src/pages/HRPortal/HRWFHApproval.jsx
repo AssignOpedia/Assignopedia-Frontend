@@ -67,7 +67,10 @@ function HRWFHApproval({ activePage, onNavigate }) {
   const [fileActionStatus, setFileActionStatus] = useState("");
   const [isRepairingFile, setIsRepairingFile] = useState(false);
   const searchQuery = useHrSearchQuery();
-  const filteredRequests = allRequests.filter((request) => itemMatchesSearch(request, searchQuery));
+  const employeeRequests = allRequests.filter((request) =>
+    String(request.requesterRole || "employee").toLowerCase() === "employee"
+  );
+  const filteredRequests = employeeRequests.filter((request) => itemMatchesSearch(request, searchQuery));
 
   useEffect(() => {
     const refreshRequests = () => {
@@ -100,7 +103,10 @@ function HRWFHApproval({ activePage, onNavigate }) {
       return;
     }
 
-    const response = await decideWfhRequestRemote(request.id, status).catch((error) => {
+    const response = await decideWfhRequestRemote(request.id, status, {
+      approverRole: "hr",
+      decidedBy: "HR",
+    }).catch((error) => {
       setFileActionStatus(error.message || "Could not update this WFH request.");
       return null;
     });

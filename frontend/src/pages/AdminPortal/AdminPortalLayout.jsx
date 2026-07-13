@@ -14,7 +14,6 @@ import {
   FaSignInAlt,
   FaSignOutAlt,
   FaUsers,
-  FaWallet,
 } from "react-icons/fa";
 import "./AdminDashboard.css";
 import { clearCurrentUser, getCurrentUser } from "../../utils/authStorage";
@@ -28,7 +27,6 @@ const sidebarItems = [
   { label: "Employee Management", icon: <FaUsers />, page: "admin-employees" },
   { label: "HR Management", icon: <FaSignInAlt />, page: "admin-hr-login-logout" },
   { label: "Project Management", icon: <FaProjectDiagram />, page: "admin-projects" },
-  { label: "Revenue Tracking", icon: <FaWallet />, page: "admin-revenue" },
   { label: "Reports", icon: <FaFileAlt />, page: "admin-reports" },
   { label: "Blog Post", icon: <FaPenNib />, page: "admin-blog-posts" },
   { label: "Settings", icon: <FaCog />, page: "admin-settings" },

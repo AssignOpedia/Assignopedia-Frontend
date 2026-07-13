@@ -9,6 +9,7 @@ import {
   FaHome,
   FaIdBadge,
   FaLaptopHouse,
+  FaPlaneDeparture,
   FaSearch,
   FaSignInAlt,
   FaSignOutAlt,
@@ -23,6 +24,7 @@ import { getHrSearchQuery, setHrSearchQuery } from "../../utils/hrSearch";
 
 const sidebarItems = [
   { label: "Dashboard", icon: <FaHome />, page: "hr-dashboard" },
+  { label: "Leave / WFH", icon: <FaPlaneDeparture />, page: "hr-leave-wfh" },
   { label: "Leave Approval", icon: <FaCalendarCheck />, page: "hr-leave-approval" },
   { label: "WFH Approval", icon: <FaLaptopHouse />, page: "hr-wfh-approval" },
   { label: "Attendance Checking", icon: <FaClipboardList />, page: "hr-attendance-checking" },

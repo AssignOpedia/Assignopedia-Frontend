@@ -15,7 +15,6 @@ import AdminEmployees from "./pages/AdminPortal/AdminEmployees";
 import AdminHRLoginLogout from "./pages/AdminPortal/AdminHRLoginLogout";
 import AdminProjects from "./pages/AdminPortal/AdminProjects";
 import AdminReports from "./pages/AdminPortal/AdminReports";
-import AdminRevenue from "./pages/AdminPortal/AdminRevenue";
 import AdminBlogPosts from "./pages/AdminPortal/AdminBlogPosts";
 import AdminSettings from "./pages/AdminPortal/AdminSettings";
 import AdminSystem from "./pages/AdminPortal/AdminSystem";
@@ -23,6 +22,7 @@ import HRAttendanceChecking from "./pages/HRPortal/HRAttendanceChecking";
 import HRCVAccess from "./pages/HRPortal/HRCVAccess";
 import HRDashboard from "./pages/HRPortal/HRDashboard";
 import HREmployeeID from "./pages/HRPortal/HREmployeeID";
+import HRLeaveWFHRequest from "./pages/HRPortal/HRLeaveWFHRequest";
 import HRLoginLogout from "./pages/HRPortal/HRLoginLogout";
 import HRLeaveApproval from "./pages/HRPortal/HRLeaveApproval";
 import HRNoticeBoard from "./pages/HRPortal/HRNoticeBoard";
@@ -52,6 +52,7 @@ const employeePages = [
 
 const hrPages = [
   "hr-dashboard",
+  "hr-leave-wfh",
   "hr-leave-approval",
   "hr-wfh-approval",
   "hr-attendance-checking",
@@ -68,7 +69,6 @@ const adminPages = [
   "admin-employees",
   "admin-hr-login-logout",
   "admin-projects",
-  "admin-revenue",
   "admin-reports",
   "admin-blog-posts",
   "admin-settings",
@@ -171,10 +171,6 @@ function App() {
       return <AdminProjects activePage={activePage} onNavigate={handleNavigate} />;
     }
 
-    if (activePage === "admin-revenue") {
-      return <AdminRevenue activePage={activePage} onNavigate={handleNavigate} />;
-    }
-
     if (activePage === "admin-reports") {
       return <AdminReports activePage={activePage} onNavigate={handleNavigate} />;
     }
@@ -193,6 +189,10 @@ function App() {
 
     if (activePage === "hr-dashboard") {
       return <HRDashboard activePage={activePage} onNavigate={handleNavigate} />;
+    }
+
+    if (activePage === "hr-leave-wfh") {
+      return <HRLeaveWFHRequest activePage={activePage} onNavigate={handleNavigate} />;
     }
 
     if (activePage === "hr-leave-approval") {

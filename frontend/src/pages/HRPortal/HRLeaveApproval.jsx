@@ -44,7 +44,10 @@ function HRLeaveApproval({ activePage, onNavigate }) {
   const [allLeaveRequests, setAllLeaveRequests] = useState(() => getStoredLeaveRequests());
   const [fileActionStatus, setFileActionStatus] = useState("");
   const searchQuery = useHrSearchQuery();
-  const filteredLeaveRequests = allLeaveRequests.filter((request) =>
+  const employeeLeaveRequests = allLeaveRequests.filter((request) =>
+    String(request.requesterRole || "employee").toLowerCase() === "employee"
+  );
+  const filteredLeaveRequests = employeeLeaveRequests.filter((request) =>
     itemMatchesSearch(request, searchQuery)
   );
 
@@ -79,7 +82,10 @@ function HRLeaveApproval({ activePage, onNavigate }) {
       return;
     }
 
-    const response = await decideLeaveRequestRemote(request.id, status).catch((error) => {
+    const response = await decideLeaveRequestRemote(request.id, status, {
+      approverRole: "hr",
+      decidedBy: "HR",
+    }).catch((error) => {
       setFileActionStatus(error.message || "Could not update this leave request.");
       return null;
     });

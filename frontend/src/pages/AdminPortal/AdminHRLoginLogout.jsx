@@ -12,6 +12,7 @@ import {
   loadAttendanceRecords,
 } from "../../utils/attendanceStorage";
 import AdminPortalLayout from "./AdminPortalLayout";
+import AdminRequestReview from "./AdminRequestReview";
 
 const sortRecords = (records) =>
   [...records].sort((a, b) =>
@@ -80,6 +81,14 @@ function AdminHRLoginLogout({ activePage, onNavigate }) {
           )}
         </div>
       </article>
+
+      <section className="admin-content-grid">
+        <AdminRequestReview
+          requesterRole="hr"
+          eyebrow="HR Requests"
+          title="HR Leave and WFH Requests"
+        />
+      </section>
     </AdminPortalLayout>
   );
 }

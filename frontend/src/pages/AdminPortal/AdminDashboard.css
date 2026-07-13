@@ -355,6 +355,17 @@
   margin-bottom: 18px;
 }
 
+.admin-dashboard-card-grid {
+  grid-template-columns: repeat(4, minmax(190px, 1fr));
+  max-width: 1120px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.admin-dashboard-card-grid .admin-stat-card {
+  min-height: 168px;
+}
+
 .compact-grid {
   grid-template-columns: repeat(4, minmax(180px, 1fr));
 }
@@ -413,6 +424,13 @@
   gap: 18px;
 }
 
+.admin-dashboard-content-grid {
+  align-items: stretch;
+  max-width: 1180px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
 .admin-panel {
   padding: 20px;
   min-height: 260px;
@@ -458,6 +476,42 @@
 .client-statistics,
 .quick-report-generation {
   grid-column: span 3;
+}
+
+.admin-dashboard-content-grid .employee-directory {
+  grid-column: span 6;
+}
+
+.admin-dashboard-content-grid .employee-analytics,
+.admin-dashboard-content-grid .project-monitoring,
+.admin-dashboard-content-grid .performance-rankings {
+  grid-column: span 4;
+}
+
+.admin-dashboard-content-grid .team-comparison,
+.admin-dashboard-content-grid .quick-report-generation {
+  grid-column: span 6;
+}
+
+.admin-dashboard-content-grid .admin-panel {
+  min-height: 286px;
+}
+
+.admin-dashboard-content-grid .employee-analytics,
+.admin-dashboard-content-grid .project-monitoring,
+.admin-dashboard-content-grid .performance-rankings,
+.admin-dashboard-content-grid .team-comparison,
+.admin-dashboard-content-grid .quick-report-generation {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-dashboard-content-grid .analytics-list,
+.admin-dashboard-content-grid .project-list,
+.admin-dashboard-content-grid .ranking-list,
+.admin-dashboard-content-grid .team-grid,
+.admin-dashboard-content-grid .report-actions {
+  flex: 1;
 }
 
 .employee-table,
@@ -1619,6 +1673,196 @@
   opacity: 0.72;
 }
 
+.admin-request-review-panel {
+  grid-column: 1 / -1;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top right, rgba(37, 99, 235, 0.16), transparent 30%),
+    radial-gradient(circle at bottom left, rgba(168, 85, 247, 0.12), transparent 28%),
+    linear-gradient(135deg, #ffffff, #f8fbff 48%, #eef6ff);
+}
+
+.admin-request-review-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.08);
+}
+
+.admin-request-list {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 14px;
+  max-height: 560px;
+  overflow-y: auto;
+  padding-right: 4px;
+  overscroll-behavior: contain;
+}
+
+.admin-request-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 8px;
+  background:
+    linear-gradient(#fff, #fff) padding-box,
+    linear-gradient(135deg, rgba(37, 99, 235, 0.36), rgba(168, 85, 247, 0.28), rgba(6, 182, 212, 0.28)) border-box;
+  border: 1px solid transparent;
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
+}
+
+.admin-request-card header,
+.admin-request-file-actions,
+.admin-request-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-request-card header {
+  justify-content: space-between;
+  padding: 12px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #eef2ff, #e0f2fe);
+}
+
+.admin-request-card header span,
+.admin-request-comment span {
+  color: #2563eb;
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.admin-request-card h3 {
+  margin: 4px 0;
+  color: #0f172a;
+  font-size: 1rem;
+}
+
+.admin-request-card header > svg {
+  width: 42px;
+  height: 42px;
+  padding: 10px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #2563eb, #8b5cf6);
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.24);
+}
+
+.admin-request-card small,
+.admin-request-meta span {
+  color: #64748b;
+}
+
+.admin-request-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.admin-request-meta p,
+.admin-request-reason,
+.admin-request-decision {
+  margin: 0;
+  padding: 10px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #ffffff, #f8fafc);
+  border: 1px solid #e2e8f0;
+}
+
+.admin-request-meta strong,
+.admin-request-meta span {
+  display: block;
+}
+
+.admin-request-meta strong {
+  color: #1e3a8a;
+}
+
+.admin-request-reason,
+.admin-request-decision {
+  color: #475569;
+  line-height: 1.5;
+}
+
+.admin-request-decision {
+  background: #ecfdf5;
+  border-color: #bbf7d0;
+  color: #166534;
+  font-weight: 800;
+}
+
+.admin-request-file-actions {
+  flex-wrap: wrap;
+  padding: 10px;
+  border-radius: 8px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+}
+
+.admin-request-file-actions span {
+  margin-right: auto;
+  color: #0f172a;
+  font-weight: 900;
+}
+
+.admin-request-file-actions a,
+.admin-request-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font: inherit;
+  font-weight: 900;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.admin-request-comment {
+  display: grid;
+  gap: 7px;
+}
+
+.admin-request-comment textarea {
+  width: 100%;
+  min-height: 82px;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0f172a;
+  font: inherit;
+  resize: vertical;
+}
+
+.admin-request-actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.admin-request-actions button {
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.22);
+}
+
+.admin-request-actions button.danger {
+  background: linear-gradient(135deg, #fee2e2, #fecaca);
+  color: #b91c1c;
+  box-shadow: none;
+}
+
 @keyframes adminProjectOverlayIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -1668,6 +1912,11 @@
     grid-template-columns: repeat(3, minmax(180px, 1fr));
   }
 
+  .admin-dashboard-card-grid {
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+    max-width: 760px;
+  }
+
   .employee-directory,
   .project-monitoring,
   .revenue-overview,
@@ -1684,6 +1933,15 @@
   .report-card,
   .client-statistics,
   .quick-report-generation {
+    grid-column: span 6;
+  }
+
+  .admin-dashboard-content-grid .employee-directory,
+  .admin-dashboard-content-grid .employee-analytics,
+  .admin-dashboard-content-grid .project-monitoring,
+  .admin-dashboard-content-grid .performance-rankings,
+  .admin-dashboard-content-grid .team-comparison,
+  .admin-dashboard-content-grid .quick-report-generation {
     grid-column: span 6;
   }
 }
@@ -1730,6 +1988,11 @@
     grid-template-columns: 1fr;
   }
 
+  .admin-dashboard-card-grid,
+  .admin-dashboard-content-grid {
+    max-width: none;
+  }
+
   .admin-table-head {
     display: none;
   }
@@ -1755,6 +2018,15 @@
   .report-card,
   .client-statistics,
   .quick-report-generation {
+    grid-column: 1 / -1;
+  }
+
+  .admin-dashboard-content-grid .employee-directory,
+  .admin-dashboard-content-grid .employee-analytics,
+  .admin-dashboard-content-grid .project-monitoring,
+  .admin-dashboard-content-grid .performance-rankings,
+  .admin-dashboard-content-grid .team-comparison,
+  .admin-dashboard-content-grid .quick-report-generation {
     grid-column: 1 / -1;
   }
 
