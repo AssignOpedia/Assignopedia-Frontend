@@ -26,7 +26,12 @@ const getDocumentUrl = (request, requestType, options = {}) => {
     : getWfhRequestDocumentUrl(request.id, options);
 };
 
-function AdminRequestReview({ requesterRole = "employee", title = "Leave and WFH Requests", eyebrow = "Requests" }) {
+function AdminRequestReview({
+  requesterRole = "employee",
+  title = "Leave and WFH Requests",
+  eyebrow = "Requests",
+  requestTypes = ["leave", "wfh"],
+}) {
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [wfhRequests, setWfhRequests] = useState([]);
   const [decisionComments, setDecisionComments] = useState({});
@@ -60,8 +65,8 @@ function AdminRequestReview({ requesterRole = "employee", title = "Leave and WFH
   }, [refreshRequests]);
 
   const requests = [
-    ...leaveRequests.map((request) => ({ ...request, requestType: "leave" })),
-    ...wfhRequests.map((request) => ({ ...request, requestType: "wfh" })),
+    ...(requestTypes.includes("leave") ? leaveRequests.map((request) => ({ ...request, requestType: "leave" })) : []),
+    ...(requestTypes.includes("wfh") ? wfhRequests.map((request) => ({ ...request, requestType: "wfh" })) : []),
   ]
     .filter((request) => itemMatchesSearch(request, searchQuery))
     .sort((a, b) =>
@@ -69,6 +74,9 @@ function AdminRequestReview({ requesterRole = "employee", title = "Leave and WFH
         String(a.createdAt || a.requestDate || a.date || a.dates || "")
       )
     );
+  const emptyRequestLabel = requestTypes.length === 1 && requestTypes[0] === "leave"
+    ? "leave requests"
+    : "Leave or WFH requests";
 
   const updateDecision = async (request, status) => {
     if (!request.id) {
@@ -168,7 +176,7 @@ function AdminRequestReview({ requesterRole = "employee", title = "Leave and WFH
             </section>
           );
         }) : (
-          <p className="admin-empty-state">No {requesterRole === "hr" ? "HR" : "employee"} Leave or WFH requests found.</p>
+          <p className="admin-empty-state">No {requesterRole === "hr" ? "HR" : "employee"} {emptyRequestLabel} found.</p>
         )}
       </div>
     </article>

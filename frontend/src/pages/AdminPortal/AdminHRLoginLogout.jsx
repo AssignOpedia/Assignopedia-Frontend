@@ -86,7 +86,8 @@ function AdminHRLoginLogout({ activePage, onNavigate }) {
         <AdminRequestReview
           requesterRole="hr"
           eyebrow="HR Requests"
-          title="HR Leave and WFH Requests"
+          title="HR Leave Requests"
+          requestTypes={["leave"]}
         />
       </section>
     </AdminPortalLayout>
