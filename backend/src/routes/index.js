@@ -568,6 +568,18 @@ const completeProjectFromSubmission = async (submission) => {
         ...project,
         status: "Completed",
         progress: 100,
+        assignments: (Array.isArray(project.assignments) ? project.assignments : []).map((assignment) =>
+          normalizeEmail(assignment.email) === normalizeEmail(submission.employeeEmail)
+            ? {
+                ...assignment,
+                status: "Completed",
+                submissionStatus: "Completed",
+                submittedAt: completedAt,
+                submissionId: submission.id,
+                updatedAt: nowIso(),
+              }
+            : assignment
+        ),
         completedAt,
         deliveredAt: completedAt,
         lastSubmissionId: submission.id,
@@ -615,11 +627,33 @@ const completeProjectsFromSubmissions = async () => {
 
     const latestSubmission = matchingSubmissions[0];
     const completedAt = latestSubmission.submittedAt || latestSubmission.createdAt || nowIso();
+    const completedSubmissionByEmail = new Map(
+      matchingSubmissions.map((submission) => [normalizeEmail(submission.employeeEmail), submission])
+    );
+    const nextAssignments = (Array.isArray(project.assignments) ? project.assignments : []).map((assignment) => {
+      const assignmentSubmission = completedSubmissionByEmail.get(normalizeEmail(assignment.email));
+
+      if (!assignmentSubmission) {
+        return assignment.status || assignment.submissionStatus
+          ? assignment
+          : { ...assignment, status: "Pending", submissionStatus: "Pending" };
+      }
+
+      return {
+        ...assignment,
+        status: "Completed",
+        submissionStatus: "Completed",
+        submittedAt: assignmentSubmission.submittedAt || assignmentSubmission.createdAt || completedAt,
+        submissionId: assignmentSubmission.id,
+        updatedAt: nowIso(),
+      };
+    });
     const alreadyCompleted =
       project.status === "Completed" &&
       Number(project.progress || 0) === 100 &&
       project.deliveredAt &&
-      project.lastSubmissionId === latestSubmission.id;
+      project.lastSubmissionId === latestSubmission.id &&
+      JSON.stringify(project.assignments || []) === JSON.stringify(nextAssignments);
 
     if (alreadyCompleted) {
       return project;
@@ -631,6 +665,7 @@ const completeProjectsFromSubmissions = async () => {
       ...project,
       status: "Completed",
       progress: 100,
+      assignments: nextAssignments,
       completedAt: project.completedAt || completedAt,
       deliveredAt: project.deliveredAt || completedAt,
       lastSubmissionId: latestSubmission.id,

@@ -10,14 +10,16 @@ import {
   FaRegCalendarAlt,
   FaSitemap,
 } from "react-icons/fa";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import EmployeePortalLayout from "./EmployeePortalLayout";
 import { useEmployeeProfileImage } from "./useEmployeeProfileImage";
 import { getEmployeeDashboardMetrics } from "../../utils/employeeDashboardMetrics";
 import { getEmployeeNotices, getNoticeDateTime, getNoticeEvent } from "../../utils/noticeStorage";
 import { getInitialsFromProfile, getPortalProfile, profileEvent } from "../../utils/profileStorage";
-import { currentUserEvent } from "../../utils/authStorage";
+import { currentUserEvent, getCurrentUser } from "../../utils/authStorage";
 import { getEmployeeEvent, loadEmployees } from "../../utils/organizationStorage";
+import { getPortalResource } from "../../utils/portalDataApi";
+import { loadTaskSubmissions } from "../../utils/taskSubmissionApi";
 
 const projects = [
   { name: "Client Research Portal", progress: 82, status: "In Review" },
@@ -25,20 +27,70 @@ const projects = [
   { name: "Content Quality Audit", progress: 91, status: "Final Checks" },
 ];
 
-const tasks = [
-  { title: "Submit weekly research summary", due: "Today, 4:00 PM" },
-  { title: "Review assignment brief updates", due: "Tomorrow, 11:30 AM" },
-  { title: "Update project tracker notes", due: "Friday, 2:00 PM" },
-];
+const normalizeEmail = (value) => String(value || "").trim().toLowerCase();
+
+const getProjectTitle = (project) => project.title || project.name || "Untitled Project";
+
+const getAssignments = (project) => (Array.isArray(project.assignments) ? project.assignments : []);
+
+const getProjectDeadline = (project) => project.deadlineDateTime || project.deadline || "";
+
+const formatTaskDue = (value) => {
+  if (!value) {
+    return "No deadline set";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+
+  return date.toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
+
+const hasEmployeeSubmission = (submissions, projectId, employeeEmail) =>
+  (Array.isArray(submissions) ? submissions : []).some(
+    (submission) =>
+      String(submission.projectId || "") === String(projectId) &&
+      normalizeEmail(submission.employeeEmail) === normalizeEmail(employeeEmail)
+  );
 
 function EmployeeDashboard({ activePage, onNavigate }) {
   const [showWorkReport, setShowWorkReport] = useState(false);
   const [announcements, setAnnouncements] = useState(() => getEmployeeNotices());
   const [profile, setProfile] = useState(() => getPortalProfile("employee"));
+  const [assignedProjectTasks, setAssignedProjectTasks] = useState([]);
+  const [taskSubmissions, setTaskSubmissions] = useState([]);
   const profileImage = useEmployeeProfileImage();
   const dashboardMetrics = getEmployeeDashboardMetrics();
+  const currentUser = getCurrentUser();
+  const currentEmail = normalizeEmail(currentUser.email);
   const employeeName = profile.name || "Employee";
   const employeeInitials = getInitialsFromProfile(profile);
+  const pendingTasks = useMemo(
+    () =>
+      assignedProjectTasks
+        .filter((project) => !hasEmployeeSubmission(taskSubmissions, project.id || getProjectTitle(project), currentEmail))
+        .map((project) => {
+          const assignment = getAssignments(project).find((item) => normalizeEmail(item.email) === currentEmail);
+
+          return {
+            id: project.id || getProjectTitle(project),
+            title: getProjectTitle(project),
+            due: formatTaskDue(getProjectDeadline(project)),
+            priority: assignment?.submissionStatus || assignment?.status || "Pending",
+          };
+        }),
+    [assignedProjectTasks, currentEmail, taskSubmissions]
+  );
   const attendanceCards = [
     { label: "Today's Login", value: dashboardMetrics.cards.todayLogin, note: dashboardMetrics.notes.todayLogin, icon: <FaClock /> },
     { label: "Logout Attendance", value: dashboardMetrics.cards.logoutAttendance, note: dashboardMetrics.notes.logoutAttendance, icon: <FaRegCalendarAlt /> },
@@ -73,6 +125,35 @@ function EmployeeDashboard({ activePage, onNavigate }) {
       window.removeEventListener("storage", refreshProfile);
     };
   }, []);
+
+  useEffect(() => {
+    const loadPendingTasks = async () => {
+      const [projectData, submissionData] = await Promise.all([
+        getPortalResource("projects", []),
+        loadTaskSubmissions(),
+      ]);
+      const employeeProjects = (Array.isArray(projectData) ? projectData : []).filter((project) =>
+        getAssignments(project).some((assignment) => normalizeEmail(assignment.email) === currentEmail)
+      );
+
+      setAssignedProjectTasks(employeeProjects);
+      setTaskSubmissions(Array.isArray(submissionData) ? submissionData : []);
+    };
+
+    loadPendingTasks().catch(() => {});
+    const refreshInterval = window.setInterval(() => {
+      loadPendingTasks().catch(() => {});
+    }, 5000);
+    const refreshOnFocus = () => {
+      loadPendingTasks().catch(() => {});
+    };
+
+    window.addEventListener("focus", refreshOnFocus);
+    return () => {
+      window.clearInterval(refreshInterval);
+      window.removeEventListener("focus", refreshOnFocus);
+    };
+  }, [currentEmail]);
 
   return (
     <EmployeePortalLayout
@@ -217,15 +298,17 @@ function EmployeeDashboard({ activePage, onNavigate }) {
             </div>
           </div>
           <div className="task-list">
-            {tasks.map((task) => (
-              <div className="task-row" key={task.title}>
+            {pendingTasks.length ? pendingTasks.map((task) => (
+              <button className="task-row" type="button" key={task.id} onClick={() => onNavigate("employee-tasks")}>
                 <FaCheckCircle />
                 <div>
                   <strong>{task.title}</strong>
-                  <small>{task.due}</small>
+                  <small>{task.due} - {task.priority}</small>
                 </div>
-              </div>
-            ))}
+              </button>
+            )) : (
+              <p className="employee-project-empty">No pending tasks assigned yet.</p>
+            )}
           </div>
         </article>
 

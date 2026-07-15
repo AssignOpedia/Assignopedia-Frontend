@@ -36,12 +36,7 @@ const projects = [
   { id: "project-1", name: "Client ERP Migration", owner: "Ananya Sen", status: "Active", progress: 78, deadline: "24 Jun" },
 ];
 
-const tasks = [
-  { id: "task-1", title: "Submit weekly research summary", due: "Today, 4:00 PM", priority: "High", status: "Pending" },
-  { id: "task-2", title: "Review assignment brief updates", due: "Tomorrow, 11:30 AM", priority: "Medium", status: "Pending" },
-  { id: "task-3", title: "Update project tracker notes", due: "Friday, 2:00 PM", priority: "Medium", status: "Pending" },
-  { id: "task-4", title: "Prepare frontend glossary draft", due: "Monday, 10:00 AM", priority: "Low", status: "Pending" },
-];
+const tasks = [];
 
 const revenue = [
   { id: "revenue-jan", month: "Jan", value: "$210K", height: 48 },

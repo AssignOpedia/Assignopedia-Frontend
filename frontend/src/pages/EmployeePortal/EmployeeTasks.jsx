@@ -6,13 +6,6 @@ import { getPortalResource } from "../../utils/portalDataApi";
 import { loadTaskSubmissions, submitCompletedTaskFiles } from "../../utils/taskSubmissionApi";
 import EmployeePortalLayout from "./EmployeePortalLayout";
 
-const fallbackTasks = [
-  { title: "Submit weekly research summary", due: "Today, 4:00 PM", priority: "High" },
-  { title: "Review assignment brief updates", due: "Tomorrow, 11:30 AM", priority: "Medium" },
-  { title: "Update project tracker notes", due: "Friday, 2:00 PM", priority: "Medium" },
-  { title: "Prepare frontend glossary draft", due: "Monday, 10:00 AM", priority: "Low" },
-];
-
 const normalizeEmail = (value) => String(value || "").trim().toLowerCase();
 
 const getProjectTitle = (project) => project.title || project.name || "Untitled Project";
@@ -27,6 +20,15 @@ const getProjectDeadline = (project) => project.deadlineDateTime || project.dead
 
 const getProjectElementId = (projectId) =>
   `employee-project-${String(projectId || "").replace(/[^a-z0-9_-]+/gi, "-")}`;
+
+const getEmployeeProjectSubmission = (submissions, projectId, employeeEmail) =>
+  submissions
+    .filter(
+      (submission) =>
+        String(submission.projectId || "") === String(projectId) &&
+        normalizeEmail(submission.employeeEmail) === normalizeEmail(employeeEmail)
+    )
+    .sort((a, b) => new Date(b.submittedAt || b.createdAt || 0) - new Date(a.submittedAt || a.createdAt || 0))[0] || null;
 
 const formatAllocationDateTime = (value) => {
   if (!value) {
@@ -108,7 +110,6 @@ const downloadProjectDoc = (project, currentAssignment) => {
 };
 
 function EmployeeTasks({ activePage, onNavigate }) {
-  const [tasks, setTasks] = useState(fallbackTasks);
   const [projects, setProjects] = useState([]);
   const [submissions, setSubmissions] = useState([]);
   const [selectedSubmissionFiles, setSelectedSubmissionFiles] = useState({});
@@ -126,12 +127,29 @@ function EmployeeTasks({ activePage, onNavigate }) {
       ),
     [currentEmail, projects]
   );
+  const pendingTasks = useMemo(
+    () =>
+      assignedProjects
+        .map((project) => {
+          const projectId = project.id || getProjectTitle(project);
+          const assignment = getAssignments(project).find((item) => normalizeEmail(item.email) === currentEmail);
+          const submission = getEmployeeProjectSubmission(submissions, projectId, currentEmail);
+
+          return {
+            id: projectId,
+            title: getProjectTitle(project),
+            due: formatAllocationDateTime(getProjectDeadline(project)),
+            priority: project.priority || "Pending",
+            project,
+            assignment,
+            submission,
+          };
+        })
+        .filter((task) => !task.submission),
+    [assignedProjects, currentEmail, submissions]
+  );
 
   useEffect(() => {
-    getPortalResource("tasks", fallbackTasks).then((data) => {
-      setTasks(Array.isArray(data) && data.length ? data : fallbackTasks);
-    });
-
     getPortalResource("projects", []).then((data) => {
       setProjects(Array.isArray(data) ? data : []);
     }).catch(() => setStatusMessage("Could not load assigned projects."));
@@ -215,7 +233,7 @@ function EmployeeTasks({ activePage, onNavigate }) {
     }));
 
     try {
-      const { item, items } = await submitCompletedTaskFiles({
+      const { item, items, projects: savedProjects } = await submitCompletedTaskFiles({
         project: { ...project, id: projectId },
         assignment,
         employee: currentUser,
@@ -224,6 +242,9 @@ function EmployeeTasks({ activePage, onNavigate }) {
       });
 
       setSubmissions(Array.isArray(items) ? items : [item, ...submissions]);
+      if (Array.isArray(savedProjects)) {
+        setProjects(savedProjects);
+      }
       setSelectedSubmissionFiles((current) => ({
         ...current,
         [projectId]: [],
@@ -274,6 +295,10 @@ function EmployeeTasks({ activePage, onNavigate }) {
                   normalizeEmail(submission.employeeEmail) === currentEmail
               )
               .sort((a, b) => new Date(b.submittedAt || b.createdAt || 0) - new Date(a.submittedAt || a.createdAt || 0));
+            const latestSubmission = projectSubmissions[0] || null;
+            const assignmentStatus = latestSubmission
+              ? "Completed"
+              : currentAssignment?.submissionStatus || currentAssignment?.status || "Pending";
 
             return (
               <article
@@ -297,6 +322,7 @@ function EmployeeTasks({ activePage, onNavigate }) {
                   <p><strong>{attachments.length}</strong><span>Files</span></p>
                   <p><strong>{allocatedAt}</strong><span>Allocated on</span></p>
                   <p><strong>{deadlineAt}</strong><span>Deadline</span></p>
+                  <p><strong>{assignmentStatus}</strong><span>Status</span></p>
                 </div>
 
                 <section>
@@ -393,12 +419,25 @@ function EmployeeTasks({ activePage, onNavigate }) {
           <FaTasks />
         </div>
         <div className="task-list">
-          {tasks.map((task) => (
-            <div className="task-row" key={task.title}>
+          {pendingTasks.length ? pendingTasks.map((task) => (
+            <button
+              className="task-row"
+              type="button"
+              key={task.id}
+              onClick={() => {
+                setHighlightedProjectId(String(task.id));
+                document.getElementById(getProjectElementId(task.id))?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "center",
+                });
+              }}
+            >
               <FaTasks />
               <div><strong>{task.title}</strong><small>{task.due} - {task.priority}</small></div>
-            </div>
-          ))}
+            </button>
+          )) : (
+            <p className="employee-project-empty">No pending tasks assigned yet.</p>
+          )}
         </div>
       </section>
     </EmployeePortalLayout>

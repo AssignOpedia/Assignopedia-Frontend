@@ -277,6 +277,8 @@ function AdminProjects({ activePage, onNavigate }) {
         email: employee.email,
         role: employee.role,
         wordCount: Number(form.assignments[employee.email] || 0),
+        status: "Pending",
+        submissionStatus: "Pending",
         allocatedAt: now,
       }));
       const project = {
