@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FaChartLine, FaClipboardCheck, FaDownload, FaFileAlt, FaProjectDiagram, FaWallet } from "react-icons/fa";
+import { FaChartLine, FaClipboardCheck, FaDownload, FaFileAlt, FaProjectDiagram } from "react-icons/fa";
 import { downloadAttendanceCsv } from "../../utils/attendanceStorage";
 import { getPortalResource } from "../../utils/portalDataApi";
 import AdminPortalLayout from "./AdminPortalLayout";
@@ -8,14 +8,12 @@ const fallbackReports = [
   { title: "Today's Attendance Reports", detail: "Daily login, logout, role, status, and late-login summary", type: "attendance", updated: "Today" },
   { title: "Employee Performance Reports", detail: "Score trends, rankings, quality, and productivity", type: "performance", updated: "2 hours ago" },
   { title: "Project Reports", detail: "Milestones, delays, ownership, and deadline movement", type: "projects", updated: "Yesterday" },
-  { title: "Revenue Reports", detail: "Monthly revenue, team contribution, and billing codes", type: "revenue", updated: "Today" },
 ];
 
 const reportIcons = {
   attendance: <FaClipboardCheck />,
   performance: <FaChartLine />,
   projects: <FaProjectDiagram />,
-  revenue: <FaWallet />,
 };
 
 function AdminReports({ activePage, onNavigate }) {
@@ -23,7 +21,9 @@ function AdminReports({ activePage, onNavigate }) {
 
   useEffect(() => {
     getPortalResource("reports", fallbackReports).then((data) => {
-      setReports(Array.isArray(data) && data.length ? data : fallbackReports);
+      const nextReports = Array.isArray(data) && data.length ? data : fallbackReports;
+
+      setReports(nextReports.filter((report) => report.type !== "revenue" && report.title !== "Revenue Reports"));
     });
   }, []);
 
@@ -32,7 +32,7 @@ function AdminReports({ activePage, onNavigate }) {
       activePage={activePage}
       eyebrow="Business intelligence"
       title="Reports"
-      description="Generate and download attendance, employee, project, and revenue reports for admin review."
+      description="Generate and download attendance, employee, and project reports for admin review."
       onNavigate={onNavigate}
       action={<button type="button"><FaFileAlt /> Schedule Report</button>}
     >

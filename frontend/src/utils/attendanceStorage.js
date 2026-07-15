@@ -190,6 +190,9 @@ const matchesCurrentAttendanceUser = (record, currentUser) =>
 const buildCurrentAttendanceId = (currentUser, date) =>
   `attendance-${getCurrentUserRole(currentUser)}-${normalizeValue(currentUser.email)}-${date}`;
 
+const isAutoLogoutRecord = (record) =>
+  Boolean(record?.autoLogout || String(record?.autoLogoutReason || "").trim());
+
 export const getEmployeeMonthlyAttendanceSummary = () => {
   const currentUser = getCurrentUser();
   const today = new Date();
@@ -202,6 +205,7 @@ export const getEmployeeMonthlyAttendanceSummary = () => {
     .map((record) => parseTimeToMinutes(record.loginTime))
     .filter((value) => value !== null);
   const logoutMinutes = monthlyRecords
+    .filter((record) => !isAutoLogoutRecord(record))
     .map((record) => parseTimeToMinutes(record.logoutTime))
     .filter((value) => value !== null);
   const workMinutes = monthlyRecords.reduce((total, record) => {

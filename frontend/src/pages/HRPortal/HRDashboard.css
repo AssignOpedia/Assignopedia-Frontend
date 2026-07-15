@@ -208,11 +208,11 @@
   right:0;
   top:calc(100% + 10px);
   z-index:20;
-  width:min(340px, calc(100vw - 32px));
+  width:min(380px, calc(100vw - 32px));
   padding:14px;
   border-radius:16px;
   border:1px solid rgba(37,99,235,.14);
-  background:#fff;
+  background:linear-gradient(135deg,#fff,#f8fbff);
   box-shadow:0 22px 44px rgba(11,34,85,.16);
   color:var(--hr-navy);
 }
@@ -220,7 +220,9 @@
 .hr-notification-panel strong{
   display:block;
   margin-bottom:10px;
-  font-size:.95rem;
+  color:var(--hr-navy);
+  font-size:1rem;
+  font-weight:900;
 }
 
 .hr-notification-panel p{
@@ -233,23 +235,27 @@
 }
 
 .hr-notification-item{
-  display:block;
+  display:grid;
+  gap:6px;
   width:100%;
-  margin:0;
-  padding:10px 0;
+  margin:8px 0 0;
+  padding:11px;
   color:#475569;
-  background:transparent;
-  border:0;
-  border-top:1px solid rgba(148,163,184,.22);
+  background:#fff;
+  border:1px solid rgba(219,234,254,.9);
+  border-radius:14px;
   cursor:pointer;
   font:inherit;
-  font-size:.88rem;
+  font-size:.84rem;
   line-height:1.45;
   text-align:left;
+  box-shadow:0 10px 22px rgba(11,34,85,.06);
 }
 
 .hr-notification-item:hover{
   color:var(--hr-navy);
+  border-color:rgba(37,99,235,.32);
+  background:#f8fbff;
 }
 
 .hr-notification-panel p:first-of-type{
@@ -258,12 +264,38 @@
 }
 
 .hr-notification-panel .hr-notification-item:first-of-type{
-  border-top:0;
-  padding-top:0;
+  margin-top:0;
 }
 
 .hr-notification-panel b{
   color:#0b2255;
+}
+
+.hr-notification-type{
+  width:fit-content;
+  padding:4px 8px;
+  border-radius:999px;
+  background:#dbeafe;
+  color:#1d4ed8;
+  font-size:.68rem;
+  font-weight:900;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+
+.hr-notification-message{
+  color:var(--hr-navy);
+  font-size:.86rem;
+  font-weight:800;
+  line-height:1.45;
+}
+
+.hr-notification-item small{
+  display:block;
+  color:var(--hr-muted);
+  font-size:.76rem;
+  font-weight:700;
+  line-height:1.45;
 }
 
 .hr-profile{
@@ -1958,6 +1990,24 @@
 .request-submit-btn:hover{
   background:#1e40af;
   transform:translateY(-1px);
+}
+
+.leave-action-buttons .hr-apply-leave-button{
+  background:#1d4ed8;
+  color:#fff;
+}
+
+.leave-action-buttons .hr-apply-leave-button:hover{
+  background:#1e40af;
+}
+
+.request-submit-btn.hr-submit-admin-button{
+  background:#1d4ed8;
+  color:#fff;
+}
+
+.request-submit-btn.hr-submit-admin-button:hover{
+  background:#1e40af;
 }
 
 .request-success{

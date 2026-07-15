@@ -199,7 +199,7 @@ function HRLeaveWFHRequest({ activePage, onNavigate }) {
           <p>Submit your HR leave request from your registered HR account. Admin will approve or reject it.</p>
         </div>
         <div className="leave-action-buttons">
-          <button type="button" onClick={() => setActiveModal("leave")}>
+          <button className="hr-apply-leave-button" type="button" onClick={() => setActiveModal("leave")}>
             Apply Leave
           </button>
         </div>
@@ -308,7 +308,7 @@ function HRLeaveWFHRequest({ activePage, onNavigate }) {
                 {fileError && <small className="request-error-text">{fileError}</small>}
               </label>
               {submitError && <small className="request-error-text">{submitError}</small>}
-              <button className="request-submit-btn" type="submit" disabled={isSubmitting}>
+              <button className="request-submit-btn hr-submit-admin-button" type="submit" disabled={isSubmitting}>
                 {isSubmitting ? "Submitting..." : "Submit to Admin"}
               </button>
             </form>

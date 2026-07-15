@@ -1356,12 +1356,16 @@ router.patch("/leave-requests/:id/decision", asyncRoute(async (req, res) => {
     await store.update(notificationStore, notificationFallback, (current) => [
       {
         id: makeId("notification"),
-        type: "Leave",
+        type: notificationStore === "hrNotifications" ? "HR Leave Decision" : "Leave",
         employeeEmail: request.email,
         hrEmail: request.email,
+        requesterRole: request.requesterRole || "employee",
+        notificationAudience: notificationStore === "hrNotifications" ? "hr-user" : "employee",
         status: request.status,
         detail: `${request.type} for ${request.dates || request.date || ""}`,
         date: decisionDate,
+        createdAt: nowIso(),
+        updatedAt: nowIso(),
         message: `Your Leave request was ${request.status.toLowerCase()} by ${decidedBy} on ${decisionDate}.`,
       },
       ...current,

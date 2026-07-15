@@ -19,7 +19,7 @@ import { clearCurrentUser, getCurrentUser } from "../../utils/authStorage";
 import { logoutAccountRemote } from "../../utils/authApi";
 import { getPasswordResetRequests, passwordResetRequestEvent } from "../../utils/passwordResetRequests";
 import { getInitialsFromProfile, getPortalProfile } from "../../utils/profileStorage";
-import { getHrRequestNotifications, notificationEvent } from "../../utils/requestNotifications";
+import { getCurrentHrNotifications, loadCurrentHrNotifications, notificationEvent } from "../../utils/requestNotifications";
 import { getHrSearchQuery, setHrSearchQuery } from "../../utils/hrSearch";
 
 const sidebarItems = [
@@ -38,7 +38,7 @@ const sidebarItems = [
 
 function HRPortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
   const [showNotifications, setShowNotifications] = useState(false);
-  const [requestNotifications, setRequestNotifications] = useState(getHrRequestNotifications);
+  const [requestNotifications, setRequestNotifications] = useState(getCurrentHrNotifications);
   const [passwordResetRequests, setPasswordResetRequests] = useState(getPasswordResetRequests);
   const [searchQuery, setSearchQuery] = useState(getHrSearchQuery);
   const notificationRef = useRef(null);
@@ -49,17 +49,29 @@ function HRPortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
 
   useEffect(() => {
     const refreshNotifications = () => {
-      setRequestNotifications(getHrRequestNotifications());
+      setRequestNotifications(getCurrentHrNotifications());
       setPasswordResetRequests(getPasswordResetRequests());
     };
 
+    loadCurrentHrNotifications().then(setRequestNotifications).catch(() => {});
     window.addEventListener(notificationEvent, refreshNotifications);
     window.addEventListener(passwordResetRequestEvent, refreshNotifications);
     window.addEventListener("storage", refreshNotifications);
+    const refreshInterval = window.setInterval(() => {
+      loadCurrentHrNotifications().then(setRequestNotifications).catch(() => {});
+    }, 5000);
+
+    const refreshOnFocus = () => {
+      loadCurrentHrNotifications().then(setRequestNotifications).catch(() => {});
+    };
+
+    window.addEventListener("focus", refreshOnFocus);
     return () => {
+      window.clearInterval(refreshInterval);
       window.removeEventListener(notificationEvent, refreshNotifications);
       window.removeEventListener(passwordResetRequestEvent, refreshNotifications);
       window.removeEventListener("storage", refreshNotifications);
+      window.removeEventListener("focus", refreshOnFocus);
     };
   }, []);
 
@@ -89,10 +101,15 @@ function HRPortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
     onNavigate("hr-login");
   };
 
-  const handleRequestNotificationClick = (type) => {
+  const handleRequestNotificationClick = (notification) => {
     setShowNotifications(false);
 
-    if (type === "WFH") {
+    if (notification.hrEmail || notification.type === "HR Leave Decision") {
+      onNavigate("hr-leave-wfh");
+      return;
+    }
+
+    if (notification.type === "WFH") {
       onNavigate("hr-wfh-approval");
       return;
     }
@@ -182,10 +199,23 @@ function HRPortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
                           className="hr-notification-item"
                           type="button"
                           key={notification.id}
-                          onClick={() => handleRequestNotificationClick(notification.type)}
+                          onClick={() => handleRequestNotificationClick(notification)}
                         >
-                          <b>{notification.employeeName}</b> sent {notification.type} request on <b>{notification.date}</b>.
-                          {notification.detail && <> {notification.detail}</>}
+                          {notification.message ? (
+                            <>
+                              <span className="hr-notification-type">{notification.type || "Notification"}</span>
+                              <span className="hr-notification-message">{notification.message}</span>
+                              {notification.detail && <small>{notification.detail}</small>}
+                            </>
+                          ) : (
+                            <>
+                              <span className="hr-notification-type">{notification.type || "Notification"}</span>
+                              <span className="hr-notification-message">
+                                <b>{notification.employeeName}</b> sent {notification.type} request.
+                              </span>
+                              <small>{notification.date}{notification.detail ? ` | ${notification.detail}` : ""}</small>
+                            </>
+                          )}
                         </button>
                       ))}
                       {passwordResetRequests.slice(0, 5).map((request) => (

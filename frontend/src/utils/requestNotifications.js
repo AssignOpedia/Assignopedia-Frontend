@@ -127,6 +127,29 @@ export const addEmployeeProjectNotifications = async ({ projectId, projectTitle,
 
 export const getHrRequestNotifications = () => hrStore.get();
 
+export const getCurrentHrNotifications = () => {
+  const currentUser = getCurrentUser();
+  const currentEmail = normalizeEmail(currentUser.email);
+
+  return sortNotificationsNewestFirst(
+    hrStore.get().filter((notification) => {
+      const notificationHrEmail = normalizeEmail(notification.hrEmail);
+      const notificationEmployeeEmail = normalizeEmail(notification.employeeEmail);
+
+      if (notificationHrEmail) {
+        return notificationHrEmail === currentEmail;
+      }
+
+      return !notificationEmployeeEmail;
+    })
+  );
+};
+
+export const loadCurrentHrNotifications = async () => {
+  await hrStore.load().catch(() => hrStore.get());
+  return getCurrentHrNotifications();
+};
+
 export const loadEmployeeNotifications = async () => {
   await Promise.all([
     employeeStore.load().catch(() => employeeStore.get()),
