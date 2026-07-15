@@ -1,4 +1,5 @@
 import { uploadFileToCloudinary } from "./uploadApi";
+import { setAdminNotifications } from "./adminNotifications";
 
 const apiBaseUrl = import.meta.env.VITE_API_URL || "/api";
 
@@ -66,6 +67,10 @@ export const submitCompletedTaskFiles = async ({ project, assignment, employee, 
 
   if (!response.ok) {
     throw new Error(data.message || "Could not save task submission.");
+  }
+
+  if (Array.isArray(data.adminNotifications)) {
+    setAdminNotifications(data.adminNotifications);
   }
 
   return data;

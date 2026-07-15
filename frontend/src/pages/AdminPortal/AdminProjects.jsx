@@ -123,6 +123,26 @@ function AdminProjects({ activePage, onNavigate }) {
   useEffect(() => {
     let isMounted = true;
 
+    const openTargetSubmission = () => {
+      const rawTarget = window.localStorage.getItem("assignopedia-admin-project-target");
+
+      if (!rawTarget) {
+        return;
+      }
+
+      try {
+        const target = JSON.parse(rawTarget);
+
+        if (target?.projectId) {
+          setExpandedProjectId(String(target.projectId));
+        }
+      } catch {
+        // Ignore malformed navigation targets.
+      } finally {
+        window.localStorage.removeItem("assignopedia-admin-project-target");
+      }
+    };
+
     const refreshProjectData = async () => {
       const [data, submissions] = await Promise.all([
         getPortalResource("projects", fallbackProjects),
@@ -138,6 +158,7 @@ function AdminProjects({ activePage, onNavigate }) {
 
       setProjects(cleanedProjects);
       setTaskSubmissions(Array.isArray(submissions) ? submissions : []);
+      openTargetSubmission();
 
       if (cleanedProjects.length !== loadedProjects.length) {
         savePortalResource("projects", cleanedProjects).catch(() => {});

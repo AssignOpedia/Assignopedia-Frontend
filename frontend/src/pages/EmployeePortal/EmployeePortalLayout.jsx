@@ -34,6 +34,7 @@ import {
 } from "../../utils/requestNotifications";
 import { getInitialsFromProfile, getPortalProfile } from "../../utils/profileStorage";
 import { getSearchQuery, setSearchQuery } from "../../utils/portalSearch";
+import { navigateFromEmployeeNotification } from "../../utils/employeeNotificationNavigation";
 
 const sidebarItems = [
   { label: "Dashboard", icon: <FaHome />, page: "employee-dashboard" },
@@ -114,6 +115,11 @@ function EmployeePortalLayout({ activePage, children, eyebrow, title, onNavigate
         setUnreadEmployeeNotifications(getCurrentEmployeeUnreadNotifications());
       })
       .catch(() => {});
+  };
+
+  const handleNotificationClick = (notification) => {
+    setShowNotifications(false);
+    navigateFromEmployeeNotification(notification, onNavigate);
   };
 
   useEffect(() => {
@@ -233,12 +239,17 @@ function EmployeePortalLayout({ activePage, children, eyebrow, title, onNavigate
                   <strong>Notifications</strong>
                   {employeeNotifications.length > 0 ? (
                     employeeNotifications.map((notification) => (
-                      <p key={notification.id}>
+                      <button
+                        className="employee-notification-entry"
+                        type="button"
+                        key={notification.id}
+                        onClick={() => handleNotificationClick(notification)}
+                      >
                         <b>{notification.type || "Notification"}</b>
                         <small className="employee-announcement-meta">{notification.date}</small>
                         <span>{notification.message}</span>
                         {notification.detail && <span>{notification.detail}</span>}
-                      </p>
+                      </button>
                     ))
                   ) : (
                     <p>No new notifications.</p>

@@ -18,7 +18,19 @@ import {
 import "./AdminDashboard.css";
 import { clearCurrentUser, getCurrentUser } from "../../utils/authStorage";
 import { logoutAccountRemote } from "../../utils/authApi";
-import { getPasswordResetRequests, passwordResetRequestEvent } from "../../utils/passwordResetRequests";
+import {
+  adminNotificationEvent,
+  getAdminNotifications,
+  getUnreadAdminNotifications,
+  loadAdminNotifications,
+  markAdminNotificationsRead,
+} from "../../utils/adminNotifications";
+import {
+  getPasswordResetRequests,
+  getUnreadPasswordResetRequests,
+  markPasswordResetRequestsRead,
+  passwordResetRequestEvent,
+} from "../../utils/passwordResetRequests";
 import { getInitialsFromProfile, getPortalProfile } from "../../utils/profileStorage";
 import { getSearchQuery, setSearchQuery } from "../../utils/portalSearch";
 
@@ -36,6 +48,11 @@ const sidebarItems = [
 function AdminPortalLayout({ activePage, children, title, eyebrow, description, action, onNavigate }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [passwordResetRequests, setPasswordResetRequests] = useState(getPasswordResetRequests);
+  const [adminNotifications, setAdminNotifications] = useState(getAdminNotifications);
+  const [unreadAdminNotifications, setUnreadAdminNotifications] = useState(getUnreadAdminNotifications);
+  const [unreadPasswordResetRequests, setUnreadPasswordResetRequests] = useState(() =>
+    getUnreadPasswordResetRequests("admin")
+  );
   const [searchText, setSearchText] = useState(() => getSearchQuery("admin"));
   const notificationRef = useRef(null);
   const profile = getPortalProfile("admin");
@@ -43,13 +60,45 @@ function AdminPortalLayout({ activePage, children, title, eyebrow, description, 
   useEffect(() => {
     const refreshNotifications = () => {
       setPasswordResetRequests(getPasswordResetRequests());
+      setAdminNotifications(getAdminNotifications());
+      setUnreadPasswordResetRequests(getUnreadPasswordResetRequests("admin"));
+      setUnreadAdminNotifications(getUnreadAdminNotifications());
     };
 
+    loadAdminNotifications()
+      .then((notifications) => {
+        setAdminNotifications(notifications);
+        setUnreadAdminNotifications(getUnreadAdminNotifications());
+      })
+      .catch(() => {});
+    window.addEventListener(adminNotificationEvent, refreshNotifications);
     window.addEventListener(passwordResetRequestEvent, refreshNotifications);
     window.addEventListener("storage", refreshNotifications);
+    const refreshInterval = window.setInterval(() => {
+      loadAdminNotifications()
+        .then((notifications) => {
+          setAdminNotifications(notifications);
+          setUnreadAdminNotifications(getUnreadAdminNotifications());
+        })
+        .catch(() => {});
+    }, 5000);
+
+    const refreshOnFocus = () => {
+      loadAdminNotifications()
+        .then((notifications) => {
+          setAdminNotifications(notifications);
+          setUnreadAdminNotifications(getUnreadAdminNotifications());
+        })
+        .catch(() => {});
+    };
+
+    window.addEventListener("focus", refreshOnFocus);
     return () => {
+      window.clearInterval(refreshInterval);
+      window.removeEventListener(adminNotificationEvent, refreshNotifications);
       window.removeEventListener(passwordResetRequestEvent, refreshNotifications);
       window.removeEventListener("storage", refreshNotifications);
+      window.removeEventListener("focus", refreshOnFocus);
     };
   }, []);
 
@@ -85,6 +134,45 @@ function AdminPortalLayout({ activePage, children, title, eyebrow, description, 
     setSearchText(nextQuery);
     setSearchQuery("admin", nextQuery);
   };
+
+  const handleAdminNotificationClick = (notification) => {
+    if (notification.targetPage === "admin-projects" || notification.projectId) {
+      window.localStorage.setItem(
+        "assignopedia-admin-project-target",
+        JSON.stringify({
+          projectId: notification.projectId || "",
+          submissionId: notification.submissionId || "",
+        })
+      );
+      setShowNotifications(false);
+      onNavigate("admin-projects");
+    }
+  };
+
+  const handleNotificationToggle = () => {
+    setShowNotifications((current) => {
+      const next = !current;
+
+      if (next) {
+        Promise.all([
+          markAdminNotificationsRead(),
+          markPasswordResetRequestsRead("admin"),
+        ])
+          .then(() => {
+            setAdminNotifications(getAdminNotifications());
+            setPasswordResetRequests(getPasswordResetRequests());
+            setUnreadAdminNotifications(getUnreadAdminNotifications());
+            setUnreadPasswordResetRequests(getUnreadPasswordResetRequests("admin"));
+          })
+          .catch(() => {});
+      }
+
+      return next;
+    });
+  };
+
+  const notificationCount = unreadAdminNotifications.length + unreadPasswordResetRequests.length;
+  const hasNotificationItems = adminNotifications.length + passwordResetRequests.length > 0;
 
   return (
     <main className="admin-dashboard">
@@ -148,24 +236,39 @@ function AdminPortalLayout({ activePage, children, title, eyebrow, description, 
                 type="button"
                 aria-label="Notifications"
                 aria-expanded={showNotifications}
-                onClick={() => setShowNotifications((current) => !current)}
+                onClick={handleNotificationToggle}
               >
                 <FaBell />
-                {passwordResetRequests.length > 0 && (
-                  <span className="admin-notification-count">{passwordResetRequests.length}</span>
+                {notificationCount > 0 && (
+                  <span className="admin-notification-count">{notificationCount}</span>
                 )}
               </button>
 
               {showNotifications && (
                 <div className="admin-notification-panel" role="status">
                   <strong>Notifications</strong>
-                  {passwordResetRequests.length > 0 ? (
-                    passwordResetRequests.slice(0, 5).map((request) => (
-                      <p key={request.id}>
-                        {request.name} has sent OTP to change their account password.
-                        OTP: <b>{request.otp}</b>
-                      </p>
-                    ))
+                  {hasNotificationItems ? (
+                    <>
+                      {adminNotifications.map((notification) => (
+                        <button
+                          className="admin-notification-item"
+                          type="button"
+                          key={notification.id}
+                          onClick={() => handleAdminNotificationClick(notification)}
+                        >
+                          <span>{notification.type || "Notification"}</span>
+                          <strong>{notification.employeeName || "Employee"}</strong>
+                          <small>{notification.projectTitle || "Submitted task"} | {notification.date || "Just now"}</small>
+                          <em>Open Project Portfolio</em>
+                        </button>
+                      ))}
+                      {passwordResetRequests.map((request) => (
+                        <p key={request.id}>
+                          {request.name} has sent OTP to change their account password.
+                          OTP: <b>{request.otp}</b>
+                        </p>
+                      ))}
+                    </>
                   ) : (
                     <p>No new notifications.</p>
                   )}

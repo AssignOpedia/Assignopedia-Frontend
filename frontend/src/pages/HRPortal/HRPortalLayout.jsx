@@ -17,9 +17,20 @@ import {
 import "./HRDashboard.css";
 import { clearCurrentUser, getCurrentUser } from "../../utils/authStorage";
 import { logoutAccountRemote } from "../../utils/authApi";
-import { getPasswordResetRequests, passwordResetRequestEvent } from "../../utils/passwordResetRequests";
+import {
+  getPasswordResetRequests,
+  getUnreadPasswordResetRequests,
+  markPasswordResetRequestsRead,
+  passwordResetRequestEvent,
+} from "../../utils/passwordResetRequests";
 import { getInitialsFromProfile, getPortalProfile } from "../../utils/profileStorage";
-import { getCurrentHrNotifications, loadCurrentHrNotifications, notificationEvent } from "../../utils/requestNotifications";
+import {
+  getCurrentHrNotifications,
+  getCurrentHrUnreadNotifications,
+  loadCurrentHrNotifications,
+  markCurrentHrNotificationsRead,
+  notificationEvent,
+} from "../../utils/requestNotifications";
 import { getHrSearchQuery, setHrSearchQuery } from "../../utils/hrSearch";
 
 const sidebarItems = [
@@ -40,10 +51,14 @@ function HRPortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [requestNotifications, setRequestNotifications] = useState(getCurrentHrNotifications);
   const [passwordResetRequests, setPasswordResetRequests] = useState(getPasswordResetRequests);
+  const [unreadRequestNotifications, setUnreadRequestNotifications] = useState(getCurrentHrUnreadNotifications);
+  const [unreadPasswordResetRequests, setUnreadPasswordResetRequests] = useState(() =>
+    getUnreadPasswordResetRequests("hr")
+  );
   const [searchQuery, setSearchQuery] = useState(getHrSearchQuery);
   const notificationRef = useRef(null);
-  const notificationCount = passwordResetRequests.length + requestNotifications.length;
-  const hasNotifications = notificationCount > 0;
+  const notificationCount = unreadPasswordResetRequests.length + unreadRequestNotifications.length;
+  const hasNotifications = requestNotifications.length + passwordResetRequests.length > 0;
   const profile = getPortalProfile("hr");
   const profileImage = profile.imageUrl || profile.imageDataUrl || "";
 
@@ -51,18 +66,35 @@ function HRPortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
     const refreshNotifications = () => {
       setRequestNotifications(getCurrentHrNotifications());
       setPasswordResetRequests(getPasswordResetRequests());
+      setUnreadRequestNotifications(getCurrentHrUnreadNotifications());
+      setUnreadPasswordResetRequests(getUnreadPasswordResetRequests("hr"));
     };
 
-    loadCurrentHrNotifications().then(setRequestNotifications).catch(() => {});
+    loadCurrentHrNotifications()
+      .then((notifications) => {
+        setRequestNotifications(notifications);
+        setUnreadRequestNotifications(getCurrentHrUnreadNotifications());
+      })
+      .catch(() => {});
     window.addEventListener(notificationEvent, refreshNotifications);
     window.addEventListener(passwordResetRequestEvent, refreshNotifications);
     window.addEventListener("storage", refreshNotifications);
     const refreshInterval = window.setInterval(() => {
-      loadCurrentHrNotifications().then(setRequestNotifications).catch(() => {});
+      loadCurrentHrNotifications()
+        .then((notifications) => {
+          setRequestNotifications(notifications);
+          setUnreadRequestNotifications(getCurrentHrUnreadNotifications());
+        })
+        .catch(() => {});
     }, 5000);
 
     const refreshOnFocus = () => {
-      loadCurrentHrNotifications().then(setRequestNotifications).catch(() => {});
+      loadCurrentHrNotifications()
+        .then((notifications) => {
+          setRequestNotifications(notifications);
+          setUnreadRequestNotifications(getCurrentHrUnreadNotifications());
+        })
+        .catch(() => {});
     };
 
     window.addEventListener("focus", refreshOnFocus);
@@ -115,6 +147,28 @@ function HRPortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
     }
 
     onNavigate("hr-leave-approval");
+  };
+
+  const handleNotificationToggle = () => {
+    setShowNotifications((current) => {
+      const next = !current;
+
+      if (next) {
+        Promise.all([
+          markCurrentHrNotificationsRead(),
+          markPasswordResetRequestsRead("hr"),
+        ])
+          .then(() => {
+            setRequestNotifications(getCurrentHrNotifications());
+            setPasswordResetRequests(getPasswordResetRequests());
+            setUnreadRequestNotifications(getCurrentHrUnreadNotifications());
+            setUnreadPasswordResetRequests(getUnreadPasswordResetRequests("hr"));
+          })
+          .catch(() => {});
+      }
+
+      return next;
+    });
   };
 
   const handleSearchChange = (event) => {
@@ -181,10 +235,10 @@ function HRPortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
                 type="button"
                 aria-label="Notifications"
                 aria-expanded={showNotifications}
-                onClick={() => setShowNotifications((current) => !current)}
+                onClick={handleNotificationToggle}
               >
                 <FaBell />
-                {hasNotifications && (
+                {notificationCount > 0 && (
                   <span className="hr-notification-count">{notificationCount}</span>
                 )}
               </button>
@@ -194,7 +248,7 @@ function HRPortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
                   <strong>Notifications</strong>
                   {hasNotifications ? (
                     <>
-                      {requestNotifications.slice(0, 5).map((notification) => (
+                      {requestNotifications.map((notification) => (
                         <button
                           className="hr-notification-item"
                           type="button"
@@ -218,7 +272,7 @@ function HRPortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
                           )}
                         </button>
                       ))}
-                      {passwordResetRequests.slice(0, 5).map((request) => (
+                      {passwordResetRequests.map((request) => (
                       <p key={request.id}>
                         {request.name} has sent OTP to change their account password.
                         OTP: <b>{request.otp}</b>

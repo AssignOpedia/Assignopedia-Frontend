@@ -1,8 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FaCalendarCheck, FaHome, FaPlaneDeparture } from "react-icons/fa";
 import { getCurrentUser } from "../../utils/authStorage";
 import { saveEmployeeWfhRequest } from "../../utils/employeeDashboardMetrics";
-import { createLeaveRequestRemote, createWfhRequestRemote } from "../../utils/hrPortalApi";
+import {
+  createLeaveRequestRemote,
+  createWfhRequestRemote,
+  getLeaveRequestsRemote,
+  getWfhRequestsRemote,
+} from "../../utils/hrPortalApi";
+import { getEmployeeRequestTargetKey } from "../../utils/employeeNotificationNavigation";
 import { addHrRequestNotification, formatNotificationDate } from "../../utils/requestNotifications";
 import { uploadFileToCloudinary } from "../../utils/uploadApi";
 import EmployeePortalLayout from "./EmployeePortalLayout";
@@ -56,6 +62,38 @@ const getLeaveDays = (fromDate, toDate) => {
   return String(Math.floor(difference / 86400000) + 1);
 };
 
+const getRequestElementId = (requestId) =>
+  `employee-request-${String(requestId || "").replace(/[^a-z0-9_-]+/gi, "-")}`;
+
+const formatRequestDate = (value) => {
+  if (!value) {
+    return "Submitted";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const toRequestListItem = (request, requestType) => ({
+  id: request.id,
+  kind: requestType,
+  title: requestType === "wfh" ? "WFH Request" : request.type || "Leave Request",
+  meta: `${request.status || "Pending"} - ${formatRequestDate(request.decisionDateTime || request.requestDate || request.date || request.createdAt)}`,
+  detail: requestType === "wfh"
+    ? `${request.task || "WFH"} on ${request.date || "selected date"}`
+    : `${request.dates || request.date || "Selected dates"}`,
+  decisionComment: request.decisionComment || "",
+});
+
 function EmployeeLeaveWFH({ activePage, onNavigate }) {
   const [activeModal, setActiveModal] = useState(null);
   const [successMessage, setSuccessMessage] = useState("");
@@ -63,6 +101,7 @@ function EmployeeLeaveWFH({ activePage, onNavigate }) {
   const [submitError, setSubmitError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [requests, setRequests] = useState(initialRequests);
+  const [highlightedRequestId, setHighlightedRequestId] = useState("");
   const [leaveForm, setLeaveForm] = useState({
     type: "Casual Leave",
     fromDate: "",
@@ -179,6 +218,52 @@ function EmployeeLeaveWFH({ activePage, onNavigate }) {
       event.target.value = "";
     }
   };
+
+  useEffect(() => {
+    const currentEmail = String(getCurrentUser().email || "").trim().toLowerCase();
+
+    Promise.all([
+      getLeaveRequestsRemote().catch(() => []),
+      getWfhRequestsRemote().catch(() => []),
+    ]).then(([leaveRequests, wfhRequests]) => {
+      const employeeLeaveRequests = (Array.isArray(leaveRequests) ? leaveRequests : [])
+        .filter((request) => String(request.email || "").trim().toLowerCase() === currentEmail)
+        .map((request) => toRequestListItem(request, "leave"));
+      const employeeWfhRequests = (Array.isArray(wfhRequests) ? wfhRequests : [])
+        .filter((request) => String(request.email || "").trim().toLowerCase() === currentEmail)
+        .map((request) => toRequestListItem(request, "wfh"));
+
+      setRequests([...employeeLeaveRequests, ...employeeWfhRequests, ...initialRequests]);
+    });
+  }, []);
+
+  useEffect(() => {
+    const rawTarget = window.localStorage.getItem(getEmployeeRequestTargetKey());
+
+    if (!rawTarget || requests.length === 0) {
+      return;
+    }
+
+    try {
+      const target = JSON.parse(rawTarget);
+      const targetRequestId = String(target.requestId || "");
+
+      if (!targetRequestId || !requests.some((request) => String(request.id || "") === targetRequestId)) {
+        return;
+      }
+
+      setHighlightedRequestId(targetRequestId);
+      window.localStorage.removeItem(getEmployeeRequestTargetKey());
+      window.setTimeout(() => {
+        document.getElementById(getRequestElementId(targetRequestId))?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }, 100);
+    } catch {
+      window.localStorage.removeItem(getEmployeeRequestTargetKey());
+    }
+  }, [requests]);
 
   const handleLeaveSubmit = async (event) => {
     event.preventDefault();
@@ -363,9 +448,15 @@ function EmployeeLeaveWFH({ activePage, onNavigate }) {
           <div className="card-heading"><div><span>Requests</span><h3>Recent Leave Requests</h3></div></div>
           <div className="timeline-list">
             {requests.map((request, index) => (
-              <p key={`${request.title}-${request.meta}-${index}`}>
+              <p
+                className={highlightedRequestId && highlightedRequestId === String(request.id || "") ? "is-targeted" : ""}
+                id={request.id ? getRequestElementId(request.id) : undefined}
+                key={request.id || `${request.title}-${request.meta}-${index}`}
+              >
                 <strong>{request.title}</strong>
                 <span>{request.meta}</span>
+                {request.detail && <small>{request.detail}</small>}
+                {request.decisionComment && <small>{request.decisionComment}</small>}
               </p>
             ))}
           </div>

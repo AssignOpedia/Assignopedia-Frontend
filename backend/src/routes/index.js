@@ -23,6 +23,7 @@ const router = express.Router();
 const syncStores = {
   accounts: { storeName: "accounts", fallback: defaults.accounts },
   adminEmployees: { storeName: "adminEmployees", fallback: defaults.adminEmployees },
+  adminNotifications: { storeName: "adminNotifications", fallback: defaults.adminNotifications },
   attendance: { storeName: "attendance", fallback: defaults.attendance },
   blogPosts: { storeName: "blogPosts", fallback: defaults.blogPosts },
   contactSubmissions: { storeName: "contactSubmissions", fallback: defaults.contactSubmissions },
@@ -1283,6 +1284,33 @@ router.post("/task-submissions", asyncRoute(async (req, res) => {
   });
   const { completedProject, projects } = await completeProjectFromSubmission(submission);
   const employee = await updateEmployeePerformanceFromSubmissions(submission.employeeEmail, submission.employeeName);
+  const adminNotification = {
+    id: makeId("admin-notification"),
+    type: "Task Submission",
+    projectId: submission.projectId,
+    submissionId: submission.id,
+    projectTitle: submission.projectTitle,
+    employeeName: submission.employeeName,
+    employeeEmail: submission.employeeEmail,
+    submittedAt,
+    date: new Date(submittedAt).toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    }),
+    detail: `${submission.employeeName || "Employee"} submitted ${submission.projectTitle || "a task"}.`,
+    message: `${submission.employeeName || "Employee"} submitted ${submission.projectTitle || "a task"}.`,
+    targetPage: "admin-projects",
+    createdAt: submittedAt,
+    updatedAt: nowIso(),
+  };
+  const adminNotifications = await store.update("adminNotifications", defaults.adminNotifications, (current) => [
+    adminNotification,
+    ...(Array.isArray(current) ? current : []),
+  ]);
 
   res.status(created ? 201 : 200).json({
     item: submission,
@@ -1290,6 +1318,8 @@ router.post("/task-submissions", asyncRoute(async (req, res) => {
     project: completedProject,
     projects,
     employee,
+    adminNotification,
+    adminNotifications,
   });
 }));
 collectionRoute({ path: "/task-submissions", storeName: "taskSubmissions", fallback: defaults.taskSubmissions, idPrefix: "task-submission", requiredFields: ["projectId", "employeeEmail"] });
@@ -1359,6 +1389,12 @@ router.patch("/leave-requests/:id/decision", asyncRoute(async (req, res) => {
         type: notificationStore === "hrNotifications" ? "HR Leave Decision" : "Leave",
         employeeEmail: request.email,
         hrEmail: request.email,
+        relatedRecordId: request.id,
+        relatedRecordType: "leave-request",
+        targetPage: notificationStore === "hrNotifications" ? "hr-leave-wfh" : "employee-leave-wfh",
+        actionUrl: notificationStore === "hrNotifications"
+          ? `/hr-leave-wfh?requestId=${encodeURIComponent(request.id)}`
+          : `/employee-leave-wfh?requestId=${encodeURIComponent(request.id)}&type=leave`,
         requesterRole: request.requesterRole || "employee",
         notificationAudience: notificationStore === "hrNotifications" ? "hr-user" : "employee",
         status: request.status,
@@ -1437,6 +1473,12 @@ router.patch("/wfh-requests/:id/decision", asyncRoute(async (req, res) => {
         type: "WFH",
         employeeEmail: request.email,
         hrEmail: request.email,
+        relatedRecordId: request.id,
+        relatedRecordType: "wfh-request",
+        targetPage: notificationStore === "hrNotifications" ? "hr-leave-wfh" : "employee-leave-wfh",
+        actionUrl: notificationStore === "hrNotifications"
+          ? `/hr-leave-wfh?requestId=${encodeURIComponent(request.id)}`
+          : `/employee-leave-wfh?requestId=${encodeURIComponent(request.id)}&type=wfh`,
         status: request.status,
         detail: `${request.task || "WFH"} on ${request.date || ""}`,
         date: decisionDate,

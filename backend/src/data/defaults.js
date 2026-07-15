@@ -126,6 +126,7 @@ module.exports = {
   departments,
   employees: [],
   adminEmployees,
+  adminNotifications: [],
   hrNotifications: [],
   employeeNotifications: [],
   leaveRequests: [],

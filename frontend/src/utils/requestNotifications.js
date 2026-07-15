@@ -64,6 +64,25 @@ const getProjectNotificationKey = (notification) =>
 
 export const isNotificationUnread = (notification) => !notification.readAt;
 
+const getHrReaderKey = () => {
+  const currentUser = getCurrentUser();
+  const currentEmail = normalizeEmail(currentUser.email);
+
+  return currentEmail ? `hr:${currentEmail}` : "hr";
+};
+
+const isCurrentHrNotificationUnread = (notification) => {
+  const currentEmail = normalizeEmail(getCurrentUser().email);
+  const notificationHrEmail = normalizeEmail(notification.hrEmail);
+  const readerKey = getHrReaderKey();
+
+  if (notificationHrEmail && notificationHrEmail === currentEmail) {
+    return !notification.readAt && !notification.readBy?.[readerKey];
+  }
+
+  return !notification.readBy?.[readerKey] && !notification.readAt;
+};
+
 export const addHrRequestNotification = ({ type, employeeName, requestDate, detail }) => {
   const notifications = hrStore.get();
   const createdAt = new Date().toISOString();
@@ -94,6 +113,9 @@ export const addEmployeeDecisionNotification = ({ type, employeeEmail, status, d
     detail,
     date: displayDate,
     createdAt,
+    relatedRecordType: type === "WFH" ? "wfh-request" : "leave-request",
+    targetPage: "employee-leave-wfh",
+    actionUrl: "/employee-leave-wfh",
     message: `Your ${type} request was ${status.toLowerCase()} by HR on ${displayDate}.`,
   };
 
@@ -109,6 +131,10 @@ export const addEmployeeProjectNotifications = async ({ projectId, projectTitle,
     id: `project-assignment-${assignment.email}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     type: "Project Assignment",
     projectId,
+    relatedRecordId: projectId,
+    relatedRecordType: "project",
+    targetPage: "employee-tasks",
+    actionUrl: `/employee-tasks?projectId=${encodeURIComponent(projectId || "")}`,
     employeeEmail: assignment.email,
     status: "Assigned",
     detail: `${projectTitle} | Your words: ${Number(assignment.wordCount || 0).toLocaleString("en-IN")} | Total words: ${Number(totalWordCount || 0).toLocaleString("en-IN")}`,
@@ -147,6 +173,45 @@ export const getCurrentHrNotifications = () => {
 
 export const loadCurrentHrNotifications = async () => {
   await hrStore.load().catch(() => hrStore.get());
+  return getCurrentHrNotifications();
+};
+
+export const getCurrentHrUnreadNotifications = () =>
+  getCurrentHrNotifications().filter(isCurrentHrNotificationUnread);
+
+export const markCurrentHrNotificationsRead = async (notificationIds = null) => {
+  const notifications = await hrStore.load().catch(() => hrStore.get());
+  const selectedIds = Array.isArray(notificationIds) ? new Set(notificationIds) : null;
+  const visibleIds = new Set(getCurrentHrNotifications().map((notification) => notification.id));
+  const readerKey = getHrReaderKey();
+  const readAt = new Date().toISOString();
+  let changed = false;
+
+  const nextNotifications = (Array.isArray(notifications) ? notifications : []).map((notification) => {
+    if (!visibleIds.has(notification.id) || (selectedIds && !selectedIds.has(notification.id))) {
+      return notification;
+    }
+
+    if (!isCurrentHrNotificationUnread(notification)) {
+      return notification;
+    }
+
+    changed = true;
+    return {
+      ...notification,
+      readBy: {
+        ...(notification.readBy || {}),
+        [readerKey]: readAt,
+      },
+      updatedAt: readAt,
+    };
+  });
+
+  if (!changed) {
+    return getCurrentHrNotifications();
+  }
+
+  await hrStore.save(sortNotificationsNewestFirst(nextNotifications));
   return getCurrentHrNotifications();
 };
 
@@ -195,6 +260,10 @@ export const getCurrentEmployeeNotifications = () => {
       id: `project-assignment-derived-${projectId}-${currentEmail}`,
       type: "Project Assignment",
       projectId,
+      relatedRecordId: projectId,
+      relatedRecordType: "project",
+      targetPage: "employee-tasks",
+      actionUrl: `/employee-tasks?projectId=${encodeURIComponent(projectId || "")}`,
       employeeEmail: currentEmail,
       status: "Assigned",
       detail: `${projectTitle} | Your words: ${Number(assignment.wordCount || 0).toLocaleString("en-IN")} | Total words: ${Number(project.totalWordCount || 0).toLocaleString("en-IN")}`,

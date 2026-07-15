@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { FaDownload, FaFileAlt, FaPaperclip, FaTasks, FaUpload, FaUsers } from "react-icons/fa";
 import { getCurrentUser } from "../../utils/authStorage";
+import { getEmployeeProjectTargetKey } from "../../utils/employeeNotificationNavigation";
 import { getPortalResource } from "../../utils/portalDataApi";
 import { loadTaskSubmissions, submitCompletedTaskFiles } from "../../utils/taskSubmissionApi";
 import EmployeePortalLayout from "./EmployeePortalLayout";
@@ -23,6 +24,9 @@ const getAttachments = (project) => (Array.isArray(project.attachments) ? projec
 const getSubmissionFiles = (submission) => (Array.isArray(submission.files) ? submission.files : []);
 
 const getProjectDeadline = (project) => project.deadlineDateTime || project.deadline || "";
+
+const getProjectElementId = (projectId) =>
+  `employee-project-${String(projectId || "").replace(/[^a-z0-9_-]+/gi, "-")}`;
 
 const formatAllocationDateTime = (value) => {
   if (!value) {
@@ -112,6 +116,7 @@ function EmployeeTasks({ activePage, onNavigate }) {
   const [submittingProjectId, setSubmittingProjectId] = useState("");
   const [submissionMessages, setSubmissionMessages] = useState({});
   const [statusMessage, setStatusMessage] = useState("");
+  const [highlightedProjectId, setHighlightedProjectId] = useState("");
   const currentUser = getCurrentUser();
   const currentEmail = normalizeEmail(currentUser.email);
   const assignedProjects = useMemo(
@@ -135,6 +140,37 @@ function EmployeeTasks({ activePage, onNavigate }) {
       .then((data) => setSubmissions(Array.isArray(data) ? data : []))
       .catch(() => setStatusMessage("Could not load task submissions."));
   }, []);
+
+  useEffect(() => {
+    const rawTarget = window.localStorage.getItem(getEmployeeProjectTargetKey());
+
+    if (!rawTarget || assignedProjects.length === 0) {
+      return;
+    }
+
+    try {
+      const target = JSON.parse(rawTarget);
+      const targetProjectId = String(target.projectId || "");
+      const matchingProject = assignedProjects.find(
+        (project) => String(project.id || getProjectTitle(project)) === targetProjectId
+      );
+
+      if (!matchingProject) {
+        return;
+      }
+
+      setHighlightedProjectId(targetProjectId);
+      window.localStorage.removeItem(getEmployeeProjectTargetKey());
+      window.setTimeout(() => {
+        document.getElementById(getProjectElementId(targetProjectId))?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }, 100);
+    } catch {
+      window.localStorage.removeItem(getEmployeeProjectTargetKey());
+    }
+  }, [assignedProjects]);
 
   const handleSubmissionFileChange = (projectId, files) => {
     setSelectedSubmissionFiles((current) => ({
@@ -240,7 +276,11 @@ function EmployeeTasks({ activePage, onNavigate }) {
               .sort((a, b) => new Date(b.submittedAt || b.createdAt || 0) - new Date(a.submittedAt || a.createdAt || 0));
 
             return (
-              <article className="employee-project-card" key={projectId}>
+              <article
+                className={`employee-project-card${highlightedProjectId === String(projectId) ? " is-targeted" : ""}`}
+                id={getProjectElementId(projectId)}
+                key={projectId}
+              >
                 <header>
                   <div>
                     <span>Project</span>

@@ -14,6 +14,7 @@ import {
   markCurrentEmployeeNotificationsRead,
   notificationEvent,
 } from "../../utils/requestNotifications";
+import { navigateFromEmployeeNotification } from "../../utils/employeeNotificationNavigation";
 import EmployeePortalLayout from "./EmployeePortalLayout";
 
 function EmployeeNotifications({ activePage, onNavigate }) {
@@ -78,12 +79,17 @@ function EmployeeNotifications({ activePage, onNavigate }) {
           <div className="announcement-list">
             {employeeNotifications.length > 0 ? (
               employeeNotifications.map((notification) => (
-                <p key={notification.id}>
+                <button
+                  className="employee-notification-entry announcement-entry"
+                  type="button"
+                  key={notification.id}
+                  onClick={() => navigateFromEmployeeNotification(notification, onNavigate)}
+                >
                   <strong>{notification.type || "Notification"}</strong>
                   <small>{notification.date}</small>
                   <span>{notification.message}</span>
                   {notification.detail && <span>{notification.detail}</span>}
-                </p>
+                </button>
               ))
             ) : (
               <p>No employee notifications yet.</p>

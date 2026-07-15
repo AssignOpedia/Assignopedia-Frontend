@@ -2,6 +2,7 @@ const apiBaseUrl = import.meta.env.VITE_API_URL || "/api";
 
 const syncItems = [
   { resource: "accounts", event: "assignopedia-current-user-updated" },
+  { resource: "adminNotifications", event: "assignopedia-admin-notification-updated" },
   { resource: "attendance", event: "assignopedia-attendance-updated" },
   { resource: "blogPosts", event: "assignopedia-blog-posts-updated" },
   { resource: "cvApplications", event: "assignopedia-cv-updated" },

@@ -209,12 +209,29 @@
   top:calc(100% + 10px);
   z-index:20;
   width:min(380px, calc(100vw - 32px));
+  max-height:min(430px, calc(100vh - 96px));
+  overflow-y:auto;
+  overscroll-behavior:contain;
   padding:14px;
   border-radius:16px;
   border:1px solid rgba(37,99,235,.14);
   background:linear-gradient(135deg,#fff,#f8fbff);
   box-shadow:0 22px 44px rgba(11,34,85,.16);
   color:var(--hr-navy);
+}
+
+.hr-notification-panel::-webkit-scrollbar{
+  width:8px;
+}
+
+.hr-notification-panel::-webkit-scrollbar-track{
+  background:#eef4ff;
+  border-radius:999px;
+}
+
+.hr-notification-panel::-webkit-scrollbar-thumb{
+  background:#b6c8e8;
+  border-radius:999px;
 }
 
 .hr-notification-panel strong{

@@ -36,7 +36,7 @@ function AdminReports({ activePage, onNavigate }) {
       onNavigate={onNavigate}
       action={<button type="button"><FaFileAlt /> Schedule Report</button>}
     >
-      <section className="admin-content-grid">
+      <section className="admin-content-grid admin-reports-grid">
         {reports.map((report) => (
           <article className="admin-panel report-card" key={report.title}>
             <div className="report-icon">{reportIcons[report.type] || <FaFileAlt />}</div>
