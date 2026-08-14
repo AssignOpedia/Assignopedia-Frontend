@@ -39,6 +39,6 @@ Frontend service:
 - Root directory: `frontend`
 - Build command: `npm install && npm run build`
 - Publish directory: `dist`
-- Required environment variable: `VITE_API_URL=https://YOUR-BACKEND.onrender.com/api`
+- Production API URL: `VITE_API_URL=https://assignopedia-backend-qsn7.onrender.com/api`
 
 Set `CLIENT_ORIGIN` on the backend to the deployed frontend URL, for example `https://YOUR-FRONTEND.onrender.com`.

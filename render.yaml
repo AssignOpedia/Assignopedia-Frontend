@@ -52,7 +52,7 @@ services:
       - key: NODE_VERSION
         value: 22
       - key: VITE_API_URL
-        sync: false
+        value: https://assignopedia-backend-qsn7.onrender.com/api
     routes:
       - type: rewrite
         source: /*
