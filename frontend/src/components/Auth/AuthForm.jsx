@@ -451,6 +451,7 @@ const AuthForm = ({
           <div className="role-auth-switch">
             {!isSignup && (
               <button
+                className="auth-forgot-password"
                 type="button"
                 onClick={() => {
                   setShowResetPassword(true);
@@ -461,19 +462,21 @@ const AuthForm = ({
                 Forgot Password?
               </button>
             )}
-            <span>
-              {isSignup
-                ? "Already have an account?"
-                : "Don\u2019t have an account?"}
+            <span className="auth-switch-prompt">
+              <span>
+                {isSignup
+                  ? "Already have an account?"
+                  : "Don\u2019t have an account?"}
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  onNavigate(`${role}-${isSignup ? "login" : "signup"}`)
+                }
+              >
+                {isSignup ? "Login" : "Sign Up"}
+              </button>
             </span>
-            <button
-              type="button"
-              onClick={() =>
-                onNavigate(`${role}-${isSignup ? "login" : "signup"}`)
-              }
-            >
-              {isSignup ? "Login" : "Sign Up"}
-            </button>
           </div>
         </section>
       </main>
