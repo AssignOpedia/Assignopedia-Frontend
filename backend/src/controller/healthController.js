@@ -9,4 +9,4 @@ const getHealth = async (req, res) => {
   });
 };
 
-module.exports = { getHealth };
+module.exports = { getHealth }; 
