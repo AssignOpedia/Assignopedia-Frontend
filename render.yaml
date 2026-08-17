@@ -10,7 +10,7 @@ services:
       - key: NODE_VERSION
         value: 22
       - key: CLIENT_ORIGIN
-        sync: false
+        value: https://assignopedia.com,https://www.assignopedia.com
       - key: MONGODB_URI
         sync: false
       - key: MONGODB_REQUIRE_CONNECTION
