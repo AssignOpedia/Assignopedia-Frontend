@@ -136,7 +136,7 @@ function App() {
 
   const renderPage = () => {
     if (activePage === "services") {
-      return <Services />;
+      return <Services onNavigate={handleNavigate} />;
     }
 
     if (activePage === "blog") {

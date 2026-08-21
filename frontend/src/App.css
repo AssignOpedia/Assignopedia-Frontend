@@ -5456,13 +5456,22 @@ body{
 
 /* ================= ABOUT + SERVICES TITLE ALIGNMENT ================= */
 
-.services > .section-title,
 .about-section-block > .section-title,
 .home-summary > .section-title,
 .home-services-preview > .section-title{
   text-align:left;
   margin-left:0;
   margin-right:0;
+}
+
+/* Match the public page heroes: center the Services introduction above the cards. */
+.services > .section-title{
+  text-align:center;
+}
+
+.services > .section-title p{
+  margin-inline:auto;
+  max-width:760px;
 }
 
 /* ================= PREMIUM HOME SECTION LABELS ================= */

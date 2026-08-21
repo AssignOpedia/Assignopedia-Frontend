@@ -14,7 +14,7 @@ import {
 } from "react-icons/fa";
 import ConstellationBackground from "../shared/ConstellationBackground";
 
-function Services() {
+function Services({ onNavigate }) {
   const services = [
     {
       icon: <FaFileAlt />,
@@ -180,7 +180,13 @@ function Services() {
               </div>
             </div>
 
-            <button className="pricing-cta">Get Pricing</button>
+            <button
+              className="pricing-cta"
+              type="button"
+              onClick={() => onNavigate("contact")}
+            >
+              Get Pricing
+            </button>
           </div>
         ))}
       </div>
