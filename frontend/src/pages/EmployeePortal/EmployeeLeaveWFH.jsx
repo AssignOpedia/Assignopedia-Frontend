@@ -330,7 +330,7 @@ function EmployeeLeaveWFH({ activePage, onNavigate }) {
         fileType: "",
         fileSize: 0,
       });
-      setSuccessMessage("Leave request submitted successfully and saved in MongoDB.");
+      setSuccessMessage("Leave request successfully sent to HR and Admin.");
       closeModal();
     } catch (error) {
       setSubmitError(`Leave request was not saved in MongoDB: ${error.message}`);
@@ -399,7 +399,7 @@ function EmployeeLeaveWFH({ activePage, onNavigate }) {
         fileType: "",
         fileSize: 0,
       });
-      setSuccessMessage("WFH request submitted successfully to HR and Admin.");
+      setSuccessMessage("WFH request successfully sent to HR and Admin.");
       closeModal();
     } catch (error) {
       setSubmitError(`WFH request was not saved in MongoDB: ${error.message}`);
