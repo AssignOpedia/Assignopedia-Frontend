@@ -2847,3 +2847,46 @@
     padding:7px 16px 7px 7px;
   }
 }
+
+/* Phone-only header alignment. Desktop and tablet retain their existing layout. */
+@media (max-width:720px){
+  .hr-topbar-actions{
+    display:grid;
+    justify-content:center;
+    grid-template-columns:minmax(0, 1fr) 48px;
+    width:min(100%, 600px);
+    margin-inline:auto;
+    gap:10px;
+    align-items:center;
+  }
+
+  .hr-search{
+    width:100%;
+    min-width:0;
+    justify-self:stretch;
+  }
+
+  .hr-notification-wrap{
+    justify-self:center;
+  }
+
+  .hr-profile{
+    grid-column:1 / -1;
+    justify-self:center;
+    justify-content:flex-start;
+    width:min(100%, 400px);
+    min-width:0;
+    text-align:left;
+  }
+}
+
+@media (max-width:420px){
+  .hr-topbar-actions{
+    grid-template-columns:minmax(0, 1fr) 44px;
+    width:100%;
+  }
+
+  .hr-profile{
+    width:100%;
+  }
+}
