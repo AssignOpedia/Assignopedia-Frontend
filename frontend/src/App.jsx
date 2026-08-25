@@ -35,6 +35,7 @@ import EmployeeLeaveWFH from "./pages/EmployeePortal/EmployeeLeaveWFH";
 import EmployeeNotifications from "./pages/EmployeePortal/EmployeeNotifications";
 import EmployeePerformance from "./pages/EmployeePortal/EmployeePerformance";
 import EmployeeProfile from "./pages/EmployeePortal/EmployeeProfile";
+import EmployeeSettings from "./pages/EmployeePortal/EmployeeSettings";
 import EmployeeTasks from "./pages/EmployeePortal/EmployeeTasks";
 import EmployeeTeam from "./pages/EmployeePortal/EmployeeTeam";
 import EmployeeChatbot from "./pages/EmployeePortal/EmployeeChatbot";
@@ -48,6 +49,7 @@ const employeePages = [
   "employee-tasks",
   "employee-performance",
   "employee-notifications",
+  "employee-settings",
 ];
 
 const hrPages = [
@@ -239,6 +241,10 @@ function App() {
       return <EmployeeProfile activePage={activePage} onNavigate={handleNavigate} />;
     }
 
+    if (activePage === "employee-settings") {
+      return <EmployeeSettings activePage={activePage} onNavigate={handleNavigate} />;
+    }
+
     if (activePage === "employee-attendance") {
       return <EmployeeAttendance activePage={activePage} onNavigate={handleNavigate} />;
     }
@@ -321,19 +327,21 @@ function App() {
         />
       )}
 
-      <EmployeeChatbot />
+      {!isPortalPage && <EmployeeChatbot />}
 
-      <a
-        className="whatsapp-float"
-        href="https://wa.me/916291075245"
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Chat with Assignopedia on WhatsApp"
-        title="Chat with us on WhatsApp"
-        onClick={playWhatsAppClick}
-      >
-        <FaWhatsapp aria-hidden="true" />
-      </a>
+      {!isPortalPage && (
+        <a
+          className="whatsapp-float"
+          href="https://wa.me/916291075245"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Chat with Assignopedia on WhatsApp"
+          title="Chat with us on WhatsApp"
+          onClick={playWhatsAppClick}
+        >
+          <FaWhatsapp aria-hidden="true" />
+        </a>
+      )}
     </>
   );
 }

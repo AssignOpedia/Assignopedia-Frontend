@@ -12,11 +12,8 @@ import {
   FaPlaneDeparture,
   FaSearch,
   FaSignInAlt,
-  FaSignOutAlt,
 } from "react-icons/fa";
 import "./HRDashboard.css";
-import { clearCurrentUser, getCurrentUser } from "../../utils/authStorage";
-import { logoutAccountRemote } from "../../utils/authApi";
 import {
   getPasswordResetRequests,
   getUnreadPasswordResetRequests,
@@ -122,17 +119,6 @@ function HRPortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [showNotifications]);
 
-  const handleLogout = async () => {
-    const currentUser = getCurrentUser();
-
-    if (currentUser?.email && currentUser?.role) {
-      await logoutAccountRemote(currentUser).catch(() => {});
-    }
-
-    clearCurrentUser();
-    onNavigate("hr-login");
-  };
-
   const handleRequestNotificationClick = (notification) => {
     setShowNotifications(false);
 
@@ -149,9 +135,9 @@ function HRPortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
     onNavigate("hr-leave-approval");
   };
 
-  const handleNotificationToggle = () => {
+  const handleNotificationToggle = (forceOpen) => {
     setShowNotifications((current) => {
-      const next = !current;
+      const next = forceOpen ?? !current;
 
       if (next) {
         Promise.all([
@@ -202,11 +188,6 @@ function HRPortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
             </button>
           ))}
         </nav>
-
-        <button className="hr-sidebar-logout" type="button" onClick={handleLogout}>
-          <FaSignOutAlt />
-          <span>Logout</span>
-        </button>
       </aside>
 
       <section className="hr-workspace">
@@ -229,13 +210,15 @@ function HRPortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
             <div
               className="hr-notification-wrap"
               ref={notificationRef}
+              onMouseEnter={() => handleNotificationToggle(true)}
+              onMouseLeave={() => setShowNotifications(false)}
             >
               <button
                 className="hr-icon-button"
                 type="button"
                 aria-label="Notifications"
                 aria-expanded={showNotifications}
-                onClick={handleNotificationToggle}
+                onClick={() => handleNotificationToggle()}
               >
                 <FaBell />
                 {notificationCount > 0 && (

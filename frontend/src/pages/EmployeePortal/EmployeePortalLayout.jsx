@@ -4,9 +4,9 @@ import {
   FaBullhorn,
   FaCalendarCheck,
   FaChartLine,
+  FaCog,
   FaHome,
   FaLaptopHouse,
-  FaPowerOff,
   FaSearch,
   FaTasks,
   FaUser,
@@ -15,8 +15,6 @@ import {
 import assignopediaLogo from "../../assets/logo.PNG";
 import "./EmployeeDashboard.css";
 import { useEmployeeProfileImage } from "./useEmployeeProfileImage";
-import { clearCurrentUser, getCurrentUser } from "../../utils/authStorage";
-import { logoutAccountRemote } from "../../utils/authApi";
 import {
   getCurrentEmployeeUnreadNotices,
   getEmployeeNotices,
@@ -45,7 +43,7 @@ const sidebarItems = [
   { label: "Tasks", icon: <FaTasks />, page: "employee-tasks" },
   { label: "Performance", icon: <FaChartLine />, page: "employee-performance" },
   { label: "Notifications", icon: <FaBell />, page: "employee-notifications" },
-  { label: "Logout", icon: <FaPowerOff />, page: "employee-login" },
+  { label: "Settings", icon: <FaCog />, page: "employee-settings" },
 ];
 
 function EmployeePortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
@@ -63,19 +61,7 @@ function EmployeePortalLayout({ activePage, children, eyebrow, title, onNavigate
   const employeeName = profile.name || "Employee";
   const employeeInitials = getInitialsFromProfile(profile);
 
-  const handleMenuClick = async (page) => {
-    if (page === "employee-login") {
-      const currentUser = getCurrentUser();
-
-      if (currentUser?.email && currentUser?.role) {
-        await logoutAccountRemote(currentUser).catch(() => {});
-      }
-
-      clearCurrentUser();
-    }
-
-    onNavigate(page);
-  };
+  const handleMenuClick = (page) => onNavigate(page);
 
   const handleSearchChange = (event) => {
     const nextQuery = event.target.value;
@@ -99,8 +85,8 @@ function EmployeePortalLayout({ activePage, children, eyebrow, title, onNavigate
     };
   }, []);
 
-  const handleNotificationToggle = () => {
-    const shouldOpen = !showNotifications;
+  const handleNotificationToggle = (forceOpen) => {
+    const shouldOpen = forceOpen ?? !showNotifications;
 
     setShowNotifications(shouldOpen);
     setShowAnnouncements(false);
@@ -138,8 +124,8 @@ function EmployeePortalLayout({ activePage, children, eyebrow, title, onNavigate
     };
   }, []);
 
-  const handleAnnouncementToggle = () => {
-    const shouldOpen = !showAnnouncements;
+  const handleAnnouncementToggle = (forceOpen) => {
+    const shouldOpen = forceOpen ?? !showAnnouncements;
 
     setShowAnnouncements(shouldOpen);
     setShowNotifications(false);
@@ -221,13 +207,15 @@ function EmployeePortalLayout({ activePage, children, eyebrow, title, onNavigate
             <div
               className="employee-notification-wrap"
               ref={notificationRef}
+              onMouseEnter={() => handleNotificationToggle(true)}
+              onMouseLeave={() => setShowNotifications(false)}
             >
               <button
                 className="topbar-icon-btn"
                 type="button"
                 aria-label="Notifications"
                 aria-expanded={showNotifications}
-                onClick={handleNotificationToggle}
+                onClick={() => handleNotificationToggle()}
               >
                 <FaBell />
                 {unreadEmployeeNotifications.length > 0 && (
@@ -257,13 +245,18 @@ function EmployeePortalLayout({ activePage, children, eyebrow, title, onNavigate
                 </div>
               )}
             </div>
-            <div className="employee-notification-wrap" ref={announcementRef}>
+            <div
+              className="employee-notification-wrap"
+              ref={announcementRef}
+              onMouseEnter={() => handleAnnouncementToggle(true)}
+              onMouseLeave={() => setShowAnnouncements(false)}
+            >
               <button
                 className="topbar-icon-btn"
                 type="button"
                 aria-label="Announcements"
                 aria-expanded={showAnnouncements}
-                onClick={handleAnnouncementToggle}
+                onClick={() => handleAnnouncementToggle()}
               >
                 <FaBullhorn />
                 {unreadAnnouncements.length > 0 && (

@@ -5398,6 +5398,40 @@ body{
   border-radius:3px;
 }
 
+/* Session controls are intentionally available only inside each portal's Settings page. */
+.portal-logout-card > p{
+  margin:0 0 16px;
+  color:#64748b;
+  line-height:1.6;
+}
+
+.portal-logout-action{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  min-height:44px;
+  padding:0 16px;
+  border:0;
+  border-radius:12px;
+  background:linear-gradient(135deg,#dc2626,#991b1b);
+  color:#fff;
+  cursor:pointer;
+  font:inherit;
+  font-weight:800;
+  box-shadow:0 10px 22px rgba(185,28,28,.2);
+}
+
+.portal-logout-action:hover{
+  background:linear-gradient(135deg,#ef4444,#b91c1c);
+}
+
+@media(max-width:640px){
+  .portal-logout-action{
+    width:100%;
+  }
+}
+
 /* Keep the password and account-switch actions readable and tappable on every screen. */
 .role-auth-switch{
   flex-wrap:wrap;

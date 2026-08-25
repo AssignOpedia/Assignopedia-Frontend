@@ -12,12 +12,9 @@ import {
   FaSearch,
   FaShieldAlt,
   FaSignInAlt,
-  FaSignOutAlt,
   FaUsers,
 } from "react-icons/fa";
 import "./AdminDashboard.css";
-import { clearCurrentUser, getCurrentUser } from "../../utils/authStorage";
-import { logoutAccountRemote } from "../../utils/authApi";
 import {
   adminNotificationEvent,
   getAdminNotifications,
@@ -117,17 +114,6 @@ function AdminPortalLayout({ activePage, children, title, eyebrow, description, 
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [showNotifications]);
 
-  const handleLogout = async () => {
-    const currentUser = getCurrentUser();
-
-    if (currentUser?.email && currentUser?.role) {
-      await logoutAccountRemote(currentUser).catch(() => {});
-    }
-
-    clearCurrentUser();
-    onNavigate("admin-login");
-  };
-
   const handleSearchChange = (event) => {
     const nextQuery = event.target.value;
 
@@ -210,11 +196,6 @@ function AdminPortalLayout({ activePage, children, title, eyebrow, description, 
           <strong>One Click Access</strong>
           <span>Open reports, permissions, and alerts from one control point.</span>
         </section>
-
-        <button className="admin-sidebar-logout" type="button" onClick={handleLogout}>
-          <FaSignOutAlt />
-          <span>Logout</span>
-        </button>
       </aside>
 
       <section className="admin-workspace">

@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { FaBell, FaCamera, FaLock, FaUserTie } from "react-icons/fa";
+import { FaBell, FaCamera, FaLock, FaPowerOff, FaUserTie } from "react-icons/fa";
+import { clearCurrentUser, getCurrentUser } from "../../utils/authStorage";
+import { logoutAccountRemote } from "../../utils/authApi";
 import { getInitialsFromProfile, getPortalProfile, savePortalProfile } from "../../utils/profileStorage";
 import { getPortalResource, savePortalResource } from "../../utils/portalDataApi";
 import { uploadFileToCloudinary } from "../../utils/uploadApi";
@@ -98,6 +100,17 @@ function HRSettings({ activePage, onNavigate }) {
     });
   };
 
+  const handleLogout = async () => {
+    const currentUser = getCurrentUser();
+
+    if (currentUser?.email && currentUser?.role) {
+      await logoutAccountRemote(currentUser).catch(() => {});
+    }
+
+    clearCurrentUser();
+    onNavigate("hr-login");
+  };
+
   return (
     <HRPortalLayout activePage={activePage} eyebrow="Settings" title="Settings" onNavigate={onNavigate}>
       <section className="hr-page-card-grid">
@@ -152,6 +165,11 @@ function HRSettings({ activePage, onNavigate }) {
             <button type="button" onClick={() => toggleSetting("wfhAlerts")}><strong>WFH request alerts</strong><span>{settings.wfhAlerts ? "On" : "Off"}</span></button>
             <button type="button" onClick={toggleDigest}><strong>Attendance digest</strong><span>{settings.attendanceDigest}</span></button>
           </div>
+        </article>
+        <article className="hr-panel portal-logout-card">
+          <div className="hr-panel-heading"><div><span>Session</span><h2>Sign out securely</h2></div><FaPowerOff /></div>
+          <p>Sign out of this HR portal on this device.</p>
+          <button className="portal-logout-action" type="button" onClick={handleLogout}><FaPowerOff /> Logout</button>
         </article>
       </section>
     </HRPortalLayout>

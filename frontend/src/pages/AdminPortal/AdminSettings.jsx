@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { FaBell, FaLock, FaSave, FaShieldAlt, FaUserCog } from "react-icons/fa";
+import { FaBell, FaLock, FaPowerOff, FaSave, FaShieldAlt, FaUserCog } from "react-icons/fa";
+import { clearCurrentUser, getCurrentUser } from "../../utils/authStorage";
+import { logoutAccountRemote } from "../../utils/authApi";
 import { getPortalProfile, savePortalProfile } from "../../utils/profileStorage";
 import AdminPortalLayout from "./AdminPortalLayout";
 
@@ -19,6 +21,17 @@ function AdminSettings({ activePage, onNavigate }) {
 
     setProfile(savePortalProfile("admin", profile));
     setStatusMessage("Admin profile details saved successfully.");
+  };
+
+  const handleLogout = async () => {
+    const currentUser = getCurrentUser();
+
+    if (currentUser?.email && currentUser?.role) {
+      await logoutAccountRemote(currentUser).catch(() => {});
+    }
+
+    clearCurrentUser();
+    onNavigate("admin-login");
   };
 
   return (
@@ -82,6 +95,17 @@ function AdminSettings({ activePage, onNavigate }) {
             <p><strong>Password rotation</strong><span>60 days</span></p>
             <p><strong>IP checks</strong><span>Enabled</span></p>
           </div>
+        </article>
+
+        <article className="admin-panel settings-card portal-logout-card">
+          <div className="admin-panel-heading">
+            <div><span>Session</span><h2>Sign out securely</h2></div>
+            <FaPowerOff />
+          </div>
+          <p>Sign out of this administrator portal on this device.</p>
+          <button className="portal-logout-action" type="button" onClick={handleLogout}>
+            <FaPowerOff /> Logout
+          </button>
         </article>
       </section>
     </AdminPortalLayout>

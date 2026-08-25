@@ -1065,6 +1065,64 @@
   box-shadow:none;
 }
 
+/* Portal-wide responsive safeguards. */
+.hr-workspace > *,
+.hr-workspace [class*="grid"],
+.hr-workspace [class*="panel"]{
+  min-width:0;
+}
+
+.hr-workspace img,
+.hr-workspace iframe{
+  max-width:100%;
+}
+
+@media(max-width:720px){
+  .hr-dashboard{
+    padding-bottom:104px;
+  }
+
+  .hr-sidebar{
+    right:12px;
+    bottom:14px;
+    left:12px;
+    box-shadow:0 18px 42px rgba(7,27,69,.28);
+  }
+
+  .hr-sidebar-logout{
+    position:fixed;
+    z-index:31;
+    top:12px;
+    right:12px;
+    width:auto;
+    min-width:94px;
+    height:42px;
+    padding:0 12px;
+    gap:7px;
+    border-radius:14px;
+    background:var(--hr-navy);
+    box-shadow:0 10px 24px rgba(7,27,69,.22);
+  }
+
+  .hr-sidebar-logout span{
+    display:inline;
+    font-size:12px;
+  }
+
+  .hr-topbar{
+    padding-right:100px;
+  }
+
+  .hr-notification-panel{
+    position:fixed;
+    top:70px;
+    right:14px;
+    left:14px;
+    width:auto;
+    max-height:calc(100vh - 190px);
+  }
+}
+
 .hr-attendance-action-panel{
   display:flex;
   align-items:center;
@@ -1093,6 +1151,44 @@
   color:#06215c;
   font-family:Georgia,"Times New Roman",serif;
   font-size:1.35rem;
+}
+
+/* Centered header and tablet bottom navigation. */
+@media(max-width:980px){
+  .hr-dashboard{display:block;padding-bottom:104px;}
+  .hr-sidebar{position:fixed;z-index:20;top:auto;right:14px;bottom:14px;left:14px;height:auto;padding:10px;border-radius:24px;flex-direction:row;gap:6px;box-shadow:0 18px 42px rgba(7,27,69,.28);}
+  .hr-brand{display:none;}
+  .hr-sidebar-menu{display:flex;flex:1;overflow-x:auto;gap:6px;scrollbar-width:none;}
+  .hr-sidebar-menu::-webkit-scrollbar{display:none;}
+  .hr-sidebar-menu button{flex:0 0 48px;width:48px;height:48px;padding:0;justify-content:center;border-radius:16px;}
+  .hr-sidebar-menu span{display:none;}
+
+  .hr-workspace{padding:22px 18px;}
+  .hr-topbar{align-items:center;text-align:center;}
+  .hr-topbar > div:first-child{width:100%;}
+  .hr-topbar-actions{display:grid;grid-template-columns:minmax(0,1fr) 48px;width:min(100%,680px);margin-inline:auto;gap:10px;}
+  .hr-search{width:100%;order:initial;}
+  .hr-notification-wrap,.hr-icon-button{width:48px;height:48px;}
+  .hr-profile{grid-column:1 / -1;justify-self:center;width:auto;max-width:100%;text-align:left;}
+}
+
+@media(max-width:480px){
+  .hr-workspace{padding:18px 12px;}
+  .hr-topbar-actions{grid-template-columns:minmax(0,1fr) 44px;gap:7px;}
+  .hr-notification-wrap,.hr-icon-button{width:44px;height:44px;}
+  .hr-search{min-height:44px;}
+
+  .hr-attendance-calendar-panel{padding:10px;border-radius:14px;}
+  .hr-attendance-calendar-summary{gap:8px;margin-bottom:10px;}
+  .hr-attendance-calendar-summary strong{font-size:1rem;}
+  .hr-attendance-calendar-legend{gap:4px;justify-content:flex-start;}
+  .hr-attendance-calendar-legend span{min-height:24px;gap:4px;padding:0 6px;font-size:.58rem;}
+  .hr-attendance-calendar-weekdays,.hr-attendance-calendar-grid{gap:3px;}
+  .hr-attendance-calendar-weekdays{margin-bottom:4px;font-size:.5rem;}
+  .hr-attendance-calendar-empty,.hr-attendance-calendar-day{min-height:60px;border-radius:8px;}
+  .hr-attendance-calendar-day{gap:3px;padding:5px 3px;overflow:hidden;}
+  .hr-attendance-calendar-day strong{font-size:.84rem;}
+  .hr-attendance-calendar-day span,.hr-attendance-calendar-day small{font-size:.52rem;line-height:1.1;overflow-wrap:anywhere;word-break:break-word;}
 }
 
 .hr-attendance-action-panel p,
@@ -2531,5 +2627,223 @@
   .leave-donut,
   .attendance-ring{
     margin:0 auto;
+  }
+}
+
+/* Responsive portal header and calendar containment. */
+@media (max-width:980px){
+  .hr-workspace{
+    padding:22px max(16px, calc((100vw - 760px) / 2));
+  }
+
+  .hr-topbar{
+    align-items:center;
+    text-align:center;
+  }
+
+  .hr-topbar > div:first-child{
+    width:100%;
+  }
+
+  .hr-topbar-actions{
+    display:grid;
+    grid-template-columns:minmax(0, 1fr) 48px;
+    width:min(100%, 680px);
+    margin-inline:auto;
+    gap:10px;
+    align-items:center;
+  }
+
+  .hr-search{
+    width:100%;
+    min-width:0;
+    order:initial;
+  }
+
+  .hr-notification-wrap,
+  .hr-icon-button{
+    width:48px;
+    height:48px;
+  }
+
+  .hr-profile{
+    grid-column:1 / -1;
+    justify-self:center;
+    width:auto;
+    max-width:100%;
+    text-align:left;
+  }
+
+  .hr-attendance-calendar-card,
+  .hr-attendance-calendar-panel,
+  .hr-attendance-calendar-summary,
+  .hr-attendance-calendar-legend,
+  .hr-attendance-calendar-day,
+  .hr-attendance-calendar-empty{
+    min-width:0;
+  }
+}
+
+@media (max-width:720px){
+  .hr-workspace{
+    padding:18px 16px;
+  }
+
+  .hr-notification-panel{
+    right:12px;
+    left:12px;
+    width:auto;
+    max-width:none;
+    max-height:calc(100dvh - 178px);
+  }
+
+  .hr-attendance-calendar-panel{
+    padding:12px;
+  }
+
+  .hr-attendance-calendar-summary{
+    gap:10px;
+    margin-bottom:12px;
+  }
+
+  .hr-attendance-calendar-legend{
+    justify-content:flex-start;
+    gap:5px;
+  }
+
+  .hr-attendance-calendar-legend span{
+    min-width:0;
+    min-height:26px;
+    padding:4px 7px;
+    font-size:.64rem;
+    overflow-wrap:anywhere;
+  }
+
+  .hr-attendance-calendar-weekdays,
+  .hr-attendance-calendar-grid{
+    gap:4px;
+  }
+
+  .hr-attendance-calendar-weekdays{
+    font-size:.6rem;
+  }
+
+  .hr-attendance-calendar-empty,
+  .hr-attendance-calendar-day{
+    min-width:0;
+    min-height:64px;
+    border-radius:10px;
+  }
+
+  .hr-attendance-calendar-day{
+    gap:3px;
+    padding:6px 4px;
+    overflow:hidden;
+  }
+
+  .hr-attendance-calendar-day strong{
+    font-size:.84rem;
+  }
+
+  .hr-attendance-calendar-day span,
+  .hr-attendance-calendar-day small{
+    min-width:0;
+    font-size:.58rem;
+    line-height:1.15;
+    overflow-wrap:anywhere;
+    word-break:break-word;
+  }
+}
+
+@media (max-width:420px){
+  .hr-workspace{
+    padding-inline:12px;
+  }
+
+  .hr-topbar-actions{
+    grid-template-columns:minmax(0, 1fr) 44px;
+    gap:7px;
+  }
+
+  .hr-notification-wrap,
+  .hr-icon-button{
+    width:44px;
+    height:44px;
+  }
+
+  .hr-search{
+    min-height:44px;
+    padding-inline:12px;
+  }
+
+  .hr-attendance-calendar-panel{
+    padding:9px;
+  }
+
+  .hr-attendance-calendar-weekdays,
+  .hr-attendance-calendar-grid{
+    gap:3px;
+  }
+
+  .hr-attendance-calendar-empty,
+  .hr-attendance-calendar-day{
+    min-height:58px;
+    border-radius:8px;
+  }
+
+  .hr-attendance-calendar-day{
+    padding:4px 2px;
+  }
+
+  .hr-attendance-calendar-day span,
+  .hr-attendance-calendar-day small{
+    font-size:.5rem;
+  }
+}
+
+/* Keep the HR header balanced on tablet and phone widths. */
+@media (max-width:980px){
+  .hr-topbar-actions{
+    width:min(100%, 700px);
+  }
+
+  .hr-profile{
+    justify-self:center;
+    justify-content:flex-start;
+    width:min(100%, 420px);
+    min-width:0;
+    min-height:56px;
+    padding:8px 20px 8px 8px;
+  }
+
+  .hr-profile > span{
+    min-width:0;
+    text-align:left;
+  }
+
+  .hr-profile strong,
+  .hr-profile small{
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+}
+
+@media (max-width:720px){
+  .hr-topbar-actions{
+    width:min(100%, 620px);
+  }
+
+  .hr-profile{
+    width:min(100%, 380px);
+    padding-right:18px;
+  }
+}
+
+@media (max-width:420px){
+  .hr-profile{
+    width:100%;
+    min-height:52px;
+    padding:7px 16px 7px 7px;
   }
 }
