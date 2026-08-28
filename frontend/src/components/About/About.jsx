@@ -256,8 +256,8 @@ function About({ onNavigate }) {
               <FaEnvelope />
               <span>
                 <strong>Client Queries & Projects</strong>
-                <a href="mailto:assignopedia2.0@gmail.com">
-                  assignopedia2.0@gmail.com
+                <a href="mailto:hrassignopedia@gmail.com">
+                  hrassignopedia@gmail.com
                 </a>
               </span>
             </p>
