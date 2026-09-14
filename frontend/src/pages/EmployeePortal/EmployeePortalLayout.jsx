@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   FaBell,
+  FaBars,
   FaBullhorn,
   FaCalendarCheck,
   FaChartLine,
@@ -47,6 +48,7 @@ const sidebarItems = [
 ];
 
 function EmployeePortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showAnnouncements, setShowAnnouncements] = useState(false);
   const profileImage = useEmployeeProfileImage();
@@ -61,7 +63,10 @@ function EmployeePortalLayout({ activePage, children, eyebrow, title, onNavigate
   const employeeName = profile.name || "Employee";
   const employeeInitials = getInitialsFromProfile(profile);
 
-  const handleMenuClick = (page) => onNavigate(page);
+  const handleMenuClick = (page) => {
+    setIsMobileMenuOpen(false);
+    onNavigate(page);
+  };
 
   const handleSearchChange = (event) => {
     const nextQuery = event.target.value;
@@ -163,7 +168,10 @@ function EmployeePortalLayout({ activePage, children, eyebrow, title, onNavigate
 
   return (
     <main className="employee-dashboard">
-      <aside className="employee-sidebar">
+      <aside
+        className={`employee-sidebar${isMobileMenuOpen ? " employee-sidebar-mobile-open" : ""}`}
+        onMouseLeave={() => setIsMobileMenuOpen(false)}
+      >
         <div className="portal-brand">
           <img src={assignopediaLogo} alt="Assignopedia logo" />
           <div>
@@ -186,9 +194,24 @@ function EmployeePortalLayout({ activePage, children, eyebrow, title, onNavigate
           ))}
         </nav>
       </aside>
+      <button
+        className={`portal-menu-backdrop${isMobileMenuOpen ? " visible" : ""}`}
+        type="button"
+        aria-label="Close navigation menu"
+        onClick={() => setIsMobileMenuOpen(false)}
+      />
 
       <section className="employee-workspace">
         <header className="employee-topbar">
+          <button
+            className="portal-mobile-menu-trigger"
+            type="button"
+            aria-label="Open employee navigation"
+            aria-expanded={isMobileMenuOpen}
+            onClick={() => setIsMobileMenuOpen((isOpen) => !isOpen)}
+          >
+            <FaBars aria-hidden="true" />
+          </button>
           <div>
             <span className="portal-eyebrow">{eyebrow}</span>
             <h1>{title}</h1>

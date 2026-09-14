@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   FaBell,
+  FaBars,
   FaBolt,
   FaCog,
   FaDatabase,
@@ -43,6 +44,7 @@ const sidebarItems = [
 ];
 
 function AdminPortalLayout({ activePage, children, title, eyebrow, description, action, onNavigate }) {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [passwordResetRequests, setPasswordResetRequests] = useState(getPasswordResetRequests);
   const [adminNotifications, setAdminNotifications] = useState(getAdminNotifications);
@@ -159,10 +161,17 @@ function AdminPortalLayout({ activePage, children, title, eyebrow, description, 
 
   const notificationCount = unreadAdminNotifications.length + unreadPasswordResetRequests.length;
   const hasNotificationItems = adminNotifications.length + passwordResetRequests.length > 0;
+  const navigateFromMenu = (page) => {
+    setIsMobileMenuOpen(false);
+    onNavigate(page);
+  };
 
   return (
     <main className="admin-dashboard">
-      <aside className="admin-sidebar">
+     <aside
+  className={`admin-sidebar${isMobileMenuOpen ? " admin-sidebar-mobile-open" : ""}`}
+  onMouseLeave={() => setIsMobileMenuOpen(false)}
+>
         <div className="admin-brand">
           <span>AP</span>
           <div>
@@ -177,7 +186,7 @@ function AdminPortalLayout({ activePage, children, title, eyebrow, description, 
               className={activePage === item.page ? "active" : ""}
               type="button"
               key={item.label}
-              onClick={() => onNavigate(item.page)}
+              onClick={() => navigateFromMenu(item.page)}
             >
               {item.icon}
               <span>{item.label}</span>
@@ -197,9 +206,24 @@ function AdminPortalLayout({ activePage, children, title, eyebrow, description, 
           <span>Open reports, permissions, and alerts from one control point.</span>
         </section>
       </aside>
+      <button
+        className={`portal-menu-backdrop${isMobileMenuOpen ? " visible" : ""}`}
+        type="button"
+        aria-label="Close navigation menu"
+        onClick={() => setIsMobileMenuOpen(false)}
+      />
 
       <section className="admin-workspace">
         <header className="admin-topbar">
+          <button
+            className="portal-mobile-menu-trigger"
+            type="button"
+            aria-label="Open admin navigation"
+            aria-expanded={isMobileMenuOpen}
+            onClick={() => setIsMobileMenuOpen((isOpen) => !isOpen)}
+          >
+            <FaBars aria-hidden="true" />
+          </button>
           <label className="admin-search">
             <FaSearch aria-hidden="true" />
             <input
