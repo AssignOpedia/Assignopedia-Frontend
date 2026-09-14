@@ -29,8 +29,8 @@ function Contact({ onNavigate }) {
       icon: <FaEnvelope />,
       title: "Email Us",
       text: "For client queries and career applications",
-      action: "assignopedia2.0@gmail.com",
-      href: "mailto:assignopedia2.0@gmail.com",
+      action: "hrassignopedia@gmail.com",
+      href: "mailto:hrassignopedia@gmail.com",
     },
     {
       icon: <FaPhoneAlt />,
@@ -126,8 +126,8 @@ function Contact({ onNavigate }) {
               <FaEnvelope />
               <span>
                 <strong>Client Queries & Projects</strong>
-                <a href="mailto:assignopedia2.0@gmail.com">
-                  assignopedia2.0@gmail.com
+                <a href="mailto:hrassignopedia@gmail.com">
+                  hrassignopedia@gmail.com
                 </a>
               </span>
             </p>

@@ -98,7 +98,7 @@ const getBotReply = (message) => {
     query.includes("email") ||
     query.includes("reach")
   ) {
-    return "You can contact Assignopedia by phone or WhatsApp at +91 6291075245. For client queries and projects, email assignopedia2.0@gmail.com. Career queries can be sent to hrrecruiter.aop@gmail.com.";
+    return "You can contact Assignopedia by phone or WhatsApp at +91 6291075245. For client queries and projects, email hrassignopedia@gmail.com. Career queries can be sent to hrrecruiter.aop@gmail.com.";
   }
 
   if (

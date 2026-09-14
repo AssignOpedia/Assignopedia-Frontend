@@ -53,10 +53,10 @@ function Footer() {
           </a>
           <a
             className="footer-contact-item"
-            href="mailto:assignopedia2.0@gmail.com"
+            href="mailto:hrassignopedia@gmail.com"
           >
             <FaEnvelope />
-            <span>assignopedia2.0@gmail.com</span>
+            <span>hrassignopedia@gmail.com</span>
           </a>
           <p className="footer-contact-item">
             <FaMapMarkerAlt />
