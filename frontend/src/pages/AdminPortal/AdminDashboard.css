@@ -14,7 +14,7 @@
   overflow-y: auto;
   padding: 26px 20px;
   background: linear-gradient(180deg, #08142c 0%, #111827 58%, #172554 100%);
-  color: #f8fafc;
+  color: #f1f4f7;
   box-shadow: 12px 0 32px rgba(15, 23, 42, 0.16);
 }
 
@@ -2341,6 +2341,109 @@
   }
 }
 
+/* Tablet and phone portal navigation: open the bottom drawer from the top menu. */
+.portal-mobile-menu-trigger,
+.portal-menu-backdrop{
+  display:none;
+}
+
+@media (max-width:980px){
+  .admin-dashboard{
+    display:block;
+  }
+
+  .portal-mobile-menu-trigger{
+    display:grid;
+    place-items:center;
+    width:48px;
+    height:48px;
+    padding:0;
+    border:0;
+    border-radius:14px;
+    background:#08142c;
+    color:#fff;
+    cursor:pointer;
+  }
+
+  .portal-menu-backdrop.visible{
+    position:fixed;
+    z-index:90;
+    inset:0;
+    display:block;
+    border:0;
+    background:rgba(8,20,44,.42);
+  }
+
+  .admin-sidebar{
+    position:fixed;
+    z-index:100;
+    top:72px;
+    right:12px;
+    bottom:auto;
+    left:12px;
+    height:auto;
+    max-height:calc(100dvh - 84px);
+    padding:12px;
+    overflow:auto;
+    border-radius:18px;
+    transform:translateY(-18px);
+    opacity:0;
+    pointer-events:none;
+    transition:transform .24s ease, opacity .24s ease;
+  }
+
+  .admin-sidebar.admin-sidebar-mobile-open{
+    transform:translateY(0);
+    opacity:1;
+    pointer-events:auto;
+  }
+
+  .admin-sidebar-mobile-open .admin-menu button{
+    flex:1 1 190px;
+    width:auto;
+    min-height:46px;
+    height:auto;
+    padding:12px;
+    justify-content:flex-start;
+  }
+
+  .admin-sidebar-mobile-open .admin-menu button span{
+    display:inline !important;
+  }
+
+  .admin-brand,
+  .admin-sidebar-card{
+    display:none;
+  }
+
+  .admin-menu{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+
+  .admin-menu button{
+    flex:1 1 190px;
+    width:auto;
+  }
+
+  .admin-topbar{
+    display:grid;
+    grid-template-columns:48px minmax(0,1fr);
+    align-items:center;
+  }
+
+  .admin-search{
+    grid-column:2;
+    width:100%;
+  }
+
+  .admin-topbar-actions{
+    grid-column:1 / -1;
+    justify-content:center;
+  }
+}
+
 /* Center the command center controls and dashboard overview on tablet and mobile. */
 @media (max-width: 980px) {
   .admin-topbar{
@@ -2710,5 +2813,507 @@
 
   .admin-filter{
     width:min(100%,300px);
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+@media (max-width: 720px) {
+
+  .admin-dashboard {
+    display: block !important;
+    padding-bottom: 20px !important;
+  }
+
+  .admin-sidebar {
+    position: fixed !important;
+    top: 68px !important;
+    right: 8px !important;
+    bottom: auto !important;
+    left: 8px !important;
+
+    width: auto !important;
+    height: auto !important;
+    max-height: calc(100dvh - 82px) !important;
+
+    padding: 16px !important;
+    overflow-y: auto !important;
+
+    border-radius: 20px !important;
+
+    transform: translateY(-20px) !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+
+    z-index: 1000 !important;
+
+    transition:
+      transform .24s ease,
+      opacity .24s ease !important;
+  }
+
+  .admin-sidebar.admin-sidebar-mobile-open {
+    transform: translateY(0) !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  .admin-brand,
+  .admin-sidebar-card {
+    display: none !important;
+  }
+
+  .admin-menu {
+  display: flex !important;
+  flex-direction: column !important;
+  flex-wrap: nowrap !important;
+  gap: 8px !important;
+  overflow: visible !important;
+}
+
+.admin-menu button {
+  flex: 0 0 auto !important;
+  width: 100% !important;
+  min-height: 46px !important;
+  height: 46px !important;
+  padding: 10px 12px !important;
+  justify-content: flex-start !important;
+}
+
+  .admin-menu button span {
+    display: inline !important;
+  }
+
+  .portal-mobile-menu-trigger {
+    display: grid !important;
+    place-items: center !important;
+    width: 48px !important;
+    height: 48px !important;
+  }
+
+  .portal-menu-backdrop.visible {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 999 !important;
+    display: block !important;
+    background: rgba(8, 20, 44, .42) !important;
+  }
+}
+
+/* Final phone header layout: show every Admin control without overlap. */
+@media (max-width: 720px) {
+  .admin-workspace{
+    padding-top:18px !important;
+  }
+
+  .admin-topbar{
+    display:grid !important;
+    grid-template-columns:minmax(0, 1fr) 44px 44px;
+    align-items:center !important;
+    gap:8px !important;
+    padding:12px 0 0 !important;
+    margin-bottom:18px !important;
+  }
+
+  .admin-topbar-actions{
+    display:contents !important;
+  }
+
+  .admin-topbar .portal-mobile-menu-trigger{
+    position:static !important;
+    grid-column:3;
+    grid-row:1;
+    width:44px !important;
+    height:44px !important;
+    min-width:44px !important;
+    min-height:44px !important;
+    margin:0 !important;
+    transform:none !important;
+  }
+
+  .admin-notification-wrap{
+    position:relative !important;
+    grid-column:2;
+    grid-row:1;
+    width:44px !important;
+    height:44px !important;
+  }
+
+  .admin-icon-button{
+    width:44px !important;
+    height:44px !important;
+  }
+
+  .admin-topbar .admin-search{
+    grid-column:1 / -1;
+    grid-row:2;
+    width:100% !important;
+    min-width:0;
+    min-height:44px;
+    margin:0 !important;
+  }
+
+  .admin-topbar .admin-search input{
+    height:44px !important;
+    min-height:44px !important;
+    font-size:.82rem;
+  }
+
+  .admin-profile{
+    grid-column:1 / span 2;
+    grid-row:3;
+    justify-self:stretch;
+    width:100% !important;
+    min-width:0;
+    min-height:48px;
+    padding-right:10px;
+  }
+
+  .admin-filter{
+    grid-column:3;
+    grid-row:3;
+    width:44px !important;
+    min-width:44px;
+    min-height:48px;
+    padding:0 8px;
+  }
+
+  .admin-filter svg{
+    display:none;
+  }
+
+  .admin-filter select{
+    min-width:0;
+    font-size:.72rem;
+  }
+
+  .admin-notification-panel{
+    position:fixed !important;
+    top:68px !important;
+    right:12px !important;
+    left:12px !important;
+    width:auto !important;
+  }
+}
+
+/* Complete Admin header on phones: controls, search, then profile and period. */
+@media (max-width: 720px) {
+  .admin-workspace{
+    padding-top:18px !important;
+  }
+
+  .admin-topbar{
+    display:grid !important;
+    grid-template-columns:minmax(0, 1fr) 44px 44px;
+    align-items:center !important;
+    gap:8px !important;
+    padding:12px 0 0 !important;
+    margin-bottom:18px !important;
+  }
+
+  .admin-topbar-actions{
+    display:contents !important;
+  }
+
+  .admin-topbar .portal-mobile-menu-trigger{
+    position:static !important;
+    grid-column:3;
+    grid-row:1;
+    width:44px !important;
+    height:44px !important;
+    min-width:44px !important;
+    min-height:44px !important;
+    margin:0 !important;
+    transform:none !important;
+  }
+
+  .admin-notification-wrap{
+    position:relative !important;
+    grid-column:2;
+    grid-row:1;
+    width:44px !important;
+    height:44px !important;
+  }
+
+  .admin-icon-button{
+    width:44px !important;
+    height:44px !important;
+  }
+
+  .admin-topbar .admin-search{
+    grid-column:1 / -1;
+    grid-row:2;
+    width:100% !important;
+    min-width:0;
+    min-height:44px;
+    margin:0 !important;
+  }
+
+  .admin-topbar .admin-search input{
+    height:44px !important;
+    min-height:44px !important;
+    font-size:.82rem;
+  }
+
+  .admin-profile{
+    grid-column:1 / span 2;
+    grid-row:3;
+    justify-self:stretch;
+    width:100% !important;
+    min-width:0;
+    min-height:48px;
+    padding-right:10px;
+  }
+
+  .admin-filter{
+    grid-column:3;
+    grid-row:3;
+    width:44px !important;
+    min-width:44px;
+    min-height:48px;
+    padding:0 8px;
+  }
+
+  .admin-filter svg{
+    display:none;
+  }
+
+  .admin-filter select{
+    min-width:0;
+    font-size:.72rem;
+  }
+
+  .admin-notification-panel{
+    position:fixed !important;
+    top:68px !important;
+    right:12px !important;
+    left:12px !important;
+    width:auto !important;
+  }
+}
+
+
+  
+
+
+
+@media (max-width: 720px) {
+
+  .admin-topbar {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+
+    width: 100% !important;
+    max-width: 100% !important;
+
+    gap: 8px !important;
+    padding: 8px !important;
+    margin: 0 !important;
+
+    box-sizing: border-box !important;
+  }
+
+  /* SEARCH — takes first position and expands */
+  .admin-topbar .admin-search {
+    order: 1 !important; /* Forces search to the left */
+    position: static !important;
+
+    display: flex !important;
+    flex: 1 1 auto !important;
+
+    width: auto !important;
+    max-width: none !important;
+    min-width: 0 !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    box-sizing: border-box !important;
+  }
+
+  .admin-topbar .admin-search input {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+
+    height: 44px !important;
+    min-height: 44px !important;
+
+    box-sizing: border-box !important;
+  }
+
+  /* 3-DOT / HAMBURGER — placed on the right side */
+  .admin-topbar .portal-mobile-menu-trigger {
+    order: 2 !important; /* Forces 3-dot menu to the far right */
+    position: static !important;
+
+    display: grid !important;
+    place-items: center !important;
+
+    flex: 0 0 auto !important;
+
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+
+    transform: none !important;
+
+    z-index: 20 !important;
+  }
+
+  /* Hide desktop topbar controls */
+  .admin-topbar-actions {
+    display: none !important;
+  }
+
+  /* Keep mobile sidebar popup working */
+  .admin-sidebar {
+    position: fixed !important;
+
+    top: 60px !important;
+    left: 8px !important;
+    right: 8px !important;
+
+    width: auto !important;
+    height: auto !important;
+
+    max-height: calc(100dvh - 72px) !important;
+
+    transform: translateY(-20px) !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+
+    z-index: 1000 !important;
+  }
+
+  .admin-sidebar.admin-sidebar-mobile-open {
+    transform: translateY(0) !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  .portal-menu-backdrop.visible {
+    position: fixed !important;
+    inset: 0 !important;
+
+    display: block !important;
+    z-index: 999 !important;
+
+    background: rgba(8, 20, 44, .42) !important;
+  }
+}
+
+/* Override the legacy phone-only rule above: retain all Admin controls. */
+@media (max-width: 720px) {
+  .admin-workspace{ padding-top:18px !important; }
+
+  .admin-topbar{
+    display:grid !important;
+    grid-template-columns:minmax(0, 1fr) 44px 44px;
+    align-items:center !important;
+    gap:8px !important;
+    padding:12px 0 0 !important;
+    margin-bottom:18px !important;
+  }
+
+  .admin-topbar-actions{ display:contents !important; }
+
+  .admin-topbar .portal-mobile-menu-trigger{
+    position:static !important;
+    grid-column:3;
+    grid-row:2;
+    width:44px !important;
+    height:44px !important;
+    min-width:44px !important;
+    min-height:44px !important;
+    margin:0 !important;
+    transform:none !important;
+  }
+
+  .admin-notification-wrap{
+    position:relative !important;
+    grid-column:2;
+    grid-row:2;
+    width:44px !important;
+    height:44px !important;
+  }
+
+  .admin-icon-button{ width:44px !important; height:44px !important; }
+
+  .admin-topbar .admin-search{
+    grid-column:1;
+    grid-row:2;
+    width:100% !important;
+    min-width:0;
+    min-height:44px;
+    margin:0 !important;
+  }
+
+  .admin-topbar .admin-search input{
+    height:44px !important;
+    min-height:44px !important;
+    font-size:.82rem;
+  }
+
+  .admin-profile{
+    grid-column:1;
+    grid-row:3;
+    justify-self:stretch;
+    width:100% !important;
+    min-width:0;
+    min-height:48px;
+    padding-right:10px;
+  }
+
+  .admin-filter{
+    grid-column:2 / -1;
+    grid-row:3;
+    width:100% !important;
+    min-width:96px;
+    min-height:48px;
+    padding:0 8px;
+  }
+
+  .admin-filter svg{ display:none; }
+  .admin-filter select{ min-width:0; font-size:.72rem; }
+
+  .admin-notification-panel{
+    position:fixed !important;
+    top:68px !important;
+    right:12px !important;
+    left:12px !important;
+    width:auto !important;
   }
 }

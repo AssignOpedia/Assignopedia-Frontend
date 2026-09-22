@@ -2801,6 +2801,174 @@
   }
 }
 
+/* Tablet and phone portal navigation: open the bottom drawer from the top menu. */
+.portal-mobile-menu-trigger,
+.portal-menu-backdrop{
+  display:none;
+}
+
+@media (max-width:980px){
+  .hr-dashboard{
+    display:block;
+  }
+
+  .portal-mobile-menu-trigger{
+    display:grid;
+    place-items:center;
+    width:48px;
+    height:48px;
+    padding:0;
+    border:0;
+    border-radius:14px;
+    background:#2563eb;
+    color:#fff;
+    cursor:pointer;
+  }
+
+  .portal-menu-backdrop.visible{
+    position:fixed;
+    z-index:90;
+    inset:0;
+    display:block;
+    border:0;
+    background:rgba(7,27,69,.42);
+  }
+
+  .hr-sidebar{
+    position:fixed;
+    z-index:100;
+    top:72px;
+    right:12px;
+    bottom:auto;
+    left:12px;
+    height:auto;
+    max-height:calc(100dvh - 84px);
+    padding:12px;
+    overflow:auto;
+    border-radius:18px;
+    transform:translateY(-18px);
+    opacity:0;
+    pointer-events:none;
+    transition:transform .24s ease, opacity .24s ease;
+  }
+
+  .hr-sidebar.hr-sidebar-mobile-open{
+    transform:translateY(0);
+    opacity:1;
+    pointer-events:auto;
+  }
+
+  .hr-sidebar-mobile-open .hr-sidebar-menu button{
+    flex:1 1 190px;
+    width:auto;
+    min-height:46px;
+    height:auto;
+    padding:12px;
+    justify-content:flex-start;
+  }
+
+  .hr-sidebar-mobile-open .hr-sidebar-menu button span{
+    display:inline !important;
+  }
+
+  .hr-brand{
+    display:none;
+  }
+
+  .hr-sidebar-menu{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+
+  .hr-sidebar-menu button{
+    flex:1 1 190px;
+    width:auto;
+    padding:12px;
+  }
+ /*
+  .hr-topbar{
+    position:relative;
+    display:block;
+    text-align:center;
+  }
+
+  .hr-topbar > div:first-child{
+    width:100%;
+    text-align:center;
+  }
+
+
+  
+   .hr-topbar > .portal-mobile-menu-trigger{
+    position:absolute;
+    top:16px;
+    right:0;
+  }
+
+
+ .hr-topbar {
+    position: relative !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+    .hr-topbar > div:first-child {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+
+  /* Keep search centered */
+  .hr-topbar .hr-search,
+  .hr-topbar input {
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  /* Put hamburger beside the title */
+  .hr-topbar > .portal-mobile-menu-trigger {
+    position: absolute !important;
+    top: 34px !important;
+    left: calc(50% + 90px) !important;
+    right: auto !important;
+    transform: none !important;
+  }
+}
+
+
+
+
+
+  .hr-topbar-actions{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:center;
+    justify-self:center;
+    width:min(100%,700px);
+  }
+
+  .hr-topbar-actions .hr-search{
+    flex:0 1 350px;
+    width:min(350px, calc(100vw - 94px));
+  }
+
+  .hr-topbar-actions .hr-notification-wrap{
+    flex:0 0 48px;
+  }
+
+  .hr-topbar-actions .hr-profile{
+    flex:0 1 360px;
+    width:min(360px, 100%);
+    justify-content:center;
+    text-align:center;
+  }
+
+
 /* Keep the HR header balanced on tablet and phone widths. */
 @media (max-width:980px){
   .hr-topbar-actions{
@@ -2854,29 +3022,31 @@
     display:grid;
     justify-content:center;
     grid-template-columns:minmax(0, 1fr) 48px;
-    width:min(100%, 600px);
+    width:min(100%, 440px);
     margin-inline:auto;
     gap:10px;
     align-items:center;
   }
 
-  .hr-search{
+  .hr-topbar-actions .hr-search{
     width:100%;
     min-width:0;
     justify-self:stretch;
+    transform:none;
   }
 
   .hr-notification-wrap{
     justify-self:center;
   }
 
-  .hr-profile{
+  .hr-topbar-actions .hr-profile{
     grid-column:1 / -1;
     justify-self:center;
     justify-content:flex-start;
     width:min(100%, 400px);
     min-width:0;
     text-align:left;
+    transform:none;
   }
 }
 
@@ -2886,7 +3056,1087 @@
     width:100%;
   }
 
-  .hr-profile{
-    width:100%;
+  .hr-topbar-actions .hr-profile{
+    width:min(100%, 320px);
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* =========================================================
+   1. DESKTOP LAYOUT (min-width: 721px)
+   Aligns Title, Search, Notification Icons, and Profile Card in ONE row
+   ========================================================= */
+
+   
+
+@media (min-width: 721px) {
+
+  .hr-topbar {
+
+    display: flex !important;
+
+    flex-direction: row !important;
+
+    align-items: center !important;
+
+    justify-content: space-between !important;
+
+    width: 100% !important;
+
+    gap: 16px !important;
+
+    margin: 0 0 20px 0 !important;
+
+    padding: 0 !important;
+
+    box-sizing: border-box !important;
+
+  }
+
+
+  /* TITLE (Left Side) */
+
+  .hr-topbar h1 {
+
+    flex: 0 0 auto !important;
+
+    width: auto !important;
+
+    margin: 0 !important;
+
+    padding: 0 !important;
+
+    text-align: left !important;
+
+    font-size: 28px !important;
+
+    line-height: 1.1 !important;
+
+    white-space: nowrap !important;
+
+  }
+
+
+  /* ACTIONS CONTAINER (Right Side: Search + Icons + Profile) */
+
+  .hr-topbar-actions {
+
+    display: flex !important;
+
+    flex-direction: row !important;
+
+    align-items: center !important;
+
+    justify-content: flex-end !important;
+
+    gap: 12px !important;
+
+    flex: 1 1 auto !important;
+
+    width: auto !important;
+
+    margin: 0 !important;
+
+    padding: 0 !important;
+
+  }
+
+
+  /* SEARCH BAR */
+
+  .hr-search {
+
+    flex: 0 1 300px !important;
+
+    width: auto !important;
+
+    min-width: 180px !important;
+
+    margin: 0 !important;
+
+    padding: 0 !important;
+
+  }
+
+  .hr-search input {
+
+    width: 100% !important;
+
+    height: 44px !important;
+
+    border-radius: 22px !important;
+
+    border: 1px solid #e2e8f0 !important;
+
+    padding: 0 16px !important;
+
+    box-sizing: border-box !important;
+
+  }
+
+
+  /* NOTIFICATION & ICON BUTTONS */
+
+  .hr-topbar-actions > button,
+
+  .hr-topbar-actions button,
+
+  .hr-notification,
+
+  .hr-notification-button {
+
+    display: grid !important;
+
+    place-items: center !important;
+
+    flex: 0 0 44px !important;
+
+    width: 44px !important;
+
+    height: 44px !important;
+
+    margin: 0 !important;
+
+    padding: 0 !important;
+
+    border-radius: 50% !important;
+
+  }
+
+
+  /* USER PROFILE CARD (Sayan Dutta Card) */
+
+  .hr-profile-banner,
+
+  .hr-profile-card,
+
+  .hr-user-card {
+
+    display: flex !important;
+
+    align-items: center !important;
+
+    flex: 0 0 auto !important;
+
+    width: auto !important;
+
+    height: auto !important;
+
+    margin: 0 !important;
+
+    padding: 0 !important;
+
+    box-sizing: border-box !important;
+
+  }
+
+
+  /* HIDE MOBILE HAMBURGER/3-DOT TRIGGER ON DESKTOP */
+
+  .portal-mobile-menu-trigger {
+
+    display: none !important;
+
+  }
+
+}
+
+
+/* =========================================================
+   2. MOBILE LAYOUT (max-width: 720px)
+   ========================================================= */
+
+@media (max-width: 720px) {
+
+  .hr-dashboard {
+
+    display: block !important;
+
+    position: relative !important;
+
+    width: 100% !important;
+
+    min-height: 100dvh !important;
+
+    padding: 0 0 20px !important;
+
+    box-sizing: border-box !important;
+
+  }
+
+
+  .hr-workspace {
+
+    position: relative !important;
+
+    width: 100% !important;
+
+    max-width: 100% !important;
+
+    min-width: 0 !important;
+
+    margin: 0 auto !important;
+
+    padding: 0 10px 20px !important;
+
+    box-sizing: border-box !important;
+
+  }
+
+
+  /* =====================================================
+     MOBILE TOPBAR
+     ===================================================== */
+
+  .hr-topbar {
+
+    display: flex !important;
+
+    flex-direction: column !important;
+
+    align-items: stretch !important;
+
+    gap: 10px !important;
+
+    width: 100% !important;
+
+    margin: 0 !important;
+
+    padding: 10px 0 0 !important;
+
+    box-sizing: border-box !important;
+
+  }
+
+
+  .hr-topbar > *:first-child {
+
+    margin-top: 0 !important;
+
+  }
+
+
+  /* =====================================================
+     MOBILE TITLE
+     ===================================================== */
+
+  .hr-topbar h1 {
+
+    order: 1 !important;
+
+    flex: none !important;
+
+    width: 100% !important;
+
+    margin: 4px 50px 9px !important;
+
+    padding: 0 !important;
+
+    text-align: center !important;
+
+    font-size: 27px !important;
+
+    line-height: 1.15 !important;
+
+    box-sizing: border-box !important;
+
+  }
+
+
+  /* =====================================================
+     SEARCH + NOTIFICATION ROW
+     ===================================================== */
+
+  .hr-topbar-actions {
+
+    order: 2 !important;
+
+    display: flex !important;
+
+    flex-direction: row !important;
+
+    align-items: center !important;
+
+    justify-content: center !important;
+
+    gap: 8px !important;
+
+    width: 100% !important;
+
+    margin: 0 !important;
+
+    padding: 0 !important;
+
+    box-sizing: border-box !important;
+
+  }
+
+
+  /* =====================================================
+     SEARCH INPUT
+     ===================================================== */
+
+  .hr-search {
+
+    order: 1 !important;
+
+    flex: 1 1 auto !important;
+
+    width: auto !important;
+
+    max-width: none !important;
+
+    min-width: 0 !important;
+
+    margin: 0 !important;
+
+    padding: 0 !important;
+
+    box-sizing: border-box !important;
+
+  }
+
+
+  .hr-search input {
+
+    display: block !important;
+
+    width: 100% !important;
+
+    height: 44px !important;
+
+    min-height: 44px !important;
+
+    min-width: 0 !important;
+
+    padding: 0 10px !important;
+
+    font-size: 11px !important;
+
+    box-sizing: border-box !important;
+
+  }
+
+
+  /* =====================================================
+     NOTIFICATION BUTTON
+     ===================================================== */
+
+  .hr-topbar-actions > button,
+
+  .hr-topbar-actions button,
+
+  .hr-notification,
+
+  .hr-notification-button {
+
+    order: 2 !important;
+
+    flex: 0 0 44px !important;
+
+    width: 44px !important;
+
+    height: 44px !important;
+
+    min-width: 44px !important;
+
+    min-height: 44px !important;
+
+    max-width: 44px !important;
+
+    max-height: 44px !important;
+
+    display: grid !important;
+
+    place-items: center !important;
+
+    margin: 0 !important;
+
+    padding: 0 !important;
+
+    box-sizing: border-box !important;
+
+  }
+
+
+  /* =====================================================
+     MOBILE 3-DOT / HAMBURGER
+     TOP RIGHT OF HR DASHBOARD
+     
+     IMPORTANT:
+     It is ABSOLUTE, so it does NOT take space
+     inside the search/bell row.
+     ===================================================== */
+
+  .portal-mobile-menu-trigger,
+
+  .hr-topbar .portal-mobile-menu-trigger,
+
+  .hr-topbar-actions .portal-mobile-menu-trigger {
+
+    display: grid !important;
+
+    place-items: center !important;
+
+    position: absolute !important;
+
+    top: 8px !important;
+
+    right: 10px !important;
+
+    width: 44px !important;
+
+    height: 44px !important;
+
+    min-width: 44px !important;
+
+    min-height: 44px !important;
+
+    max-width: 44px !important;
+
+    max-height: 44px !important;
+
+    margin: 0 !important;
+
+    padding: 0 !important;
+
+    flex: none !important;
+
+    order: unset !important;
+
+    transform: none !important;
+
+    z-index: 10000 !important;
+
+    border-radius: 12px !important;
+
+  }
+
+
+  /* =====================================================
+     PROFILE CARD
+     ===================================================== */
+
+  .hr-profile-banner,
+
+  .hr-profile-card,
+
+  .hr-user-card {
+
+    order: 3 !important;
+
+    width: 100% !important;
+
+    max-width: 100% !important;
+
+    min-width: 0 !important;
+
+    height: auto !important;
+
+    margin: 10px auto 0 !important;
+
+    box-sizing: border-box !important;
+
+  }
+
+
+  /* =====================================================
+     GRIDS & PANELS
+     ===================================================== */
+
+  .hr-summary-grid,
+
+  .hr-main-grid {
+
+    display: grid !important;
+
+    grid-template-columns: 1fr !important;
+
+    gap: 14px !important;
+
+    width: 100% !important;
+
+    margin: 14px auto 0 !important;
+
+    box-sizing: border-box !important;
+
+  }
+
+
+  .hr-summary-card,
+
+  .hr-panel {
+
+    width: 100% !important;
+
+    max-width: 100% !important;
+
+    min-width: 0 !important;
+
+    margin: 0 auto !important;
+
+    box-sizing: border-box !important;
+
+  }
+
+
+  /* =====================================================
+     MOBILE SIDEBAR POPUP
+     ===================================================== */
+
+  .hr-sidebar {
+
+    position: fixed !important;
+
+    top: 58px !important;
+
+    left: 8px !important;
+
+    right: 8px !important;
+
+    bottom: auto !important;
+
+    width: auto !important;
+
+    height: auto !important;
+
+    max-height: calc(100dvh - 72px) !important;
+
+    padding: 16px !important;
+
+    overflow-y: auto !important;
+
+    border-radius: 20px !important;
+
+    transform: translateY(-20px) !important;
+
+    opacity: 0 !important;
+
+    pointer-events: none !important;
+
+    z-index: 10000 !important;
+
+    transition:
+
+      transform 0.24s ease,
+
+      opacity 0.24s ease !important;
+
+  }
+
+
+  .hr-sidebar.hr-sidebar-mobile-open {
+
+    transform: translateY(0) !important;
+
+    opacity: 1 !important;
+
+    pointer-events: auto !important;
+
+  }
+
+
+  /* =====================================================
+     MOBILE MENU
+     ===================================================== */
+
+  .hr-menu {
+
+    display: flex !important;
+
+    flex-direction: column !important;
+
+    flex-wrap: nowrap !important;
+
+    width: 100% !important;
+
+    gap: 8px !important;
+
+    overflow: visible !important;
+
+  }
+
+
+  .hr-menu button {
+
+    display: flex !important;
+
+    justify-content: flex-start !important;
+
+    flex: 0 0 auto !important;
+
+    width: 100% !important;
+
+    height: 46px !important;
+
+    min-height: 46px !important;
+
+    padding: 10px 12px !important;
+
+    box-sizing: border-box !important;
+
+  }
+
+
+  .hr-menu button span {
+
+    display: inline !important;
+
+  }
+
+
+  /* HIDE SIDEBAR BRAND/CARDS */
+
+  .hr-brand,
+
+  .hr-sidebar-card {
+
+    display: none !important;
+
+  }
+
+
+  /* =====================================================
+     BACKDROP
+     ===================================================== */
+
+  .portal-menu-backdrop.visible {
+
+    position: fixed !important;
+
+    inset: 0 !important;
+
+    display: block !important;
+
+    z-index: 9998 !important;
+
+    background: rgba(8, 20, 44, 0.42) !important;
+
+  }
+
+}
+
+
+/* =========================================================
+   3. EXTRA SMALL PHONES
+   ========================================================= */
+
+@media (max-width: 380px) {
+
+  .hr-workspace {
+
+    padding-left: 10px !important;
+
+    padding-right: 10px !important;
+
+  }
+
+
+  .hr-topbar {
+
+    padding-top: 3px !important;
+
+  }
+
+
+  .hr-topbar h1 {
+
+    margin-top: 4px !important;
+
+    margin-bottom: 9px !important;
+
+    font-size: 25px !important;
+
+  }
+
+
+  .hr-search input {
+
+    height: 42px !important;
+
+    min-height: 42px !important;
+
+    font-size: 11px !important;
+
+    padding-left: 10px !important;
+
+    padding-right: 8px !important;
+
+  }
+
+
+  .hr-topbar-actions {
+
+    gap: 6px !important;
+
+  }
+
+
+  .hr-topbar-actions > button,
+
+  .hr-topbar-actions button,
+
+  .hr-notification,
+
+  .hr-notification-button {
+
+    flex: 0 0 42px !important;
+
+    width: 42px !important;
+
+    height: 42px !important;
+
+    min-width: 42px !important;
+
+    min-height: 42px !important;
+
+    max-width: 42px !important;
+
+    max-height: 42px !important;
+
+  }
+
+
+
+
+
+
+
+  /* SMALL PHONE 3-DOT */
+
+  .portal-mobile-menu-trigger,
+
+  .hr-topbar .portal-mobile-menu-trigger,
+
+  .hr-topbar-actions .portal-mobile-menu-trigger {
+
+    top: 6px !important;
+
+    right: 8px !important;
+
+    width: 42px !important;
+
+    height: 42px !important;
+
+    min-width: 42px !important;
+
+    min-height: 42px !important;
+
+    max-width: 42px !important;
+
+    max-height: 42px !important;
+
+  }
+
+}
+
+/* Keep the mobile/tablet portal controls clear of the screen edge. */
+@media (max-width: 720px) {
+  .hr-topbar{
+    --hr-header-control-size:48px;
+    --hr-header-control-gap:10px;
+    --hr-header-control-edge:12px;
+  }
+
+  .hr-workspace{
+    padding-top:18px !important;
+  }
+
+  .hr-topbar{
+    position:relative !important;
+    padding-top:4px !important;
+  }
+
+  .portal-mobile-menu-trigger,
+  .hr-topbar .portal-mobile-menu-trigger{
+    position:absolute !important;
+    top:4px !important;
+    right:var(--hr-header-control-edge) !important;
+    z-index:10001 !important;
+  }
+
+  .hr-notification-wrap{
+    position:absolute !important;
+    top:4px !important;
+    right:calc(var(--hr-header-control-edge) + var(--hr-header-control-size) + var(--hr-header-control-gap)) !important;
+    z-index:10001 !important;
+  }
+
+  .hr-notification-panel{
+    position:fixed !important;
+    top:64px !important;
+    right:12px !important;
+    left:12px !important;
+    width:auto !important;
+  }
+}
+
+/* Complete HR header on phones: title controls, search, then profile. */
+@media (max-width: 720px) {
+  .hr-topbar{
+    display:grid !important;
+    grid-template-columns:minmax(0, 1fr) 44px 44px;
+    align-items:center !important;
+    gap:8px !important;
+    padding-top:16px !important;
+    margin-bottom:18px !important;
+  }
+
+  .hr-topbar > div:first-child{
+    grid-column:1;
+    grid-row:1;
+    width:auto !important;
+    margin:0 !important;
+    text-align:center !important;
+  }
+
+  .hr-topbar-actions{
+    display:contents !important;
+  }
+
+  .portal-mobile-menu-trigger,
+  .hr-topbar .portal-mobile-menu-trigger{
+    position:static !important;
+    grid-column:3;
+    grid-row:1;
+    width:44px !important;
+    height:44px !important;
+    min-width:44px !important;
+    min-height:44px !important;
+    transform:none !important;
+  }
+
+  .hr-notification-wrap{
+    position:relative !important;
+    top:auto !important;
+    right:auto !important;
+    grid-column:2;
+    grid-row:1;
+    width:44px !important;
+    height:44px !important;
+  }
+
+  .hr-icon-button{
+    width:44px !important;
+    height:44px !important;
+  }
+
+  .hr-topbar-actions .hr-search{
+    grid-column:1 / -1;
+    grid-row:2;
+    width:100% !important;
+    min-width:0;
+    min-height:44px;
+  }
+
+  .hr-topbar-actions .hr-profile{
+    grid-column:1 / -1;
+    grid-row:3;
+    justify-self:center;
+    width:min(100%, 330px) !important;
+    min-width:0;
+    min-height:48px;
+  }
+}
+
+/* Keep the HR search and navigation controls together on one mobile row. */
+@media (max-width: 720px) {
+  .hr-topbar > div:first-child{
+    grid-column:1 / -1;
+    grid-row:1;
+  }
+
+  .hr-topbar-actions .hr-search{
+    grid-column:1;
+    grid-row:2;
+  }
+
+  .hr-notification-wrap{
+    grid-column:2;
+    grid-row:2;
+  }
+
+  .portal-mobile-menu-trigger,
+  .hr-topbar .portal-mobile-menu-trigger{
+    grid-column:3;
+    grid-row:2;
+  }
+}
+
+@media (max-width: 420px) {
+  .hr-topbar{
+    --hr-header-control-size:44px;
+    --hr-header-control-gap:8px;
+    --hr-header-control-edge:10px;
+  }
+
+  .portal-mobile-menu-trigger,
+  .hr-topbar .portal-mobile-menu-trigger{
+    top:4px !important;
+    right:var(--hr-header-control-edge) !important;
+  }
+
+  .hr-notification-wrap{
+    top:4px !important;
+    right:calc(var(--hr-header-control-edge) + var(--hr-header-control-size) + var(--hr-header-control-gap)) !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .hr-topbar{
+    --hr-header-control-size:44px;
+    --hr-header-control-gap:8px;
+    --hr-header-control-edge:10px;
+    display:block !important;
+    min-height:62px;
+    padding-top:14px !important;
+    text-align:center !important;
+  }
+
+  .hr-topbar > div:first-child{
+    width:calc(100% - 116px) !important;
+    min-width:0;
+    margin:0 auto 12px 0 !important;
+    text-align:center !important;
+  }
+
+  .hr-topbar h1{
+    width:100% !important;
+    margin:4px 0 0 !important;
+    text-align:center !important;
+  }
+
+  .hr-topbar-actions{
+    display:flex !important;
+    width:100% !important;
+    margin:0 !important;
+  }
+
+  .hr-topbar-actions .hr-search{
+    width:100% !important;
+    flex:1 1 auto !important;
+  }
+}
+
+/* Final phone header layout: retain every HR control without covering the title. */
+@media (max-width: 720px) {
+  .hr-topbar{
+    display:grid !important;
+    grid-template-columns:minmax(0, 1fr) 44px 44px;
+    align-items:center !important;
+    gap:8px !important;
+    padding-top:16px !important;
+    margin-bottom:18px !important;
+  }
+
+  .hr-topbar > div:first-child{
+    grid-column:1;
+    grid-row:1;
+    width:auto !important;
+    min-width:0;
+    margin:0 !important;
+    text-align:center !important;
+  }
+
+  .hr-topbar h1{
+    width:100% !important;
+    margin:4px 0 0 !important;
+    text-align:center !important;
+  }
+
+  .hr-topbar-actions{
+    display:contents !important;
+  }
+
+  .portal-mobile-menu-trigger,
+  .hr-topbar .portal-mobile-menu-trigger{
+    position:static !important;
+    grid-column:3;
+    grid-row:1;
+    width:44px !important;
+    height:44px !important;
+    min-width:44px !important;
+    min-height:44px !important;
+    margin:0 !important;
+    transform:none !important;
+  }
+
+  .hr-notification-wrap{
+    position:relative !important;
+    top:auto !important;
+    right:auto !important;
+    grid-column:2;
+    grid-row:1;
+    width:44px !important;
+    height:44px !important;
+  }
+
+  .hr-icon-button{
+    width:44px !important;
+    height:44px !important;
+  }
+
+  .hr-sidebar{
+    z-index:10020 !important;
+  }
+
+  .portal-mobile-menu-trigger,
+  .hr-topbar .portal-mobile-menu-trigger,
+  .hr-notification-wrap{
+    z-index:1 !important;
+    transform:translateY(-4px) !important;
+  }
+
+  .hr-sidebar.hr-sidebar-mobile-open ~ .hr-workspace .portal-mobile-menu-trigger,
+  .hr-sidebar.hr-sidebar-mobile-open ~ .hr-workspace .hr-notification-wrap{
+    visibility:hidden;
+    pointer-events:none;
+  }
+
+  .hr-topbar-actions .hr-search{
+    grid-column:1 / -1;
+    grid-row:2;
+    width:100% !important;
+    min-width:0;
+    min-height:44px;
+  }
+
+  .hr-topbar-actions .hr-profile{
+    grid-column:1 / -1;
+    grid-row:3;
+    justify-self:center;
+    width:min(100%, 330px) !important;
+    min-width:0;
+    min-height:48px;
+  }
+}
+

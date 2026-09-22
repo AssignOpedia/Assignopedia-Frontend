@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   FaBell,
+  FaBars,
   FaBuilding,
   FaCalendarCheck,
   FaClipboardList,
@@ -45,6 +46,7 @@ const sidebarItems = [
 ];
 
 function HRPortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [requestNotifications, setRequestNotifications] = useState(getCurrentHrNotifications);
   const [passwordResetRequests, setPasswordResetRequests] = useState(getPasswordResetRequests);
@@ -166,7 +168,10 @@ function HRPortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
 
   return (
     <main className="hr-dashboard">
-      <aside className="hr-sidebar">
+      <aside
+        className={`hr-sidebar${isMobileMenuOpen ? " hr-sidebar-mobile-open" : ""}`}
+        onMouseLeave={() => setIsMobileMenuOpen(false)}
+      >
         <div className="hr-brand">
           <span>HR</span>
           <div>
@@ -181,7 +186,10 @@ function HRPortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
               className={activePage === item.page ? "active" : ""}
               type="button"
               key={item.label}
-              onClick={() => onNavigate(item.page)}
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                onNavigate(item.page);
+              }}
             >
               {item.icon}
               <span>{item.label}</span>
@@ -189,6 +197,12 @@ function HRPortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
           ))}
         </nav>
       </aside>
+      <button
+        className={`portal-menu-backdrop${isMobileMenuOpen ? " visible" : ""}`}
+        type="button"
+        aria-label="Close navigation menu"
+        onClick={() => setIsMobileMenuOpen(false)}
+      />
 
       <section className="hr-workspace">
         <header className="hr-topbar">
@@ -196,6 +210,15 @@ function HRPortalLayout({ activePage, children, eyebrow, title, onNavigate }) {
             <span>{eyebrow}</span>
             <h1>{title}</h1>
           </div>
+          <button
+            className="portal-mobile-menu-trigger"
+            type="button"
+            aria-label="Open HR navigation"
+            aria-expanded={isMobileMenuOpen}
+            onClick={() => setIsMobileMenuOpen((isOpen) => !isOpen)}
+          >
+            <FaBars aria-hidden="true" />
+          </button>
 
           <div className="hr-topbar-actions">
             <label className="hr-search">
