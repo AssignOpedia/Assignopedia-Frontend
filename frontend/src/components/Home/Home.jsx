@@ -685,28 +685,7 @@ function Home({ onNavigate, showIntro = false, onIntroComplete }) {
             ===================================================== */
 
         .home-page-shell .home-hero {
-          background:
-            radial-gradient(
-              circle at 18% 16%,
-              rgba(212, 175, 55, 0.12),
-              transparent 30%
-            ),
-            radial-gradient(
-              circle at 82% 20%,
-              rgba(254, 240, 138, 0.05),
-              transparent 35%
-            ),
-            radial-gradient(
-              circle at 46% 74%,
-              rgba(255, 255, 255, 0.02),
-              transparent 40%
-            ),
-            linear-gradient(
-              135deg,
-              rgba(9, 9, 11, 0.9) 0%,
-              rgba(18, 18, 22, 0.85) 54%,
-              rgba(9, 9, 11, 0.9) 100%
-            ) !important;
+          background: transparent !important;
 
           position: relative;
           z-index: 1;
