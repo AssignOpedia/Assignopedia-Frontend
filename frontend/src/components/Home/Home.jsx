@@ -207,9 +207,10 @@ function Home({ onNavigate, showIntro = false, onIntroComplete }) {
       className="home-page-shell"
       style={{
         position: "relative",
-        backgroundColor: "rgba(9, 9, 11, 0.85)",
+        backgroundColor: "transparent",
       }}
     >
+      <ConstellationBackground variant="home" />
       <style>{`
         .home-page-shell {
           color: #fef08a;
@@ -1077,20 +1078,6 @@ function Home({ onNavigate, showIntro = false, onIntroComplete }) {
           ===================================================== */}
 
       <>
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            pointerEvents: "none",
-            zIndex: 0,
-            overflow: "hidden",
-          }}
-        >
-          <ConstellationBackground variant="home" />
-        </div>
-
         {/* HERO */}
 
         <section

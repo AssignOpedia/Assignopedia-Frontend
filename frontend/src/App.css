@@ -3228,6 +3228,36 @@ body{
     linear-gradient(135deg,#180f24 0%,#0b2255 52%,#f8fbff 52.2%,#f8fbff 100%);
 }
 
+.constellation-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.constellation-bg .constellation-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 1;
+  filter: saturate(1.3) contrast(1.12) brightness(0.94);
+}
+
+.constellation-bg .constellation-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(7, 17, 38, 0.12), rgba(7, 17, 38, 0.26)),
+    radial-gradient(circle at 20% 20%, rgba(244, 163, 0, 0.08), transparent 24%),
+    radial-gradient(circle at 80% 18%, rgba(96, 165, 250, 0.08), transparent 28%),
+    radial-gradient(circle at 50% 80%, rgba(255, 255, 255, 0.04), transparent 30%);
+}
+
 .about-page > :not(.constellation-bg),
 .blog-page > :not(.constellation-bg),
 .careers-page > :not(.constellation-bg),
@@ -3274,10 +3304,10 @@ body{
 
 .home-page-shell .home-hero{
   background:
-    radial-gradient(circle at 18% 16%,rgba(244,163,0,.24),transparent 28%),
-    radial-gradient(circle at 82% 20%,rgba(37,99,235,.3),transparent 32%),
-    radial-gradient(circle at 46% 74%,rgba(255,255,255,.08),transparent 34%),
-    linear-gradient(135deg,#071126 0%,#0b2255 54%,#08162f 100%);
+    radial-gradient(circle at 18% 16%,rgba(244,163,0,.10),transparent 28%),
+    radial-gradient(circle at 82% 20%,rgba(37,99,235,.12),transparent 32%),
+    radial-gradient(circle at 46% 74%,rgba(255,255,255,.04),transparent 34%),
+    linear-gradient(135deg,rgba(7,17,38,0.18),rgba(11,34,85,0.08),rgba(8,22,47,0.22));
 }
 
 .home-page-shell .home-hero .constellation-bg{
@@ -7229,7 +7259,7 @@ body{
 
 /* Home page uses the same network-star language as Blog, tuned for the home palette. */
 .home-page-shell{
-  background:#f7faff;
+  background:transparent;
   animation:none;
 }
 
@@ -7239,11 +7269,7 @@ body{
 }
 
 .home-page-shell .home-hero{
-  background:
-    radial-gradient(circle at 16% 18%,rgba(245,180,58,.22),transparent 26%),
-    radial-gradient(circle at 82% 16%,rgba(226,236,248,.18),transparent 29%),
-    radial-gradient(circle at 52% 78%,rgba(255,255,255,.08),transparent 34%),
-    linear-gradient(135deg,#071126 0%,#0b2255 50%,#101827 100%);
+  background:transparent;
 }
 
 .home-page-shell .home-hero::before,
@@ -7297,12 +7323,7 @@ body{
   position:relative;
   isolation:isolate;
   overflow:hidden;
-  background:
-    radial-gradient(circle at 14% 8%,rgba(245,180,58,.24),transparent 27%),
-    radial-gradient(circle at 84% 22%,rgba(37,99,235,.2),transparent 30%),
-    radial-gradient(circle at 42% 48%,rgba(148,163,184,.12),transparent 34%),
-    radial-gradient(circle at 78% 88%,rgba(245,180,58,.12),transparent 31%),
-    linear-gradient(145deg,#071126 0%,#0b2255 50%,#101827 100%);
+  background:transparent;
 }
 
 .home-page-shell > :not(.constellation-bg){
