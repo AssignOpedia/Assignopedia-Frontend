@@ -17,7 +17,7 @@ function Footer() {
     },
     {
       label: "Instagram",
-      href: "https://www.instagram.com/assignopedia",
+      href: "https://www.instagram.com/assignopediaservices?stkn=MW1uaDlua2U0MXM4NQ==",
       icon: <FaInstagram />,
     },
     {

@@ -926,6 +926,12 @@ function Home({ onNavigate, showIntro = false, onIntroComplete }) {
           display: none;
         }
 
+        /* The footer follows Home directly. Its responsive top margin was
+           exposing the document's white background between these sections. */
+        .home-page-shell + .site-footer {
+          margin-top: 0;
+        }
+
         .home-page-shell .testimonial-card,
         .home-page-shell .testimonial-card.is-active {
           background: rgba(8, 22, 47, 0.5) !important;
@@ -1283,7 +1289,7 @@ function Home({ onNavigate, showIntro = false, onIntroComplete }) {
                     }
                   >
                     <source
-                      src="/video.mp4"
+                      src="/home.mp4"
                       type="video/mp4"
                     />
 
