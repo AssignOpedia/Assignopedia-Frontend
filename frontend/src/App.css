@@ -7471,6 +7471,107 @@ body{
   background:rgba(242,247,255,.88);
 }
 
+/* Blog: use the same full-page constellation treatment as the Home page. */
+.blog-page{
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  background:transparent;
+}
+
+.blog-page > :not(.constellation-bg){
+  position:relative;
+  z-index:1;
+}
+
+.blog-page > .constellation-bg{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  min-height:100%;
+  opacity:1;
+  mix-blend-mode:normal;
+}
+
+.blog-page .constellation-bg .constellation-video{
+  filter:saturate(1.3) contrast(1.12) brightness(.94);
+}
+
+.blog-page .page-hero h1,
+.blog-page .featured-post h2,
+.blog-page .post-card h3,
+.blog-page .sidebar-panel h3,
+.blog-page .post-meta{
+  color:#fff;
+}
+
+.blog-page .page-hero p,
+.blog-page .featured-post p,
+.blog-page .post-card p{
+  color:rgba(226,232,240,.9);
+}
+
+.blog-page .search-box,
+.blog-page .featured-post,
+.blog-page .post-card,
+.blog-page .sidebar-panel{
+  background:rgba(255,255,255,.08);
+  border-color:rgba(255,255,255,.2);
+  box-shadow:0 18px 42px rgba(2,8,23,.22);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+}
+
+.blog-page .search-box{
+  color:#fff;
+}
+
+.blog-page .search-box input{
+  background:transparent;
+  color:#fff;
+}
+
+.blog-page .search-box input::placeholder{
+  color:rgba(226,232,240,.72);
+}
+
+.blog-page .category-row button{
+  background:rgba(255,255,255,.1);
+  border:1px solid rgba(255,255,255,.2);
+  color:#fff;
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+}
+
+.blog-page .feature-icon{
+  background:rgba(244,163,0,.2);
+  color:#ffd166;
+}
+
+.blog-page .featured-post button{
+  background:rgba(11,34,85,.86);
+  border:1px solid rgba(255,255,255,.24);
+}
+
+.blog-page .sidebar-panel button{
+  width:100%;
+  margin-top:10px;
+  padding:14px;
+  border-radius:12px;
+  background:rgba(255,255,255,.1);
+  color:#fff;
+  text-align:left;
+  letter-spacing:normal;
+  text-transform:none;
+  border:1px solid rgba(255,255,255,.14);
+}
+
+.blog-page .category-row button:hover,
+.blog-page .sidebar-panel button:hover{
+  background:rgba(255,255,255,.18);
+}
+
 /* Compact premium footer */
 .site-footer{
   margin-top:4vh;

@@ -60,7 +60,7 @@ function Blog() {
 
   return (
     <main className="page blog-page">
-      <ConstellationBackground variant="blog" />
+      <ConstellationBackground variant="home" />
       <section className="page-hero">
         <span>Blog / Resources</span>
         <h1>Academic Resources for Better Writing</h1>
