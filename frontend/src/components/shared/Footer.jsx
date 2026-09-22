@@ -51,13 +51,15 @@ function Footer() {
             <FaPhoneAlt />
             <span>+91 6291075245</span>
           </a>
-          <a
-            className="footer-contact-item"
-            href="mailto:hrassignopedia@gmail.com"
-          >
-            <FaEnvelope />
-            <span>hrassignopedia@gmail.com</span>
-          </a>
+        <a
+  className="footer-contact-item"
+  href="https://mail.google.com/mail/?view=cm&fs=1&to=hrassignopedia@gmail.com"
+  target="_blank"
+  rel="noopener noreferrer"
+>
+  <FaEnvelope />
+  <span>hrassignopedia@gmail.com</span>
+</a>
           <p className="footer-contact-item">
             <FaMapMarkerAlt />
             <span>Kolkata, West Bengal, India</span>

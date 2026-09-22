@@ -805,8 +805,51 @@ function Home({ onNavigate, showIntro = false, onIntroComplete }) {
         }
 
         /* =====================================================
-            CARDS - WHITE
+            HOME GLASS PANELS
             ===================================================== */
+
+        /* Keep the existing statistics layout while allowing the
+           page-wide constellation animation to show through it. */
+        .home-page-shell .home-hero .hero-stats-bar {
+          background: rgba(255, 255, 255, 0.06) !important;
+          border: 1px solid rgba(255, 255, 255, 0.18) !important;
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          box-shadow:
+            0 18px 42px rgba(0, 0, 0, 0.24),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .home-page-shell .home-hero .hero-stats-bar::before,
+        .home-page-shell .home-hero .hero-stats-bar::after {
+          background: transparent !important;
+        }
+
+        .home-page-shell .home-hero .hero-stat,
+        .home-page-shell .home-hero .hero-stat:nth-child(2) {
+          background: rgba(255, 255, 255, 0.06) !important;
+          border: 1px solid rgba(255, 255, 255, 0.18) !important;
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          box-shadow:
+            0 10px 24px rgba(0, 0, 0, 0.18),
+            inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        }
+
+        .home-page-shell .home-hero .hero-stat > svg {
+          color: #f7d774 !important;
+          filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
+        }
+
+        .home-page-shell .home-hero .hero-stat h3 {
+          color: #f8fafc !important;
+          text-shadow: 0 2px 10px rgba(0, 0, 0, 0.58);
+        }
+
+        .home-page-shell .home-hero .hero-stat p {
+          color: rgba(241, 245, 249, 0.94) !important;
+          text-shadow: 0 1px 8px rgba(0, 0, 0, 0.56);
+        }
 
         .summary-card,
         .service-preview-card {
@@ -815,26 +858,91 @@ function Home({ onNavigate, showIntro = false, onIntroComplete }) {
             box-shadow 0.3s ease,
             border-color 0.3s ease;
 
-          border:
-            1px solid rgba(212, 175, 55, 0.35);
+          border: 1px solid rgba(255, 255, 255, 0.28);
 
-          background: #ffffff !important;
+          background: rgba(8, 22, 47, 0.48) !important;
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
 
           position: relative;
 
           overflow: hidden;
 
-          color: #111827;
+          color: #f8fafc;
+
+          box-shadow:
+            0 14px 32px rgba(0, 0, 0, 0.22),
+            inset 0 1px 0 rgba(255, 255, 255, 0.08);
         }
 
         .summary-card h3,
         .service-preview-card h3 {
-          color: #0b2a66 !important;
+          color: #f8fafc !important;
+          text-shadow: 0 2px 10px rgba(0, 0, 0, 0.48);
         }
 
         .summary-card p,
         .service-preview-card p {
-          color: #475569 !important;
+          color: rgba(226, 232, 240, 0.94) !important;
+          text-shadow: 0 1px 8px rgba(0, 0, 0, 0.44);
+        }
+
+        .home-summary > .about-summary-hero,
+        .home-page-shell .home-cta {
+          background: rgba(8, 22, 47, 0.5) !important;
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          box-shadow:
+            0 18px 42px rgba(0, 0, 0, 0.26),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .home-summary > .about-summary-hero h2,
+        .home-page-shell .home-cta h2 {
+          color: #f8fafc !important;
+          text-shadow: 0 2px 12px rgba(0, 0, 0, 0.52);
+        }
+
+        .home-summary > .about-summary-hero p,
+        .home-page-shell .home-cta p {
+          color: rgba(226, 232, 240, 0.94) !important;
+          text-shadow: 0 1px 8px rgba(0, 0, 0, 0.44);
+        }
+
+        .summary-icon,
+        .service-preview-icon {
+          background: rgba(255, 255, 255, 0.12) !important;
+          border: 1px solid rgba(255, 255, 255, 0.22);
+          color: #f7d774 !important;
+          box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+        }
+
+        .home-page-shell .testimonials-section {
+          background: transparent !important;
+        }
+
+        .home-page-shell .testimonials-section::after {
+          display: none;
+        }
+
+        .home-page-shell .testimonial-card,
+        .home-page-shell .testimonial-card.is-active {
+          background: rgba(8, 22, 47, 0.5) !important;
+          border-color: rgba(255, 255, 255, 0.28);
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
+          box-shadow:
+            0 16px 38px rgba(0, 0, 0, 0.24),
+            inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        }
+
+        .home-page-shell .testimonials-heading h2,
+        .home-page-shell .testimonial-card blockquote,
+        .home-page-shell .testimonial-client strong,
+        .home-page-shell .testimonial-client small {
+          color: #f8fafc !important;
+          text-shadow: 0 1px 8px rgba(0, 0, 0, 0.44);
         }
 
         .summary-card:hover,
